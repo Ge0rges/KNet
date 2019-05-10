@@ -66,6 +66,9 @@ class WakeSleep:
             'w': weights
         }
 
+        # Flip the list.
+        sizes = sizes[::-1]
+
         # Generate the generative layer of weights.
         biases = [np.random.randn(y, 1) for y in sizes[1:]]
         weights = [np.random.randn(y, x)
@@ -87,17 +90,17 @@ class WakeSleep:
             a = sigmoid(np.dot(w, a) + b)
         return a
 
-    def wake(self, training_data, epochs, mini_batch_size, eta):
+    def wake_phase(self, training_data, epochs, mini_batch_size, eta):
         self.wake = True
-        representation = self.encode(training_data)
+        representation = [self.encode(x) for x in training_data]
         data_set = zip(representation, training_data)
 
         self.SGD(data_set, epochs, mini_batch_size, eta)
 
-    def sleep(self, epochs, mini_batch_size, eta):
+    def sleep_phase(self, epochs, mini_batch_size, eta):
         self.wake = False
-        training_data = np.random.randn(self.inner_size, 100000)
-        representation = self.generate(training_data)
+        training_data = [np.random.randn(self.inner_size, 1) for i in xrange(100000)]
+        representation = [self.generate(x) for x in training_data]
         data_set = zip(representation, training_data)
 
         self.SGD(data_set, epochs, mini_batch_size, eta)
@@ -113,6 +116,8 @@ class WakeSleep:
                 ]
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
+            print "Epoch {0} complete".format(i)
+            print "Epoch {0}, Cost: {1}".format(i, self.total_cost(training_data))
 
     def update_mini_batch(self, mini_batch, eta):
         biases, weights = self.get_net()
@@ -164,26 +169,45 @@ class WakeSleep:
 
     def get_net(self):
         if self.wake:
-            biases = self.encoding['b']
-            weights = self.encoding['w']
-        else:
             biases = self.gen['b']
             weights = self.gen['w']
+        else:
+            biases = self.encoding['b']
+            weights = self.encoding['w']
 
         return biases, weights
 
     def set_net(self, biases, weights):
         if self.wake:
-            self.encoding['b'] = biases
-            self.encoding['w'] = weights
-        else:
             self.gen['b'] = biases
             self.gen['w'] = weights
+        else:
+            self.encoding['b'] = biases
+            self.encoding['w'] = weights
+
+    def total_cost(self, data, lmbda=0):
+        """Return the total cost for the data set ``data``.  The flag
+        ``convert`` should be set to False if the data set is the
+        training data (the usual case), and to True if the data set is
+        the validation or test data.  See comments on the similar (but
+        reversed) convention for the ``accuracy`` method, above.
+        """
+        cost = 0.0
+        biases, weights = self.get_net()
+        for x, y in data:
+            if self.wake:
+                a = self.generate(x)
+            else:
+                a = self.encode(x)
+            cost += self.cost.fn(a, y)/len(data)
+        cost += 0.5*(lmbda/len(data))*sum(
+            np.linalg.norm(w)**2 for w in weights)
+        return cost
 
 
 def sigmoid(z):
     """The sigmoid function."""
-    return 1.0/(1.0+np.exp(-z))
+    return 1.0/(1.0+np.nan_to_num(np.exp(-z)))
 
 
 def sigmoid_prime(z):
