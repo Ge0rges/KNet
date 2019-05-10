@@ -116,8 +116,7 @@ class WakeSleep:
                 ]
             for mini_batch in mini_batches:
                 self.update_mini_batch(mini_batch, eta)
-            print "Epoch {0} complete".format(i)
-            print "Epoch {0}, Cost: {1}".format(i, self.total_cost(training_data))
+            print "\t\tEpoch Cost: {0}".format(self.partial_cost(training_data))
 
     def update_mini_batch(self, mini_batch, eta):
         biases, weights = self.get_net()
@@ -185,13 +184,7 @@ class WakeSleep:
             self.encoding['b'] = biases
             self.encoding['w'] = weights
 
-    def total_cost(self, data, lmbda=0):
-        """Return the total cost for the data set ``data``.  The flag
-        ``convert`` should be set to False if the data set is the
-        training data (the usual case), and to True if the data set is
-        the validation or test data.  See comments on the similar (but
-        reversed) convention for the ``accuracy`` method, above.
-        """
+    def partial_cost(self, data, lmbda=0):
         cost = 0.0
         biases, weights = self.get_net()
         for x, y in data:
@@ -199,6 +192,17 @@ class WakeSleep:
                 a = self.generate(x)
             else:
                 a = self.encode(x)
+            cost += self.cost.fn(a, y)/len(data)
+        cost += 0.5*(lmbda/len(data))*sum(
+            np.linalg.norm(w)**2 for w in weights)
+        return cost
+
+    def total_cost(self, data, lmbda=0):
+        cost = 0.0
+        biases, weights = self.get_net()
+        for x, y in data:
+            a = self.encode(x)
+            a = self.generate(a)
             cost += self.cost.fn(a, y)/len(data)
         cost += 0.5*(lmbda/len(data))*sum(
             np.linalg.norm(w)**2 for w in weights)

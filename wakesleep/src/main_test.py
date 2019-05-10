@@ -7,10 +7,15 @@ total_data = training_data + validation_data + test_data
 
 net = network.WakeSleep([784, 30, 10], cost=network.QuadraticCost)
 
-for i in xrange(10):
+test_data = zip(total_data, total_data)
+
+print "Total Cost: ", net.total_cost(test_data)
+
+for i in xrange(5):
     print "Stage", i + 1
-    for j in xrange(10 - i):
-        print "Wake Phase ", j + 1
-        net.wake_phase(total_data, 1, (i + 1) * 100, 10.0 / (i + 1))
-        print "Sleep Phase", j + 1
-        net.sleep_phase(1, (i + 1) * 100, 10.0 / (i + 1))
+    for j in xrange(5 - i):
+        print "\tWake Phase ", j + 1
+        net.wake_phase(total_data, i + 1, (i + 1) * 100, 5.0 / (i * 5 + 1))
+        print "\tSleep Phase", j + 1
+        net.sleep_phase(i + 1, (i + 1) * 100, 1.0 / (i * 5 + 1))
+        print "Total Cost: ", net.total_cost(test_data)
