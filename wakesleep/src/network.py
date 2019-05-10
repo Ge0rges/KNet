@@ -53,6 +53,7 @@ class WakeSleep:
         :param cost: Cost function for the network.
         """
         self.num_layers = len(sizes)
+        self.inner_size = sizes[-1]
         self.sizes = sizes
         self.cost = cost
 
@@ -88,10 +89,18 @@ class WakeSleep:
 
     def wake(self, training_data, epochs, mini_batch_size, eta):
         self.wake = True
+        representation = self.encode(training_data)
+        data_set = zip(representation, training_data)
 
+        self.SGD(data_set, epochs, mini_batch_size, eta)
 
-    def sleep(self, epochs, mini_batch_size, eta,):
+    def sleep(self, epochs, mini_batch_size, eta):
         self.wake = False
+        training_data = np.random.randn(self.inner_size, 100000)
+        representation = self.generate(training_data)
+        data_set = zip(representation, training_data)
+
+        self.SGD(data_set, epochs, mini_batch_size, eta)
 
     def SGD(self, training_data, epochs, mini_batch_size, eta):
         n = len(training_data)

@@ -75,6 +75,13 @@ def load_data_wrapper():
     test_data = zip(test_inputs, te_d[1])
     return (training_data, validation_data, test_data)
 
+def load_only_inputs():
+    tr_d, va_d, te_d = load_data()
+    training_inputs = [np.reshape(x, (784, 1)) for x in tr_d[0]]
+    validation_inputs = [np.reshape(x, (784, 1)) for x in va_d[0]]
+    test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]
+    return (training_inputs, validation_inputs, test_inputs)
+
 def vectorized_result(j):
     """Return a 10-dimensional unit vector with a 1.0 in the jth
     position and zeroes elsewhere.  This is used to convert a digit
