@@ -90,22 +90,22 @@ class WakeSleep:
             a = sigmoid(np.dot(w, a) + b)
         return a
 
-    def wake_phase(self, training_data, epochs, mini_batch_size, eta):
+    def wake_phase(self, training_data, epochs, mini_batch_size, eta, lmbda=0):
         self.wake = True
         representation = [self.encode(x) for x in training_data]
         data_set = zip(representation, training_data)
 
-        self.SGD(data_set, epochs, mini_batch_size, eta)
+        self.SGD(data_set, epochs, mini_batch_size, eta, lmbda)
 
-    def sleep_phase(self, epochs, mini_batch_size, eta):
+    def sleep_phase(self, epochs, mini_batch_size, eta, lmbda=0):
         self.wake = False
         training_data = [np.random.randn(self.inner_size, 1) for i in xrange(100000)]
         representation = [self.generate(x) for x in training_data]
         data_set = zip(representation, training_data)
 
-        self.SGD(data_set, epochs, mini_batch_size, eta)
+        self.SGD(data_set, epochs, mini_batch_size, eta, lmbda)
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta):
+    def SGD(self, training_data, epochs, mini_batch_size, eta, lmbda):
         n = len(training_data)
 
         for i in xrange(epochs):
@@ -115,10 +115,10 @@ class WakeSleep:
                 for j in xrange(0, n, mini_batch_size)
                 ]
             for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch, eta)
+                self.update_mini_batch(mini_batch, eta, lmbda, len(training_data))
             print "\t\tEpoch Cost: {0}".format(self.partial_cost(training_data))
 
-    def update_mini_batch(self, mini_batch, eta):
+    def update_mini_batch(self, mini_batch, eta, lmbda, n):
         biases, weights = self.get_net()
 
         nabla_b = [np.zeros(b.shape) for b in biases]
@@ -127,7 +127,7 @@ class WakeSleep:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        weights = [w - (eta / len(mini_batch)) * nw
+        weights = [(1-eta*(lmbda/n))*w - (eta / len(mini_batch)) * nw
                         for w, nw in zip(weights, nabla_w)]
         biases = [b - (eta / len(mini_batch)) * nb
                        for b, nb in zip(biases, nabla_b)]
