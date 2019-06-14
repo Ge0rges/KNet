@@ -23,13 +23,13 @@ def training_loop():
 
     print "Total Cost: ", net.total_cost(test_data)
 
-    for i in xrange(5):
+    for i in xrange(6):
         print "Stage", i + 1
-        for j in xrange(5 - i):
+        for j in xrange(6 - i):
             print "\tWake Phase ", j + 1
-            net.wake_phase(total_data, i + 1, (i + 1) * 100, .5 / pow(10, i))
+            net.wake_phase(total_data, i + 1, (i + 1) * 100, 1.0 / pow(10, i))
             print "\tSleep Phase", j + 1
-            net.sleep_phase(i + 1, (i + 1) * 100, .1 / pow(10, i))
+            net.sleep_phase(i + 1, (i + 1) * 100, 1.0 / pow(10, i))
             print "Total Cost: ", net.total_cost(test_data)
 
     input_obj = np.random.randn(5, 1)
