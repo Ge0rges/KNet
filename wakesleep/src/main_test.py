@@ -1,7 +1,10 @@
 import mnist_loader
 import network
 import numpy as np
+import os
 from PIL import Image
+
+script_dir = os.path.dirname(__file__)
 
 
 def show_image(array, title):
@@ -12,51 +15,68 @@ def show_image(array, title):
     img.show(title + ".png")
 
 
-def training_loop():
+def training_loop(sizes):
     training_data, validation_data, test_data = mnist_loader.load_only_inputs()
 
     total_data = training_data + validation_data + test_data
 
-    net = network.WakeSleep([784, 30, 5], cost=network.QuadraticCost)
+    net = network.WakeSleep(sizes, cost=network.QuadraticCost)
 
     test_data = zip(total_data, total_data)
 
     print "Total Cost: ", net.total_cost(test_data)
 
-    for i in xrange(6):
+    training_length = 6
+
+    for i in xrange(training_length):
         print "Stage", i + 1
-        for j in xrange(6 - i):
+        for j in xrange(training_length - i):
             print "\tWake Phase ", j + 1
             net.wake_phase(total_data, i + 1, (i + 1) * 100, 1.0 / pow(10, i))
             print "\tSleep Phase", j + 1
             net.sleep_phase(i + 1, (i + 1) * 100, 1.0 / pow(10, i))
             print "Total Cost: ", net.total_cost(test_data)
 
-    input_obj = np.random.randn(5, 1)
-    for i in xrange(5):
-        for index in xrange(len(input_obj)):
-            if index == i:
-                input_obj[index] = 1
-            else:
-                input_obj[index] = 0
-
-        output = net.generate(input_obj)
-
-        output = ((output * 256).astype(np.uint8).reshape([28, 28]))
-
-        img = Image.fromarray(output)
-        img.save("Number" + str(i + 1) + ".png")
+        samples_gen(net, i + 1)
 
     return net
 
 
+def samples_gen(net, stage, sample_size=20):
+    dirName = "Stage " + str(stage)
+    if not os.path.exists(dirName):
+        os.mkdir(dirName)
+        print("Directory ", dirName, " Created ")
+    else:
+        print("Directory ", dirName, " already exists")
+
+    input_obj = np.random.randn(net.inner_size, 1)
+    for i in xrange(net.inner_size):
+        for j in xrange(sample_size + 1):
+            for index in xrange(len(input_obj)):
+                if index == i:
+                    input_obj[index] = (1.0/sample_size) * j
+                else:
+                    input_obj[index] = 0
+
+            output = net.generate(input_obj)
+
+            output = ((output * 256).astype(np.uint8).reshape([28, 28]))
+
+            img = Image.fromarray(output)
+            image_size = 28 * 5, 28 * 5
+            img = img.resize(image_size)
+            path = script_dir + "/" + dirName + "/Number" + str(i) + "-" + str(j) + ".png"
+            img.save(path, "png")
+
+
 def test_loop(net):
-    input_obj = np.random.randn(5, 1)
-    numbers = raw_input("Enter 5 Inputs: ")
+    input_obj = np.random.randn(net.inner_size, 1)
+    numbers = raw_input("Enter " + str(net.inner_size) + " Inputs: ")
 
     while numbers != "QUIT":
         numbers = numbers.split(" ")
-        for i in range(5):
+        for i in range(net.inner_size):
             input_obj[i] = float(numbers[i])
         print input_obj
 
@@ -68,8 +88,9 @@ def test_loop(net):
 
         show_image(output, "Image")
 
-        numbers = raw_input("Enter 5 Inputs: ")
+        numbers = raw_input("Enter " + str(net.inner_size) + " Inputs: ")
 
 if __name__ == '__main__':
-    net = training_loop()
+
+    net = training_loop([784, 30, 10])
     test_loop(net)
