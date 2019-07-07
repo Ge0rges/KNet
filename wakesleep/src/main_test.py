@@ -1,5 +1,5 @@
 import mnist_loader
-import network
+import network2
 import numpy as np
 import os
 from PIL import Image
@@ -15,16 +15,14 @@ def show_image(array, title):
     img.show(title + ".png")
 
 
-def training_loop(sizes):
+def training_loop(in_size, out_size):
     training_data, validation_data, test_data = mnist_loader.load_only_inputs()
 
     total_data = training_data + validation_data + test_data
 
-    net = network.WakeSleep(sizes, cost=network.QuadraticCost)
+    net = network2.WakeSleep(in_size, out_size)
 
     test_data = zip(total_data, total_data)
-
-    print "Total Cost: ", net.total_cost(test_data)
 
     training_length = 6
 
@@ -35,7 +33,6 @@ def training_loop(sizes):
             net.wake_phase(total_data, i + 1, (i + 1) * 100, 1.0 / pow(10, i))
             print "\tSleep Phase", j + 1
             net.sleep_phase(i + 1, (i + 1) * 100, 1.0 / pow(10, i))
-            print "Total Cost: ", net.total_cost(test_data)
 
         samples_gen(net, i + 1)
 
@@ -92,5 +89,5 @@ def test_loop(net):
 
 if __name__ == '__main__':
 
-    net = training_loop([784, 30, 10])
+    net = training_loop(784, 10)
     test_loop(net)
