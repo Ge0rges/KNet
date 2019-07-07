@@ -1,7 +1,7 @@
 # Cascade correlation layer
 
 import numpy as np
-from utils import relu
+from utils import *
 
 class cclayer:
 
@@ -11,27 +11,26 @@ class cclayer:
         self.num_in = num_in
         self.num_out = num_out
         self.bias = 1.0
-        # connection weights to output layer
-        self.o_weight = np.random.rand(num_nodes, num_out) 
 
-        # connection weights to hidden layers
+        self.o_weights = np.random.rand(num_nodes, num_out) 
         self.h_weights = []
         self.value = None
+
+    def cumulate_inputs(self, values):
+        """
+        Sumsincoming input signals to layer, used for hidden unit activations
+        """
+        self.value = np.zeros(values[0].shape)
+
+        for val in values:
+            self.value = np.add(self.value, val)
         
-    def sum_incoming_inputs(self, inputs):
-
-        self.value = inputs[0]
-        for x in inputs[1:]:
-            self.value += x
-
-
     def compute_net_out(self):
         """
         Computes outputs to output layer of network
         """
-
-        z  = np.dot(self.o_weight.T, self.value) + self.bias
-        return relu(z) 
+        z  = np.dot(self.o_weights.T, self.value) + self.bias
+        return sigmoid(z) 
 
     def compute_hidden_out(self):
         """
@@ -40,7 +39,7 @@ class cclayer:
         hidden_outs = []
         for w in self.h_weights:
             h = np.dot(w.T, self.value) + self.bias
-            hidden_outs.append(relu(h))
+            hidden_outs.append(sigmoid(h))
 
         return hidden_outs
 
@@ -48,3 +47,12 @@ class cclayer:
 
         new_hidden_weight = np.random.rand(self.num_nodes, num_hidden_nodes)
         self.h_weights.append(new_hidden_weight)
+
+
+    def update_output_weight(self, alpha, grad):
+
+        self.o_weights = self.o_weights - alpha * grad
+
+    def update_hidden_weights(self, alpha, grad, i):
+
+        self.h_weights[i] = self.h_weights[i] - alpha * grad
