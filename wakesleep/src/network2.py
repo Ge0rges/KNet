@@ -37,12 +37,12 @@ class WakeSleep:
         return self.gen_net.forward_pass(a)
 
     def wake_phase(self, training_data, epochs, mini_batch_size, eta, lmbda=0):
-        representation = [self.encode(x) for x in training_data]
-
-        self.gen_net.train_candidate_network(representation, training_data, epochs)
+        training_data = np.asarray(training_data)
+        representation = np.asarray([self.encode(x)['y'][3] for x in training_data])
+        self.gen_net.train(representation, training_data, epochs)
 
     def sleep_phase(self, epochs, mini_batch_size, eta, lmbda=0):
-        training_data = [np.random.randn(self.inner_size, 1) for i in xrange(100000)]
-        representation = [self.generate(x) for x in training_data]
+        training_data = np.asarray([np.random.randn(self.inner_size, 1) for _ in xrange(100000)])
+        representation = np.asarray([self.generate(x)['y'][3] for x in training_data])
 
-        self.encode_net.train_candidate_network(representation, training_data, epochs)
+        self.encode_net.train(representation, training_data, epochs)

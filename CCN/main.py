@@ -6,8 +6,8 @@ import numpy as np
 
 if __name__ == '__main__':
 
-    N = 2
-    M = 1
+    N = 20
+    M = 10
     x = [np.random.rand(N,1) / 2 for _ in range(100)]
     for i in range(50, 100):
         x[i] *= 2
@@ -24,4 +24,4 @@ if __name__ == '__main__':
     network.create_candidate_layer()
     
     epochs = 10
-    network.train_candidate_network(x, targets, epochs)
+    network.train(x, targets, epochs)

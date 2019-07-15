@@ -1,7 +1,7 @@
 # Cascade correlation layer
 
 import numpy as np
-from .utils import *
+from CCN.utils import *
 
 class cclayer:
 

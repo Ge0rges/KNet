@@ -147,8 +147,8 @@ def test_loop(net):
 if __name__ == '__main__':
 
     # ws_ccn_test runnable
-    # net = training_loop(784, 10)
-    # test_loop(net)
+    net = training_loop(784, 10)
+    test_loop(net)
     
     # ccn_test runnable
     # ccn_test()

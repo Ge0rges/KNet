@@ -1,8 +1,8 @@
 # Cascade correlation network
 
 import numpy as np
-from .cclayer import cclayer
-from .utils import *
+from CCN.cclayer import cclayer
+from CCN.utils import *
 import matplotlib.pyplot as plt
 
 class ccnet:
