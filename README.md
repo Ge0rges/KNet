@@ -4,6 +4,10 @@ This network aims to better model two of the brain's core processes that are sai
 
 So far, our design has led us to having a wake-sleep network whose layers are CCNs with a variable number of nodes.
 
+## Software 
+# Dependencies
+We use python 3.
+
 ## Style Guide
 We use the industry standard [PEP8].
 
