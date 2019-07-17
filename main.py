@@ -77,6 +77,8 @@ def training_loop(in_size, out_size):
     
     total_data = training_data + validation_data + test_data
 
+    total_data = total_data[:1000]
+
     net = network2.WakeSleep(in_size, out_size)
 
     test_data = zip(total_data, total_data)
@@ -87,9 +89,9 @@ def training_loop(in_size, out_size):
         print("Stage", i + 1)
         for j in range(training_length - i):
             print("\tWake Phase ", j + 1)
-            net.wake_phase(total_data, i + 1, (i + 1) * 100, 1.0 / pow(10, i))
+            net.wake_phase(total_data, i + 1)
             print("\tSleep Phase", j + 1)
-            net.sleep_phase(i + 1, (i + 1) * 100, 1.0 / pow(10, i))
+            net.sleep_phase(i + 1)
 
         samples_gen(net, i + 1)
 
@@ -113,7 +115,7 @@ def samples_gen(net, stage, sample_size=20):
                 else:
                     input_obj[index] = 0
 
-            output = net.generate(input_obj)
+            output = net.generate(input_obj)['y'][0]
 
             output = ((output * 256).astype(np.uint8).reshape([28, 28]))
 
