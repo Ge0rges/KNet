@@ -26,12 +26,12 @@ def training_loop(in_size, out_size):
 
     training_length = 6
 
-    for i in xrange(training_length):
-        print "Stage", i + 1
-        for j in xrange(training_length - i):
-            print "\tWake Phase ", j + 1
+    for i in range(training_length):
+        print("Stage", i + 1)
+        for j in range(training_length - i):
+            print("\tWake Phase ", j + 1)
             net.wake_phase(total_data, i + 1, (i + 1) * 100, 1.0 / pow(10, i))
-            print "\tSleep Phase", j + 1
+            print("\tSleep Phase", j + 1)
             net.sleep_phase(i + 1, (i + 1) * 100, 1.0 / pow(10, i))
 
         samples_gen(net, i + 1)
@@ -75,13 +75,13 @@ def test_loop(net):
         numbers = numbers.split(" ")
         for i in range(net.inner_size):
             input_obj[i] = float(numbers[i])
-        print input_obj
+        print(input_obj)
 
         output = net.generate(input_obj)
         for i in range(28):
             for j in range(28):
-                print output[i * 28 + j],
-            print ""
+                print(output[i * 28 + j]),
+            print("")
 
         show_image(output, "Image")
 
