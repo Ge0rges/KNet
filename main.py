@@ -77,7 +77,9 @@ def training_loop(in_size, out_size):
     
     total_data = training_data + validation_data + test_data
 
-    total_data = total_data[:1000]
+    print(len(total_data))
+
+    total_data = total_data[:5000]
 
     net = network2.WakeSleep(in_size, out_size)
 
