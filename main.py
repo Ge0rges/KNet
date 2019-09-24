@@ -6,6 +6,7 @@ from CCN.ccnet import ccnet
 import wakesleep.src.mnist_loader as mnist_loader
 import wakesleep.src.network2 as network2
 import numpy as np
+import random
 import os
 from PIL import Image
 import json
@@ -79,7 +80,7 @@ def training_loop(in_size, out_size):
 
     print(len(total_data))
 
-    total_data = total_data[:5000]
+    total_data = random.sample(total_data, k=1000)
 
     net = network2.WakeSleep(in_size, out_size)
 
