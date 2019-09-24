@@ -41,7 +41,7 @@ def load_data():
     below.
     """
     f = gzip.open('wakesleep/data/mnist.pkl.gz', 'rb')
-    training_data, validation_data, test_data = cPickle.load(f)
+    training_data, validation_data, test_data = cPickle.load(f, encoding="bytes")
     f.close()
     return (training_data, validation_data, test_data)
 
