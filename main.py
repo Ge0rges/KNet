@@ -64,7 +64,7 @@ def ccn_test():
     network.train(one_hot_x, one_hot_y, epochs)  
     
     
-script_dir = os.path.dirname(__file__)
+script_dir = os.getcwd()
 def show_image(array, title):
     array = ((array * 256).astype(np.uint8).reshape([28, 28]))
 
@@ -80,7 +80,7 @@ def training_loop(in_size, out_size):
 
     print(len(total_data))
 
-    total_data = random.sample(total_data, k=1000)
+    total_data = random.sample(total_data, k=5000)
 
     net = network2.WakeSleep(in_size, out_size)
 
@@ -102,7 +102,7 @@ def training_loop(in_size, out_size):
 
 
 def samples_gen(net, stage, sample_size=20):
-    dirName = "Stage " + str(stage)
+    dirName = "Stage_" + str(stage)
     if not os.path.exists(dirName):
         os.mkdir(dirName)
         print("Directory ", dirName, " Created ")
@@ -131,7 +131,7 @@ def samples_gen(net, stage, sample_size=20):
 
 def test_loop(net):
     input_obj = np.random.randn(net.inner_size, 1)
-    numbers = raw_input("Enter " + str(net.inner_size) + " Inputs: ")
+    numbers = input("Enter " + str(net.inner_size) + " Inputs: ")
 
     while numbers != "QUIT":
         numbers = numbers.split(" ")
