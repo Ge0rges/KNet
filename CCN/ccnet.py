@@ -191,7 +191,7 @@ class ccnet:
         Trains the network in following manner:
         1. Begin with a minimal net
         2. Train output connections until the loss stops decreasing
-        3. If loss value is good enough, then Stop, else go to step 3
+        3. If loss value is good enough, then Stop, else go to step 2
         4. Add a new hidden layer with one node
         5. Train this candidate network, till the correlation value stops decreasing
         5. Go to step 2 
@@ -203,7 +203,7 @@ class ccnet:
         """
         round = 0
         losses = []
-        while round < 10:
+        while round < 1:
             curr_loss = 0
             prev_loss = 100
             n = 0

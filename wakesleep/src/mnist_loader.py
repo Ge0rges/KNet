@@ -10,11 +10,12 @@ function usually called by our neural network code.
 
 #### Libraries
 # Standard library
-import _pickle as cPickle
+import pickle as cPickle
 import gzip
 
 # Third-party libraries
 import numpy as np
+
 
 def load_data():
     """Return the MNIST data as a tuple containing the training data,
@@ -40,9 +41,10 @@ def load_data():
     below.
     """
     f = gzip.open('wakesleep/data/mnist.pkl.gz', 'rb')
-    training_data, validation_data, test_data = cPickle.load(f, encoding='latin1')
+    training_data, validation_data, test_data = cPickle.load(f, encoding="bytes")
     f.close()
     return (training_data, validation_data, test_data)
+
 
 def load_data_wrapper():
     """Return a tuple containing ``(training_data, validation_data,
@@ -75,12 +77,14 @@ def load_data_wrapper():
     test_data = zip(test_inputs, te_d[1])
     return (training_data, validation_data, test_data)
 
+
 def load_only_inputs():
     tr_d, va_d, te_d = load_data()
     training_inputs = [np.reshape(x, (784, 1)) for x in tr_d[0]]
     validation_inputs = [np.reshape(x, (784, 1)) for x in va_d[0]]
     test_inputs = [np.reshape(x, (784, 1)) for x in te_d[0]]
     return (training_inputs, validation_inputs, test_inputs)
+
 
 def vectorized_result(j):
     """Return a 10-dimensional unit vector with a 1.0 in the jth
