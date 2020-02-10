@@ -69,3 +69,16 @@ Candidate Networks:
 We use the industry standard [PEP8].
 
 [PEP8]: <https://pep8.org>
+
+## Resources
+Below a compilation of resources we've used along the way, including academic papers, tutorials, etc.
+### Papers
+- [The wake-sleep algorithm for unsupervised neural networks](https://www.cs.toronto.edu/~hinton/absps/ws.pdf)
+- [Lifelong Learning with Dynamically Expandable Networks](https://openreview.net/pdf?id=Sk7KsfW0-) with [code](https://github.com/jaehong-yoon93/DEN)
+- [Measuring abstract reasoning in neural networks](https://arxiv.org/pdf/1807.04225.pdf)
+### Datasets
+- [Car Evaluation](https://archive.ics.uci.edu/ml/datasets/Car+Evaluation)
+- [Car 1](https://archive.ics.uci.edu/ml/datasets/Automobile)
+- [Stanford Car](https://www.kaggle.com/jessicali9530/stanford-cars-dataset)
+- [Fruit 360](https://www.kaggle.com/moltean/fruits) (organized by subfolders)
+- [Mendeley Banana](https://data.mendeley.com/datasets/zk3tkxndjw/2)
