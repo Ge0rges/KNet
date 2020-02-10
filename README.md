@@ -59,6 +59,9 @@ Candidate Networks:
             genetic algorithm.
 
 ## Software 
+# How to Run
+Unavailable
+
 # Dependencies
 - Python 3.7
 - Numpy 1.18.1
@@ -84,3 +87,6 @@ Below a compilation of resources we've used along the way, including academic pa
 - [Stanford Car](https://www.kaggle.com/jessicali9530/stanford-cars-dataset)
 - [Fruit 360](https://www.kaggle.com/moltean/fruits) (organized by subfolders)
 - [Mendeley Banana](https://data.mendeley.com/datasets/zk3tkxndjw/2)
+
+## Citation
+Unavailable
