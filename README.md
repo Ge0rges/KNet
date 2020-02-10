@@ -60,7 +60,7 @@ Candidate Networks:
 
 ## Software 
 # Dependencies
-- Python 3.6
+- Python 3.7
 - Numpy
 - PIL
 - Pytorch 1.4
