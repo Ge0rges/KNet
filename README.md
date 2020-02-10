@@ -63,7 +63,7 @@ Candidate Networks:
 - Python 3.6
 - Numpy
 - PIL
-- Pytorch 
+- Pytorch 1.4
 
 ## Style Guide
 We use the industry standard [PEP8].
