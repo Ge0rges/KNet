@@ -62,7 +62,7 @@ Candidate Networks:
 # Dependencies
 - Python 3.7
 - Numpy 1.18.1
-- PIL 1.1.6
+- Pillow (PIL Fork) 7.0.0
 - Pytorch 1.4.0
 - TorchVision 0.5.0
 
