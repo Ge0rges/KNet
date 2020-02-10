@@ -1,13 +1,21 @@
-import os
-import torch
-from torch.nn import functional as F
+"""
+The lightning modules for KNet.
+"""
+
+from torch.nn import functional as functional
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
-import torchvision.transforms as transforms
 
+import os
+import torch
+import torchvision.transforms as transforms
 import pytorch_lightning as pl
 
+
 class KNet(pl.LightningModule):
+    """
+    The KNet lightning module.
+    """
 
     def __init__(self):
         super(KNet, self).__init__()
@@ -19,13 +27,13 @@ class KNet(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        return {'loss': F.cross_entropy(y_hat, y)}
+        return {'loss': functional.cross_entropy(y_hat, y)}
 
     def validation_step(self, batch, batch_idx):
         # OPTIONAL
         x, y = batch
         y_hat = self.forward(x)
-        return {'val_loss': F.cross_entropy(y_hat, y)}
+        return {'val_loss': functional.cross_entropy(y_hat, y)}
 
     def validation_end(self, outputs):
         # OPTIONAL
@@ -36,7 +44,7 @@ class KNet(pl.LightningModule):
         # OPTIONAL
         x, y = batch
         y_hat = self.forward(x)
-        return {'test_loss': F.cross_entropy(y_hat, y)}
+        return {'test_loss': functional.cross_entropy(y_hat, y)}
 
     def test_end(self, outputs):
         # OPTIONAL

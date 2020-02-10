@@ -118,3 +118,7 @@ dmypy.json
 
 # Stages outputted by our scripts
 Stage_*/
+
+# Lightning logs
+lightning_logs/
+MNIST/
