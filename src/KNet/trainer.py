@@ -7,7 +7,7 @@ from src.KNet.knet import *
 
 model = KNet()
 
-trainer = Trainer()
+trainer = Trainer()  # gpus=[0] for GPU
 trainer.fit(model)
 # trainer.test(model)
 
