@@ -61,9 +61,10 @@ Candidate Networks:
 ## Software 
 # Dependencies
 - Python 3.7
-- Numpy
-- PIL
-- Pytorch 1.4
+- Numpy 1.18.1
+- PIL 1.1.6
+- Pytorch 1.4.0
+- TorchVision 0.5.0
 
 ## Style Guide
 We use the industry standard [PEP8].
