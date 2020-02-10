@@ -3,9 +3,9 @@ The default lightning trainer for KNet.
 """
 
 from pytorch_lightning import Trainer
-from src.KNet.knet import *
+from knet import *
 
-model = KNet()
+model = KNet(784, [10, 10, 10])
 
 trainer = Trainer()  # gpus=[0] for GPU
 trainer.fit(model)

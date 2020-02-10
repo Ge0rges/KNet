@@ -17,12 +17,17 @@ class KNet(pl.LightningModule):
     The KNet lightning module.
     """
 
-    def __init__(self):
+    def __init__(self, input_shape, layers):
         super(KNet, self).__init__()
-        self.l1 = torch.nn.Linear(28 * 28, 10)
+        self.l = torch.nn.ModuleList([torch.nn.Linear(layers[i], layers[i+1]) for i in range(len(layers) - 1)])
+        self.l.insert(0, torch.nn.Linear(input_shape, layers[0]))
+        print(self.l)
 
     def forward(self, x):
-        return torch.relu(self.l1(x.view(x.size(0), -1)))
+        x = x.view(x.size(0), -1)
+        for i, l in enumerate(self.l):
+            x = l(x)
+        return torch.relu(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
