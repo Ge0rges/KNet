@@ -65,6 +65,7 @@ Candidate Networks:
 - Pillow (PIL Fork) 7.0.0
 - Pytorch 1.4.0
 - TorchVision 0.5.0
+- PyTorch-Lightning 0.6.0
 
 ## Style Guide
 We use the industry standard [PEP8].
