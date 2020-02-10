@@ -65,7 +65,7 @@ Unavailable
 # Dependencies
 - Python 3.7
 - Numpy 1.18.1
-- Pillow (PIL Fork) 7.0.0
+- Pillow (PIL Fork) 6.2.2
 - Pytorch 1.4.0
 - TorchVision 0.5.0
 - PyTorch-Lightning 0.6.0
