@@ -115,3 +115,6 @@ dmypy.json
 
 # IntelliJ
 .idea/*
+
+# Stages outputted by our scripts
+Stage_*/
