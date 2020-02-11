@@ -1,8 +1,8 @@
 from pytorch_lightning import Trainer
-from src.KNet.knet import *
+from knet import *
 
-model = KNet()
+model = KNet(784, [10, 10, 10])
 
 trainer = Trainer()
 trainer.fit(model)
-#trainer.test(model)
+trainer.test(model)
