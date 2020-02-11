@@ -12,13 +12,13 @@ class KNet(pl.LightningModule):
 
     def __init__(self, input_shape, layers):
         super(KNet, self).__init__()
-        self.l = torch.nn.ModuleList([torch.nn.Linear(layers[i], layers[i+1]) for i in range(len(layers) - 1)])
-        self.l.insert(0, torch.nn.Linear(input_shape, layers[0]))
-        print(self.l)
+        self.layers = torch.nn.ModuleList([torch.nn.Linear(layers[i], layers[i+1]) for i in range(len(layers) - 1)])
+        self.layers.insert(0, torch.nn.Linear(input_shape, layers[0]))
+        print(self.layers)
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        for i, l in enumerate(self.l):
+        for i, l in enumerate(self.layers):
             x = l(x)
         return torch.relu(x)
 
