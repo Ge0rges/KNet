@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 
 
 class AutoEncoder(nn.Module):
@@ -23,8 +24,19 @@ class AutoEncoder(nn.Module):
 
         self.decoder = nn.Sequential(*decoder_layers)
 
+        action_layers = [
+            nn.Linear(10, 10),
+            nn.ReLU(True),
+            nn.Linear(10, 10),
+            nn.ReLU(True),
+            nn.Softmax(dim=10)
+        ]
+
+        self.action = nn.Sequential(*action_layers)
+
     def forward(self, x):
         x = x.view(-1, 28*28)
         x = self.encoder(x)
+        y = self.action(x)
         x = self.decoder(x)
-        return x
+        return torch.cat([x, y], 0)
