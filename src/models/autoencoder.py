@@ -1,7 +1,8 @@
 import torch.nn as nn
 
+
 class AutoEncoder(nn.Module):
-    def __init__(self, layer_sizes=[28*28, 128, 64, 12, 10]):
+    def __init__(self, layer_sizes=(28*28, 128, 64, 12, 10)):
         super(AutoEncoder, self).__init__()
 
         encoder_layers = []
@@ -23,6 +24,7 @@ class AutoEncoder(nn.Module):
         self.decoder = nn.Sequential(*decoder_layers)
 
     def forward(self, x):
+        x = x.view(-1, 28*28)
         x = self.encoder(x)
         x = self.decoder(x)
         return x
