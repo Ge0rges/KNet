@@ -63,11 +63,21 @@ Candidate Networks:
 Unavailable
 
 # Dependencies
-- Python 3.7
-- Numpy 1.18.1
-- Pillow (PIL Fork) 6.2.2
-- Pytorch 1.4.0
-- torchvision 0.5.0
+- Python 2.7
+- backports.functools-lru-cache 1.4
+- cycler 0.10.0
+- matplotlib 2.1.2
+- numpy 1.14.0
+- Pillow 5.0.0
+- progress 1.3
+- pyparsing 2.2.0
+- python-dateutil 2.6.1
+- pytz 2017.3
+- PyYAML 3.12
+- six 1.11.0
+- subprocess32 3.2.7
+- torch 0.3.0.post4
+- torchvision 0.2.0
 
 ## Style Guide
 We use the industry standard [PEP8].
@@ -86,6 +96,11 @@ Below a compilation of resources we've used along the way, including academic pa
 - [Stanford Car](https://www.kaggle.com/jessicali9530/stanford-cars-dataset)
 - [Fruit 360](https://www.kaggle.com/moltean/fruits) (organized by subfolders)
 - [Mendeley Banana](https://data.mendeley.com/datasets/zk3tkxndjw/2)
+
+## Thanks
+Thanks to bjsowa/DEN for providing initial pytorch DEN implementation.
+Thanks to Prof. Steve Mann for providing computational resources.
+Thanks to Prof. John Vervaeke for guidance, thoughts and wisdom.
 
 ## Citation
 Unavailable
