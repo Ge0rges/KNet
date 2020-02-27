@@ -67,6 +67,7 @@ Unavailable
 - Numpy 1.18.1
 - Pillow (PIL Fork) 6.2.2
 - Pytorch 1.4.0
+- torchvision 0.5.0
 
 ## Style Guide
 We use the industry standard [PEP8].
