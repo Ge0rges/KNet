@@ -122,3 +122,6 @@ Stage_*/
 # Lightning logs
 lightning_logs/
 MNIST/
+
+# Model Checkpoints
+/src/checkpoints/

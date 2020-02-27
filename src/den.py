@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 
-from models import FeedForward
+from models import AutoEncoder
 from utils import *
 
 # PATHS
@@ -60,7 +60,7 @@ def main():
     trainloader, validloader, testloader = load_MNIST(batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
-    model = FeedForward(num_classes=len(ALL_CLASSES))
+    model = AutoEncoder()
 
     if CUDA:
         model = model.cuda()
