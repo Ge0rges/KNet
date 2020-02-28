@@ -29,7 +29,8 @@ class AutoEncoder(nn.Module):
             nn.ReLU(True),
             nn.Linear(10, 10),
             nn.ReLU(True),
-            nn.Softmax(dim=10)
+            nn.Linear(10, 10),
+            nn.Softmax()
         ]
 
         self.action = nn.Sequential(*action_layers)
@@ -39,4 +40,4 @@ class AutoEncoder(nn.Module):
         x = self.encoder(x)
         y = self.action(x)
         x = self.decoder(x)
-        return torch.cat([x, y], 0)
+        return torch.cat([x, y], 1)
