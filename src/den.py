@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 
-from models import AutoEncoder
+from models import FeedForward
 from utils import *
 
 # PATHS
@@ -31,7 +31,7 @@ LR_DROP = 0.5
 EPOCHS_DROP = 20
 
 # MISC
-MAX_EPOCHS = 200
+MAX_EPOCHS = 5
 CUDA = False
 
 # L1 REGULARIZATION
@@ -60,7 +60,7 @@ def main():
     trainloader, validloader, testloader = load_MNIST(batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
-    model = AutoEncoder()
+    model = FeedForward(num_classes=10)
 
     if CUDA:
         model = model.cuda()
@@ -301,16 +301,25 @@ def split_neurons(old_model, new_model):
             new_layers.append(param)
 
     suma = 0
+    
     for old_layer, new_layer in zip(old_layers, new_layers):
 
-        for data1, data2 in zip(old_layer.data, new_layer.data):
+        for data1, data2, i in zip(old_layer.data, new_layer.data, range(len(new_layer.data))):
             diff = data1 - data2
             drift = diff.norm(2)
 
             if (drift > 0.02):
                 suma += 1
 
-    print("Number of neurons to split: %d" % (suma))
+                # Copy neuron i into i' (w' introduction of edges or i')
+                # new_layer.data append data2
+                # new_layer.data replace old data2 with data1
+                new_layer_data = torch.cat([new_layer.data, data2], dim=1)
+                new_layer_data[i] = data1
+                new_layer.data.copy_(new_layer_data)
+
+
+    print("Number of neurons split: %d" % (suma))
 
 
 if __name__ == '__main__':
