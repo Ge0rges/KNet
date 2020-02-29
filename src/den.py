@@ -207,6 +207,15 @@ def main():
             for hook in hooks:
                 hook.remove()
 
+            # if Loss > Threshhold
+            #   print('==> Dynamic Expansion)
+            #   add k neurons to all layers.
+            #   optimize training on those weights with l1 regularization, and an addition cost based on
+            #   the norm_2 of the weights of each individual neuron.
+            #
+            #   remove all neurons which have no weights that are non_zero
+            #   save network.
+
             print("==> Splitting Neurons")
             split_neurons(model_copy, model)
 
