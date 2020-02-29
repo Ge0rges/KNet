@@ -31,7 +31,7 @@ LR_DROP = 0.5
 EPOCHS_DROP = 20
 
 # MISC
-MAX_EPOCHS = 5
+MAX_EPOCHS = 1
 CUDA = False
 
 # L1 REGULARIZATION
@@ -118,9 +118,9 @@ def main():
                                   use_cuda=CUDA)
 
                 # save model
-                is_best = test_loss < best_loss
-                best_loss = min(test_loss, best_loss)
-                save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
+                # is_best = test_loss < best_loss
+                # best_loss = min(test_loss, best_loss)
+                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
 
                 suma = 0
                 for p in model.parameters():
@@ -199,9 +199,9 @@ def main():
                 test_loss = train(validloader, model, criterion, ALL_CLASSES, [cls], test=True, use_cuda=CUDA)
 
                 # save model
-                is_best = test_loss < best_loss
-                best_loss = min(test_loss, best_loss)
-                save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
+                # is_best = test_loss < best_loss
+                # best_loss = min(test_loss, best_loss)
+                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
 
             # remove hooks
             for hook in hooks:
@@ -212,9 +212,9 @@ def main():
 
         print("==> Calculating AUROC")
 
-        filepath_best = os.path.join(CHECKPOINT, "best.pt")
-        checkpoint = torch.load(filepath_best)
-        model.load_state_dict(checkpoint['state_dict'])
+        # filepath_best = os.path.join(CHECKPOINT, "best.pt")
+        # checkpoint = torch.load(filepath_best)
+        # model.load_state_dict(checkpoint['state_dict'])
 
         auroc = calc_avg_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
 
@@ -301,10 +301,10 @@ def split_neurons(old_model, new_model):
             new_layers.append(param)
 
     suma = 0
-    
-    for old_layer, new_layer in zip(old_layers, new_layers):
 
-        for data1, data2, i in zip(old_layer.data, new_layer.data, range(len(new_layer.data))):
+    for old_layer, new_layer, layer_index in zip(old_layers, new_layers, range(len(new_layers))):
+
+        for data1, data2, node_index in zip(old_layer.data, new_layer.data, range(len(new_layer.data))):
             diff = data1 - data2
             drift = diff.norm(2)
 
@@ -314,12 +314,14 @@ def split_neurons(old_model, new_model):
                 # Copy neuron i into i' (w' introduction of edges or i')
                 # new_layer.data append data2
                 # new_layer.data replace old data2 with data1
-                new_layer_data = torch.cat([new_layer.data, data2], dim=1)
-                new_layer_data[i] = data1
-                new_layer.data.copy_(new_layer_data)
+                reshaped_data2 = data2.unsqueeze(0)
+                new_layer_data = torch.cat([new_layer.data, reshaped_data2], dim=0)
+                new_layer_data[node_index] = data1
+                new_layer.data = new_layer_data
 
+                print("In layer %d split neuron %d" % (layer_index, node_index))
 
-    print("Number of neurons split: %d" % (suma))
+    print("# Number of neurons split: %d" % (suma))
 
 
 if __name__ == '__main__':
