@@ -43,6 +43,9 @@ L2_COEFF = 1e-5
 #LOSS_THRE
 LOSS_THRESHOLD = 1e-2
 
+# Dynamic Expansion
+EXPAND_BY_K = 10
+
 # weight below this value will be considered as zero
 ZERO_THRESHOLD = 1e-4
 
@@ -226,7 +229,7 @@ def main():
             #   save network.
 
             print("==> Splitting Neurons")
-            split_neurons(model_copy, model)
+            model = split_neurons(model_copy, model)
 
         print("==> Calculating AUROC")
 
@@ -262,7 +265,7 @@ class my_hook(object):
 
 
 def dynamic_expansion(model, task):
-    k = 10
+    # k = EXPAND_BY_K
 
     layers = []
     for name, param in model.named_parameters():
@@ -274,8 +277,8 @@ def dynamic_expansion(model, task):
     sizes.append(layers[0].data.shape[1])
     for layer in layers:
         weights.append(layer.data)
-        sizes.append(layer.data.shape[0] + 10)
-    sizes[-1] -= 10
+        sizes.append(layer.data.shape[0] + EXPAND_BY_K)
+    sizes[-1] -= EXPAND_BY_K
 
     # TODO: Make module generation dynamic.
     new_model = FeedForward(sizes, oldWeights=weights)
@@ -341,6 +344,8 @@ def split_neurons(old_model, new_model):
             new_layers.append(param)
 
     suma = 0
+    sizes = []
+    weights = []
 
     for old_layer, new_layer, layer_index in zip(old_layers, new_layers, range(len(new_layers))):
 
@@ -361,7 +366,12 @@ def split_neurons(old_model, new_model):
 
                 print("In layer %d split neuron %d" % (layer_index, node_index))
 
+        sizes.append(new_layer.data.shape[0])
+        weights.append(new_layer.data)
+
     print("# Number of neurons split: %d" % (suma))
+
+    return FeedForward(sizes, oldWeights=weights)
 
 
 if __name__ == '__main__':
