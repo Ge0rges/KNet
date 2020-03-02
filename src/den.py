@@ -37,6 +37,12 @@ CUDA = False
 # L1 REGULARIZATION
 L1_COEFF = 1e-5
 
+# L2 REGULARIZATION
+L2_COEFF = 1e-5
+
+#LOSS_THRE
+LOSS_THRESHOLD = 1e-2
+
 # weight below this value will be considered as zero
 ZERO_THRESHOLD = 1e-4
 
@@ -60,7 +66,7 @@ def main():
     trainloader, validloader, testloader = load_MNIST(batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
-    model = FeedForward(num_classes=10)
+    model = FeedForward()
 
     if CUDA:
         model = model.cuda()
@@ -207,8 +213,11 @@ def main():
             for hook in hooks:
                 hook.remove()
 
-            # if Loss > Threshhold
-            #   print('==> Dynamic Expansion)
+            #Could be train_loss or test_loss
+            if train_loss > LOSS_THRESHOLD:
+                print("==> Dynamic Expansion")
+                dynamic_expansion(model, t)
+
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
             #   the norm_2 of the weights of each individual neuron.
@@ -250,6 +259,28 @@ class my_hook(object):
         if self.mask2.size:
             grad_clone[:, self.mask2] = 0
         return grad_clone
+
+
+def dynamic_expansion(model, task):
+    k = 10
+
+    layers = []
+    for name, param in model.named_parameters():
+        if 'bias' not in name:
+            layers.append(param)
+
+    sizes = []
+    weights = []
+    sizes.append(layers[0].data.shape[1])
+    for layer in layers:
+        weights.append(layer.data)
+        sizes.append(layer.data.shape[0] + 10)
+    sizes[-1] -= 10
+
+    # TODO: Make module generation dynamic.
+    new_model = FeedForward(sizes, oldWeights=weights)
+    print()
+
 
 
 def select_neurons(model, task):
