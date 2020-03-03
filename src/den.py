@@ -61,8 +61,8 @@ ALL_CLASSES = range(10)
 
 
 def main():
-    if not os.path.isdir(CHECKPOINT):
-        os.makedirs(CHECKPOINT)
+    # if not os.path.isdir(CHECKPOINT):
+    #     os.makedirs(CHECKPOINT)
 
     print('==> Preparing dataset')
 
@@ -305,8 +305,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
 
         penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
 
-        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer,
-                           use_cuda=CUDA)
+        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA)
         test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
 
     new_sizes = [sizes[0]]
