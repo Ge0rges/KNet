@@ -148,6 +148,7 @@ class l1l2_penalty(object):
         self.old_model = model
 
     def __call__(self, new_model):
+        return self.l1(new_model) + self.l2(new_model)
 
     def l1(self, new_model):
         penalty = 0
