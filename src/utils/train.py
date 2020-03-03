@@ -18,6 +18,7 @@ random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
 
+
 def one_hot(targets, classes):
     targets = targets.type(torch.LongTensor).view(-1)
     targets_onehot = torch.zeros(targets.size()[0], len(classes))
@@ -26,8 +27,9 @@ def one_hot(targets, classes):
             targets_onehot[i][classes.index(t)] = 1
     return targets_onehot
 
+
 def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False):
-    
+
     # switch to train or evaluate mode
     if test:
         model.eval()
@@ -68,7 +70,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
         for i, cls in enumerate(classes):
             loss = loss + criterion(outputs[:, all_classes.index(cls)], targets_onehot[:, i])
         if penalty is not None:
-        	loss = loss + penalty(model)
+            loss = loss + penalty(model)
 
         # record loss
         losses.update(loss.data[0], inputs.size(0))
@@ -84,7 +86,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
         end = time.time()
 
         # plot progress
-        bar.suffix  = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
+        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
                     batch=batch_idx + 1,
                     size=len(batchloader),
                     data=data_time.avg,
@@ -95,6 +97,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
 
     bar.finish()
     return losses.avg
+
 
 def save_checkpoint(state, path, is_best = False):
     filepath = os.path.join(path, "last.pt")
@@ -110,21 +113,24 @@ class l2_penalty(object):
         self.coeff = coeff
 
     def __call__(self, new_model):
-        penalty = 0
-        for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
-            if name1 != name2 or param1.shape != param2.shape:
-                raise Exception("model parameters do not match!")
+        l2 = torch.nn.MSELoss()
+        return l2(self.old_model, self.new_model)*self.coeff
 
-            # get only weight parameters
-            if 'bias' not in name1:
-                diff = param1 - param2
-                penalty = penalty + diff.norm(2)
-
-        return self.coeff * penalty
+        # penalty = 0
+        # for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
+        #     if name1 != name2 or param1.shape != param2.shape:
+        #         raise Exception("model parameters do not match!")
+        #
+        #     # get only weight parameters
+        #     if 'bias' not in name1:
+        #         diff = param1 - param2
+        #         penalty = penalty + diff.norm(2)
+        #
+        # return self.coeff * penalty
 
 
 class l1_penalty(object):
-    def __init__(self, coeff = 5e-2):
+    def __init__(self, coeff=5e-2):
         self.coeff = coeff
 
     def __call__(self, model):
@@ -142,7 +148,6 @@ class l1l2_penalty(object):
         self.old_model = model
 
     def __call__(self, new_model):
-        return self.l1(new_model) + self.l2(new_model)
 
     def l1(self, new_model):
         penalty = 0

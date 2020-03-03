@@ -76,8 +76,8 @@ Unavailable
 - PyYAML 3.12
 - six 1.11.0
 - subprocess32 3.2.7
-- torch 0.3.0.post4
-- torchvision 0.2.0
+- torch 0.3.1
+- torchvision 0.2.1
 
 ## Style Guide
 We use the industry standard [PEP8].
