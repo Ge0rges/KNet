@@ -219,7 +219,7 @@ def main():
             #Could be train_loss or test_loss
             if train_loss > LOSS_THRESHOLD:
                 print("==> Dynamic Expansion")
-                dynamic_expansion(model, t)
+                dynamic_expansion(model, trainloader, validloader, cls, t)
 
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
@@ -264,7 +264,7 @@ class my_hook(object):
         return grad_clone
 
 
-def dynamic_expansion(model, task):
+def dynamic_expansion(model, trainloader, validloader, cls, task):
     # k = EXPAND_BY_K
 
     layers = []
@@ -282,7 +282,42 @@ def dynamic_expansion(model, task):
 
     # TODO: Make module generation dynamic.
     new_model = FeedForward(sizes, oldWeights=weights)
-    print()
+
+    optimizer = optim.SGD(
+        model.parameters(),
+        lr=LEARNING_RATE,
+        momentum=MOMENTUM,
+        weight_decay=1e-4
+    )
+
+    learning_rate = LR_DROP
+    criterion = nn.BCELoss()
+
+    for epoch in range(MAX_EPOCHS):
+
+        # decay learning rate
+        if (epoch + 1) % EPOCHS_DROP == 0:
+            learning_rate *= LR_DROP
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = learning_rate
+
+        print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+
+        penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
+
+        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer,
+                           use_cuda=CUDA)
+        test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
+
+    new_sizes = [sizes[0]]
+    for ((name1, param1), (name2, param2)) in zip(model.named_parameters(), new_model.named_parameters()):
+        row_size = 0
+        for i in range(param1.data.shape[0], param2.data.shape[0]):
+            if param2[i].norm(1) > ZERO_THRESHOLD:
+                row_size += 1
+        new_sizes.append(param1.data.shape[0] + row_size)
+
+    print(new_sizes)
 
 
 
