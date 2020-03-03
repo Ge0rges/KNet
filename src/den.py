@@ -382,6 +382,7 @@ def split_neurons(old_model, new_model):
     sizes = []
     weights = []
 
+    sizes.append(new_layers[0].data.shape[1])
     for old_layer, new_layer, layer_index in zip(old_layers, new_layers, range(len(new_layers))):
 
         for data1, data2, node_index in zip(old_layer.data, new_layer.data, range(len(new_layer.data))):
