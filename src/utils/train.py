@@ -147,9 +147,11 @@ class l1l2_penalty(object):
     def l1(self, new_model):
         penalty = 0
         for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
+            if 'bias' in name1:
+                continue
+
             if param2.data.shape[0] > param1.data.shape[0]:
                 for i in range(param1.data.shape[0], param2.data.shape[0]):
-                    print(param2.data.shape)
                     for j in range(param2.data.shape[1]):
                         penalty += param2[i, j].norm(1)
             if param2.data.shape[1] > param1.data.shape[1]:
@@ -162,6 +164,9 @@ class l1l2_penalty(object):
     def l2(self, new_model):
         penalty = 0
         for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
+            if 'bias' in name1:
+                continue
+
             for i in range(param1.data.shape[0], param2.data.shape[0]):
                 row = torch.zeros(param2.data.shape[1])
                 for j in range(param2.data.shape[1]):

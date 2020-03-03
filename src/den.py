@@ -311,6 +311,9 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
 
     new_sizes = [sizes[0]]
     for ((name1, param1), (name2, param2)) in zip(model.named_parameters(), new_model.named_parameters()):
+        if 'bias' in name1:
+            continue
+
         row_size = 0
         for i in range(param1.data.shape[0], param2.data.shape[0]):
             if param2[i].norm(1) > ZERO_THRESHOLD:
