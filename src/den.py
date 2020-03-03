@@ -315,12 +315,11 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
 
         row_size = 0
         for i in range(param1.data.shape[0], param2.data.shape[0]):
-            if param2[i].norm(1) > ZERO_THRESHOLD:
+            if float(param2[i].norm(1)) > ZERO_THRESHOLD:
                 row_size += 1
         new_sizes.append(param1.data.shape[0] + row_size)
 
     print(new_sizes)
-
 
 
 def select_neurons(model, task):
