@@ -113,20 +113,20 @@ class l2_penalty(object):
         self.coeff = coeff
 
     def __call__(self, new_model):
-        l2 = torch.nn.MSELoss()
-        return l2(self.old_model, self.new_model)*self.coeff
+        # l2 = torch.nn.MSELoss()
+        # return l2(self.old_model, self.new_model)*self.coeff
 
-        # penalty = 0
-        # for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
-        #     if name1 != name2 or param1.shape != param2.shape:
-        #         raise Exception("model parameters do not match!")
-        #
-        #     # get only weight parameters
-        #     if 'bias' not in name1:
-        #         diff = param1 - param2
-        #         penalty = penalty + diff.norm(2)
-        #
-        # return self.coeff * penalty
+        penalty = 0
+        for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
+            if name1 != name2 or param1.shape != param2.shape:
+                raise Exception("model parameters do not match!")
+
+            # get only weight parameters
+            if 'bias' not in name1:
+                diff = param1 - param2
+                penalty = penalty + diff.norm(2)
+
+        return self.coeff * penalty
 
 
 class l1_penalty(object):
