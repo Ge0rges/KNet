@@ -58,6 +58,7 @@ Candidate Networks:
             We suggest K=2 from biological inspiration. However this parameter could also be subject to the
             genetic algorithm.
 
+*This repository implements Step 1.a and Step 1.b*
 ## Software 
 # How to Run
 Unavailable
