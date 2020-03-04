@@ -218,7 +218,7 @@ def main():
             # Could be train_loss or test_loss
             if train_loss > LOSS_THRESHOLD:
                 print("==> Dynamic Expansion")
-                dynamic_expansion(model, trainloader, validloader, cls, t)
+                model = dynamic_expansion(model, trainloader, validloader, cls, t)
 
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
@@ -313,17 +313,17 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     for ((name1, param1), (name2, param2)) in zip(model.named_parameters(), new_model.named_parameters()):
         if 'bias' in name1:
             continue
-
+        new_layer = []
         for i in range(param1.data.shape[0]):
             row = []
             for j in range(param1.data.shape[1]):
                 row.append(float(param2.data[i, j]))
-            new_weights.append(row)
+            new_layer.append(row)
 
         for j in range(param1.data.shape[1], param2.data.shape[1]):
             for i in range(param1.data.shape[0]):
                 if j in weight_indexes:
-                    new_weights[i].append(float(param2.data[i, j]))
+                    new_layer[i].append(float(param2.data[i, j]))
 
         weight_indexes = []
         for i in range(param1.data.shape[0], param2.data.shape[0]):
@@ -332,8 +332,9 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
                 weight_indexes.append(i)
                 for j in range(param2.data.shape[1]):
                     row.append(float(param2.data[i, j]))
-            new_weights.append(row)
+            new_layer.append(row)
 
+        new_weights.append(new_layer)
         added_neurons.append(weight_indexes)
 
     new_sizes = [sizes[0]]
@@ -344,14 +345,8 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
 
     # Merge sublists of same lentghs into a matrix, ie this is a list of matrices
     three_d_weights = []
-    size = -1
-    for row in new_weights:
-        if not size == len(row):
-            size = len(row)
-            three_d_weights.append([])
-
-        if size == len(row):
-            three_d_weights[-1].append(row)
+    for layer in new_weights:
+        three_d_weights.append(np.asarray(layer))
 
     return FeedForward(new_sizes, oldWeights=three_d_weights)
 

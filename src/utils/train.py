@@ -6,7 +6,7 @@ import random
 import torch
 from torch import nn
 import numpy as np
-from src.models import AutoEncoder, FeedForward
+from src.models import ActionEncoder, FeedForward
 from torch.autograd import Variable
 from progress.bar import Bar
 
