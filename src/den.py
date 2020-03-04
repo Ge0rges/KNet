@@ -308,19 +308,44 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA)
         test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
 
-    new_sizes = [sizes[0]]
+    new_weights = []
+    weight_indexes = []
+    added_neurons = []
     for ((name1, param1), (name2, param2)) in zip(model.named_parameters(), new_model.named_parameters()):
         if 'bias' in name1:
             continue
 
-        row_size = 0
+        for i in range(param1.data.shape[0]):
+            row = []
+            for j in range(param1.data.shape[1]):
+                row.append(float(param2.data[i, j]))
+            new_weights.append(row)
+
+        for j in range(param1.data.shape[1], param2.data.shape[1]):
+            for i in range(param1.data.shape[0]):
+                if j in weight_indexes:
+                    new_weights[i].append(float(param2.data[i, j]))
+
+        weight_indexes = []
         for i in range(param1.data.shape[0], param2.data.shape[0]):
+            row = []
             if float(param2[i].norm(1)) > ZERO_THRESHOLD:
-                row_size += 1
-        new_sizes.append(param1.data.shape[0] + row_size)
+                weight_indexes.append(i)
+                for j in range(param2.data.shape[1]):
+                    row.append(float(param2.data[i, j]))
+            new_weights.append(row)
 
-    print(new_sizes)
+        added_neurons.append(weight_indexes)
 
+    new_sizes = [sizes[0]]
+    index = 1
+    for weights in added_neurons:
+        new_sizes.append(sizes[index] + len(weights))
+        index += 1
+
+    new_weights = np.asarray(new_weights, dtype=np.float32)
+
+    return FeedForward(new_sizes, oldWeights=torch.from_numpy(new_weights))
 
 def select_neurons(model, task):
     prev_active = [True] * len(ALL_CLASSES)
