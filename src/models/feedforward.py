@@ -32,11 +32,11 @@ class FeedForward(nn.Module):
 
         weights = weights[index]
 
-        w = torch.zeros([output, input])
-        l = nn.Linear(input, output)
-        for i in range(weights.shape[0]):
-            for j in range(weights.shape[1]):
-                w[i, j] = weights[i, j]
-        l.weight = nn.Parameter(w)
-        return l
+        layer_weights = torch.zeros([output, input])
+        layer = nn.Linear(input, output)
+        for i in range(len(weights)):
+            for j in range(len(weights[i])):
+                layer_weights[i][j] = weights[i][j]
+        layer.weight = nn.Parameter(layer_weights)
+        return layer
 

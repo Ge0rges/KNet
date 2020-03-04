@@ -343,9 +343,18 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         new_sizes.append(sizes[index] + len(weights))
         index += 1
 
-    new_weights = np.asarray(new_weights, dtype=np.float32)
+    # Merge sublists of same lentghs into a matrix, ie this is a list of matrices
+    three_d_weights = []
+    size = -1
+    for row in new_weights:
+        if not size == len(row):
+            size = len(row)
+            three_d_weights.append([])
 
-    return FeedForward(new_sizes, oldWeights=torch.from_numpy(new_weights))
+        if size == len(row):
+            three_d_weights[-1].append(row)
+
+    return FeedForward(new_sizes, oldWeights=three_d_weights)
 
 def select_neurons(model, task):
     prev_active = [True] * len(ALL_CLASSES)
