@@ -3,30 +3,30 @@ import torch
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self, layer_sizes=(28*28, 128, 64, 12, 10), oldWeights=None):
+    def __init__(self, encoder_sizes=(28 * 28, 128, 64, 12, 10), action_sizes=[10, 10, 10, 10], oldWeights=None):
         super(AutoEncoder, self).__init__()
 
         # Encoder
         encoder_layers = [
-            self.get_layer(layer_sizes[0], layer_sizes[1], oldWeights, 0)
+            self.get_layer(encoder_sizes[0], encoder_sizes[1], oldWeights, 0)
         ]
 
-        for i in range(1, len(layer_sizes) - 1):
+        for i in range(1, len(encoder_sizes) - 1):
             encoder_layers.append(nn.ReLU(True))
-            encoder_layers.append(self.get_layer(layer_sizes[i], layer_sizes[i + 1], oldWeights, i))
+            encoder_layers.append(self.get_layer(encoder_sizes[i], encoder_sizes[i + 1], oldWeights, i))
 
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
         decoder_layers = [
-            self.get_layer(layer_sizes[-2], layer_sizes[-3], oldWeights, len(layer_sizes) - 1)
+            self.get_layer(encoder_sizes[-2], encoder_sizes[-3], oldWeights, len(encoder_sizes) - 1)
         ]
 
-        for i in range(len(layer_sizes) - 3, -1, -1):
+        for i in range(len(encoder_sizes) - 3, -1, -1):
             decoder_layers.append(nn.ReLU(True))
-            decoder_layers.append(self.get_layer(layer_sizes[i + 1], layer_sizes[i], oldWeights, i))
+            decoder_layers.append(self.get_layer(encoder_sizes[i + 1], encoder_sizes[i], oldWeights, i))
 
-        decoder_layers[-1] = nn.Tanh()
+        decoder_layers.append(nn.Tanh())
 
         self.decoder = nn.Sequential(*decoder_layers)
 
@@ -34,15 +34,15 @@ class AutoEncoder(nn.Module):
         self.activation = nn.Sigmoid()
 
         # Action
-        # TODO Does OldWeights go to action?
         action_layers = [
-            nn.Linear(10, 10),
-            nn.ReLU(True),
-            nn.Linear(10, 10),
-            nn.ReLU(True),
-            nn.Linear(10, 10),
-            nn.Softmax()
+            self.get_layer(action_sizes[0], action_sizes[1], oldWeights, 0)
         ]
+
+        for i in range(1, len(action_sizes) - 1):
+            nn.ReLU(True)
+            encoder_layers.append(self.get_layer(action_sizes[i], action_sizes[i+1], oldWeights, i))
+
+        action_layers.append(nn.Softmax())
 
         self.action = nn.Sequential(*action_layers)
 
