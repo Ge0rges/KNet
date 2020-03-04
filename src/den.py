@@ -343,6 +343,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         index += 1
 
     # Merge sublists of same lentghs into a matrix, ie this is a list of matrices
+    # TODO: Will definitely break if two or more consecutive layers have the same size
     three_d_weights = []
     size = -1
     for row in new_weights:
