@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
 
-from models import AutoEncoder
+from models import FeedForward
 from utils import *
 
 # PATHS
@@ -31,11 +31,20 @@ LR_DROP = 0.5
 EPOCHS_DROP = 20
 
 # MISC
-MAX_EPOCHS = 200
+MAX_EPOCHS = 1
 CUDA = False
 
 # L1 REGULARIZATION
 L1_COEFF = 1e-5
+
+# L2 REGULARIZATION
+L2_COEFF = 1e-5
+
+#LOSS_THRE
+LOSS_THRESHOLD = 1e-2
+
+# Dynamic Expansion
+EXPAND_BY_K = 10
 
 # weight below this value will be considered as zero
 ZERO_THRESHOLD = 1e-4
@@ -52,15 +61,15 @@ ALL_CLASSES = range(10)
 
 
 def main():
-    if not os.path.isdir(CHECKPOINT):
-        os.makedirs(CHECKPOINT)
+    # if not os.path.isdir(CHECKPOINT):
+    #     os.makedirs(CHECKPOINT)
 
     print('==> Preparing dataset')
 
     trainloader, validloader, testloader = load_MNIST(batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
-    model = AutoEncoder()
+    model = FeedForward()
 
     if CUDA:
         model = model.cuda()
@@ -118,9 +127,9 @@ def main():
                                   use_cuda=CUDA)
 
                 # save model
-                is_best = test_loss < best_loss
-                best_loss = min(test_loss, best_loss)
-                save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
+                # is_best = test_loss < best_loss
+                # best_loss = min(test_loss, best_loss)
+                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
 
                 suma = 0
                 for p in model.parameters():
@@ -199,22 +208,34 @@ def main():
                 test_loss = train(validloader, model, criterion, ALL_CLASSES, [cls], test=True, use_cuda=CUDA)
 
                 # save model
-                is_best = test_loss < best_loss
-                best_loss = min(test_loss, best_loss)
-                save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
+                # is_best = test_loss < best_loss
+                # best_loss = min(test_loss, best_loss)
+                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
 
             # remove hooks
             for hook in hooks:
                 hook.remove()
 
+            #Could be train_loss or test_loss
+            if train_loss > LOSS_THRESHOLD:
+                print("==> Dynamic Expansion")
+                dynamic_expansion(model, trainloader, validloader, cls, t)
+
+            #   add k neurons to all layers.
+            #   optimize training on those weights with l1 regularization, and an addition cost based on
+            #   the norm_2 of the weights of each individual neuron.
+            #
+            #   remove all neurons which have no weights that are non_zero
+            #   save network.
+
             print("==> Splitting Neurons")
-            split_neurons(model_copy, model)
+            model = split_neurons(model_copy, model)
 
         print("==> Calculating AUROC")
 
-        filepath_best = os.path.join(CHECKPOINT, "best.pt")
-        checkpoint = torch.load(filepath_best)
-        model.load_state_dict(checkpoint['state_dict'])
+        # filepath_best = os.path.join(CHECKPOINT, "best.pt")
+        # checkpoint = torch.load(filepath_best)
+        # model.load_state_dict(checkpoint['state_dict'])
 
         auroc = calc_avg_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
 
@@ -241,6 +262,64 @@ class my_hook(object):
         if self.mask2.size:
             grad_clone[:, self.mask2] = 0
         return grad_clone
+
+
+def dynamic_expansion(model, trainloader, validloader, cls, task):
+    # k = EXPAND_BY_K
+
+    layers = []
+    for name, param in model.named_parameters():
+        if 'bias' not in name:
+            layers.append(param)
+
+    sizes = []
+    weights = []
+    sizes.append(layers[0].data.shape[1])
+    for layer in layers:
+        weights.append(layer.data)
+        sizes.append(layer.data.shape[0] + EXPAND_BY_K)
+    sizes[-1] -= EXPAND_BY_K
+
+    # TODO: Make module generation dynamic.
+    new_model = FeedForward(sizes, oldWeights=weights)
+
+    optimizer = optim.SGD(
+        model.parameters(),
+        lr=LEARNING_RATE,
+        momentum=MOMENTUM,
+        weight_decay=1e-4
+    )
+
+    learning_rate = LR_DROP
+    criterion = nn.BCELoss()
+
+    for epoch in range(MAX_EPOCHS):
+
+        # decay learning rate
+        if (epoch + 1) % EPOCHS_DROP == 0:
+            learning_rate *= LR_DROP
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = learning_rate
+
+        print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+
+        penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
+
+        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA)
+        test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
+
+    new_sizes = [sizes[0]]
+    for ((name1, param1), (name2, param2)) in zip(model.named_parameters(), new_model.named_parameters()):
+        if 'bias' in name1:
+            continue
+
+        row_size = 0
+        for i in range(param1.data.shape[0], param2.data.shape[0]):
+            if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                row_size += 1
+        new_sizes.append(param1.data.shape[0] + row_size)
+
+    print(new_sizes)
 
 
 def select_neurons(model, task):
@@ -301,16 +380,35 @@ def split_neurons(old_model, new_model):
             new_layers.append(param)
 
     suma = 0
-    for old_layer, new_layer in zip(old_layers, new_layers):
+    sizes = []
+    weights = []
 
-        for data1, data2 in zip(old_layer.data, new_layer.data):
+    sizes.append(new_layers[0].data.shape[1])
+    for old_layer, new_layer, layer_index in zip(old_layers, new_layers, range(len(new_layers))):
+
+        for data1, data2, node_index in zip(old_layer.data, new_layer.data, range(len(new_layer.data))):
             diff = data1 - data2
             drift = diff.norm(2)
 
             if (drift > 0.02):
                 suma += 1
 
-    print("Number of neurons to split: %d" % (suma))
+                # Copy neuron i into i' (w' introduction of edges or i')
+                # new_layer.data append data2
+                # new_layer.data replace old data2 with data1
+                reshaped_data2 = data2.unsqueeze(0)
+                new_layer_data = torch.cat([new_layer.data, reshaped_data2], dim=0)
+                new_layer_data[node_index] = data1
+                new_layer.data = new_layer_data
+
+                print("In layer %d split neuron %d" % (layer_index, node_index))
+
+        sizes.append(new_layer.data.shape[0])
+        weights.append(new_layer.data)
+
+    print("# Number of neurons split: %d" % (suma))
+
+    return FeedForward(sizes, oldWeights=weights)
 
 
 if __name__ == '__main__':

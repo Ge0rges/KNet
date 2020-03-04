@@ -12,7 +12,7 @@ from progress.bar import Bar
 
 from .misc import AverageMeter
 
-__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty']
+__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty']
 
 # Manual seed
 SEED = 20
@@ -20,6 +20,7 @@ SEED = 20
 random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
+
 
 def one_hot(targets, classes):
     targets = targets.type(torch.LongTensor).view(-1)
@@ -72,7 +73,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
         for i, cls in enumerate(classes):
             loss = loss + criterion(outputs[:, all_classes.index(cls)], targets_onehot[:, i])
         if penalty is not None:
-        	loss = loss + penalty(model)
+            loss = loss + penalty(model)
 
         # record loss
         losses.update(loss.data[0], inputs.size(0))
@@ -88,7 +89,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
         end = time.time()
 
         # plot progress
-        bar.suffix  = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
+        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
                     batch=batch_idx + 1,
                     size=len(batchloader),
                     data=data_time.avg,
@@ -168,7 +169,6 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
     bar.finish()
     return losses.avg
 
-
 def save_checkpoint(state, path, is_best = False):
     filepath = os.path.join(path, "last.pt")
     torch.save(state, filepath)
@@ -176,12 +176,16 @@ def save_checkpoint(state, path, is_best = False):
         filepath_best = os.path.join(path, "best.pt")
         shutil.copyfile(filepath, filepath_best)
 
+
 class l2_penalty(object):
     def __init__(self, model, coeff = 5e-2):
         self.old_model = model
         self.coeff = coeff
 
     def __call__(self, new_model):
+        # l2 = torch.nn.MSELoss()
+        # return l2(self.old_model, self.new_model)*self.coeff
+
         penalty = 0
         for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
             if name1 != name2 or param1.shape != param2.shape:
@@ -194,8 +198,9 @@ class l2_penalty(object):
 
         return self.coeff * penalty
 
+
 class l1_penalty(object):
-    def __init__(self, coeff = 5e-2):
+    def __init__(self, coeff=5e-2):
         self.coeff = coeff
 
     def __call__(self, model):
@@ -204,3 +209,43 @@ class l1_penalty(object):
             if param.requires_grad and 'bias' not in name:
                 penalty = penalty + param.norm(1)
         return self.coeff * penalty
+
+
+class l1l2_penalty(object):
+    def __init__(self, l1_coeff, l2_coeff, model):
+        self.l1_coeff = l1_coeff
+        self.l2_coeff = l2_coeff
+        self.old_model = model
+
+    def __call__(self, new_model):
+        return self.l1(new_model) + self.l2(new_model)
+
+    def l1(self, new_model):
+        penalty = 0
+        for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
+            if 'bias' in name1:
+                continue
+
+            if param2.data.shape[0] > param1.data.shape[0]:
+                for i in range(param1.data.shape[0], param2.data.shape[0]):
+                    for j in range(param2.data.shape[1]):
+                        penalty += param2[i, j].norm(1)
+            if param2.data.shape[1] > param1.data.shape[1]:
+                for j in range(param1.data.shape[1], param2.data.shape[1]):
+                    for i in range(param1.data.shape[0]):
+                        penalty += param2[i, j].norm(1)
+
+        return self.l1_coeff * penalty
+
+    def l2(self, new_model):
+        penalty = 0
+        for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
+            if 'bias' in name1:
+                continue
+
+            for i in range(param1.data.shape[0], param2.data.shape[0]):
+                row = torch.zeros(param2.data.shape[1])
+                for j in range(param2.data.shape[1]):
+                    row[j] = param2.data[i, j]
+                penalty += row.norm(2)
+        return self.l2_coeff * penalty
