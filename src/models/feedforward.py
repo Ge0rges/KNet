@@ -10,7 +10,7 @@ class FeedForward(nn.Module):
         self.output_size = sizes[-1]
 
         layers = [
-            self.get_layer(sizes[0], sizes[1], oldWeights, 0),
+            self.get_layer(sizes[0], sizes[1], oldWeights, 0)
         ]
 
         for i in range(1, len(sizes) - 1):
@@ -34,9 +34,10 @@ class FeedForward(nn.Module):
 
         layer_weights = torch.zeros([output, input])
         layer = nn.Linear(input, output)
+
         for i in range(len(weights)):
             for j in range(len(weights[i])):
                 layer_weights[i][j] = weights[i][j]
+
         layer.weight = nn.Parameter(layer_weights)
         return layer
-
