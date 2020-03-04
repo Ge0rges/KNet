@@ -49,6 +49,9 @@ EXPAND_BY_K = 10
 # weight below this value will be considered as zero
 ZERO_THRESHOLD = 1e-4
 
+# Classes
+ALL_CLASSES = range(10)
+
 # Manual seed
 SEED = 20
 
@@ -56,8 +59,6 @@ random.seed(SEED)
 torch.manual_seed(SEED)
 if CUDA:
     torch.cuda.manual_seed_all(SEED)
-
-ALL_CLASSES = range(10)
 
 
 def main():
@@ -121,10 +122,8 @@ def main():
 
                 print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
 
-                train_loss = train(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer,
-                                   penalty=penalty, use_cuda=CUDA)
-                test_loss = train(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty,
-                                  use_cuda=CUDA)
+                train_loss = train(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
+                test_loss = train(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
 
                 # save model
                 # is_best = test_loss < best_loss
@@ -143,7 +142,7 @@ def main():
 
             print("==> Selective Retraining")
 
-            ## Solve Eq.3
+            # Solve Eq.3
 
             # freeze all layers except the last one (last 2 parameters)
             params = list(model.parameters())
@@ -216,7 +215,7 @@ def main():
             for hook in hooks:
                 hook.remove()
 
-            #Could be train_loss or test_loss
+            # Could be train_loss or test_loss
             if train_loss > LOSS_THRESHOLD:
                 print("==> Dynamic Expansion")
                 dynamic_expansion(model, trainloader, validloader, cls, t)

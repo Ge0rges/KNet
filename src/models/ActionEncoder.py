@@ -2,9 +2,9 @@ import torch.nn as nn
 import torch
 
 
-class AutoEncoder(nn.Module):
+class ActionEncoder(nn.Module):
     def __init__(self, encoder_sizes=(28 * 28, 128, 64, 12, 10), action_sizes=[10, 10, 10, 10], oldWeights=None):
-        super(AutoEncoder, self).__init__()
+        super(ActionEncoder, self).__init__()
 
         # Encoder
         encoder_layers = [
