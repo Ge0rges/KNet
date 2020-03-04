@@ -65,6 +65,30 @@ class ClassSampler(Sampler):
     def __len__(self):
         return len(self.indices)
 
+
+class AESampler(Sampler):
+
+    def __init__(self, dataset, start_from=0, amount=None):
+        self.indices = []
+        start = start_from
+        left = amount
+        for i, sample in enumerate(dataset):
+            if start == 0:
+                if left is None:
+                    self.indices.append(i)
+                elif left > 0:
+                    self.indices.append(i)
+            else:
+                start -= 1
+
+    def __iter__(self):
+        #return (i for i in range(self.prefix))
+        return (self.indices[i] for i in torch.randperm(len(self.indices)))
+
+    def __len__(self):
+        return len(self.indices)
+
+
 class GaussianNoise(object):
 
     def __init__(self, mean, stddev):

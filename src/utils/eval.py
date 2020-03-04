@@ -46,6 +46,31 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_class
     
     return (sum_area / len(classes))
 
+def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
+    """Calculates average of the AUROC for the autoencoder
+    """
+
+    # TODO: still doesn't work
+    sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
+    sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
+
+    for batch_idx, (inputs, targets) in enumerate(batchloader):
+
+        if use_cuda:
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+
+        inputs = Variable(inputs)
+        targets = Variable(targets)
+        outputs = model(inputs).data
+
+        sum_targets = torch.cat((sum_targets, targets), 0)
+        sum_outputs = torch.cat((sum_outputs, outputs), 0)
+
+    sum_area = AUROC(sum_outputs.cpu().numpy(), sum_targets.cpu().numpy())
+
+    return (sum_area / len(classes))
+
 def AUROC(scores, targets):
     """Calculates the Area Under the Curve.
     Args:

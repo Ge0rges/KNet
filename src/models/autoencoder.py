@@ -22,9 +22,11 @@ class AutoEncoder(nn.Module):
         decoder_layers[len(decoder_layers) - 1] = nn.Tanh()
 
         self.decoder = nn.Sequential(*decoder_layers)
+        self.activation = nn.Sigmoid()
 
     def forward(self, x):
         x = x.view(-1, 28*28)
         x = self.encoder(x)
         x = self.decoder(x)
+        x = self.activation(x)
         return x

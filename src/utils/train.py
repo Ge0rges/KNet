@@ -4,6 +4,9 @@ import shutil
 import random
 
 import torch
+from torch import nn
+import numpy as np
+from src.models import AutoEncoder, FeedForward
 from torch.autograd import Variable
 from progress.bar import Bar
 
@@ -26,9 +29,10 @@ def one_hot(targets, classes):
             targets_onehot[i][classes.index(t)] = 1
     return targets_onehot
 
-def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False):
-    
+def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False, model_type="FeedForward"):
     # switch to train or evaluate mode
+    if model_type == "AutoEncoder":
+        return trainAE(batchloader, model, criterion, optimizer, penalty, test, use_cuda)
     if test:
         model.eval()
     else:
@@ -95,6 +99,75 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
 
     bar.finish()
     return losses.avg
+
+
+def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False,
+          use_cuda=False):
+    # switch to train or evaluate mode
+    if test:
+        model.eval()
+    else:
+        model.train()
+
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    end = time.time()
+
+    if test:
+        bar = Bar('Testing', max=len(batchloader))
+    else:
+        bar = Bar('Training', max=len(batchloader))
+
+    for batch_idx, (inputs, targets) in enumerate(batchloader):
+
+        # measure data loading time
+        data_time.update(time.time() - end)
+
+        if use_cuda:
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+
+        inputs = Variable(inputs)
+        targets = Variable(targets)
+
+        # compute output
+        outputs = model(inputs)
+        # print("max", np.max(outputs))
+        # print("min", np.min(outputs))
+        # print("mean", np.mean(outputs))
+        # calculate loss
+        loss = criterion(outputs, targets)
+
+        if penalty is not None:
+            loss = loss + penalty(model)
+
+        # record loss
+        losses.update(loss.data[0], inputs.size(0))
+
+        if not test:
+            # compute gradient and do SGD step
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # plot progress
+        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
+            batch=batch_idx + 1,
+            size=len(batchloader),
+            data=data_time.avg,
+            bt=batch_time.avg,
+            total=bar.elapsed_td,
+            loss=losses.avg)
+        bar.next()
+
+    bar.finish()
+    return losses.avg
+
 
 def save_checkpoint(state, path, is_best = False):
     filepath = os.path.join(path, "last.pt")
