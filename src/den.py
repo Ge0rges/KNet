@@ -303,8 +303,8 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
 
         penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
-
-        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA)
+        freeze_grad = freeze(model)
+        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA, freeze=freeze_grad)
         test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
 
     new_weights = []
