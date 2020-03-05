@@ -398,24 +398,33 @@ def select_neurons(model, task):
 
 
 def split_neurons(old_model, new_model):
+    old_biases = []
     old_layers = []
     for name, param in old_model.named_parameters():
         if 'bias' not in name:
             old_layers.append(param)
 
+        elif 'bias' in name:
+            old_biases.append(param)
+
+    new_biases = []
     new_layers = []
     for name, param in new_model.named_parameters():
         if 'bias' not in name:
             new_layers.append(param)
 
+        elif 'bias' in name:
+            new_biases.append(param)
+
     suma = 0
     sizes = []
     weights = []
+    bias = []
 
     sizes.append(new_layers[0].data.shape[1])
-    for old_layer, new_layer, layer_index in zip(old_layers, new_layers, range(len(new_layers))):
+    for old_layer, new_layer, old_bias, new_bias, layer_index in zip(old_layers, new_layers, old_biases, new_biases, range(len(new_layers))): # For each layer
 
-        for data1, data2, node_index in zip(old_layer.data, new_layer.data, range(len(new_layer.data))):
+        for data1, data2, node_index in zip(old_layer.data, new_layer.data, old_bias, new_bias, range(len(new_layer.data))): # For each neuron
             diff = data1 - data2
             drift = diff.norm(2)
 
@@ -430,14 +439,18 @@ def split_neurons(old_model, new_model):
                 new_layer_data[node_index] = data1
                 new_layer.data = new_layer_data
 
+                new_biases[layer_index][node_index] = old_bias
+                new_biases[layer_index].append(new_bias)
+
                 print("In layer %d split neuron %d" % (layer_index, node_index))
+
 
         sizes.append(new_layer.data.shape[0])
         weights.append(new_layer.data)
 
     print("# Number of neurons split: %d" % (suma))
 
-    return FeedForward(sizes, oldWeights=weights)
+    return FeedForward(sizes, oldWeights=np.asarray(weights, dtype=float), oldBiases=np.asarray(new_biases, dtype=float))
 
 
 if __name__ == '__main__':
