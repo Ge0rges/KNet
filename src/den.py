@@ -215,6 +215,9 @@ def main():
             for hook in hooks:
                 hook.remove()
 
+            print("==> Splitting Neurons")
+            model = split_neurons(model_copy, model)
+
             # Could be train_loss or test_loss
             if train_loss > LOSS_THRESHOLD:
                 print("==> Dynamic Expansion")
@@ -226,9 +229,6 @@ def main():
             #
             #   remove all neurons which have no weights that are non_zero
             #   save network.
-
-            print("==> Splitting Neurons")
-            model = split_neurons(model_copy, model)
 
         print("==> Calculating AUROC")
 
@@ -314,6 +314,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         if 'bias' in name1:
             continue
         new_layer = []
+
         for i in range(param1.data.shape[0]):
             row = []
             for j in range(param1.data.shape[1]):
@@ -350,6 +351,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         three_d_weights.append(np.asarray(layer))
 
     return FeedForward(new_sizes, oldWeights=three_d_weights)
+
 
 def select_neurons(model, task):
     prev_active = [True] * len(ALL_CLASSES)
