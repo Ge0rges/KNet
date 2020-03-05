@@ -457,9 +457,13 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     # k = EXPAND_BY_K
 
     layers = []
+    biases = []
     for name, param in model.named_parameters():
         if 'bias' not in name:
             layers.append(param)
+
+        elif 'bias' in name:
+            biases.append(param)
 
     sizes = []
     weights = []
@@ -493,54 +497,68 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
 
         penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
-
-        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA)
+        freeze_grad = freeze(model)
+        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA, freeze=freeze_grad)
         test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
 
+    new_biases = []
     new_weights = []
     weight_indexes = []
     added_neurons = []
     for ((name1, param1), (name2, param2)) in zip(model.named_parameters(), new_model.named_parameters()):
         if 'bias' in name1:
-            continue
-        new_layer = []
+            new_layer = []
 
-        for i in range(param1.data.shape[0]):
-            row = []
-            for j in range(param1.data.shape[1]):
-                row.append(float(param2.data[i, j]))
-            new_layer.append(row)
-
-        for j in range(param1.data.shape[1], param2.data.shape[1]):
+            # Copy over old bias
             for i in range(param1.data.shape[0]):
-                if j in weight_indexes:
-                    new_layer[i].append(float(param2.data[i, j]))
-
-        weight_indexes = []
-        for i in range(param1.data.shape[0], param2.data.shape[0]):
-            row = []
-            if float(param2[i].norm(1)) > ZERO_THRESHOLD:
-                weight_indexes.append(i)
-                for j in range(param2.data.shape[1]):
+                row = []
+                for j in range(param1.data.shape[1]):
                     row.append(float(param2.data[i, j]))
-            new_layer.append(row)
+                new_layer.append(row)
 
-        new_weights.append(new_layer)
-        added_neurons.append(weight_indexes)
+            # Copy over incoming bias for new neuron for previous existing
+            for i in range(param1.data.shape[0], param2.data.shape[0]):
+                row = []
+                if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                    row.append(float(param2.data[i, j]))
+                new_layer.append(row)
+
+            new_biases.append(new_layer)
+
+        else:
+            new_layer = []
+
+            # Copy over old neurons
+            for i in range(param1.data.shape[0]):
+                row = []
+                for j in range(param1.data.shape[1]):
+                    row.append(float(param2.data[i, j]))
+                new_layer.append(row)
+
+            # Copy over output weights for new neuron for previous existing neuron in the next layer
+            for j in range(param1.data.shape[1], param2.data.shape[1]):
+                for i in range(param1.data.shape[0]):
+                    if j in weight_indexes:
+                        new_layer[i].append(float(param2.data[i, j]))
+
+            # Copy over incoming weights for new neuron for previous existing
+            weight_indexes = []  # Marks neurons with none zero incoming weights
+            for i in range(param1.data.shape[0], param2.data.shape[0]):
+                row = []
+                if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                    weight_indexes.append(i)
+                    for j in range(param2.data.shape[1]):
+                        row.append(float(param2.data[i, j]))
+                new_layer.append(row)
+
+            new_weights.append(new_layer)
+            added_neurons.append(weight_indexes)
 
     new_sizes = [sizes[0]]
-    index = 1
-    for weights in added_neurons:
-        new_sizes.append(sizes[index] + len(weights))
-        index += 1
+    for i, weights in enumerate(added_neurons):
+        new_sizes.append(sizes[i+1] + len(weights))
 
-    # Merge sublists of same lentghs into a matrix, ie this is a list of matrices
-    # TODO: Will definitely break if two or more consecutive layers have the same size
-    three_d_weights = []
-    for layer in new_weights:
-        three_d_weights.append(np.asarray(layer))
-
-    return FeedForward(new_sizes, oldWeights=three_d_weights)
+    return FeedForward(new_sizes, oldWeights=np.asarray(new_weights), oldBiases=np.asarray(new_biases))
 
 
 def select_neurons(model, task):
@@ -590,28 +608,37 @@ def select_neurons(model, task):
 
 
 def split_neurons(old_model, new_model):
+    old_biases = []
     old_layers = []
     for name, param in old_model.named_parameters():
         if 'bias' not in name:
             old_layers.append(param)
 
+        elif 'bias' in name:
+            old_biases.append(param)
+
+    new_biases = []
     new_layers = []
     for name, param in new_model.named_parameters():
         if 'bias' not in name:
             new_layers.append(param)
 
+        elif 'bias' in name:
+            new_biases.append(param)
+
     suma = 0
     sizes = []
     weights = []
+    bias = []
 
     sizes.append(new_layers[0].data.shape[1])
-    for old_layer, new_layer, layer_index in zip(old_layers, new_layers, range(len(new_layers))):
+    for old_layer, new_layer, old_layer_bias, new_layer_bias, layer_index in zip(old_layers, new_layers, old_biases, new_biases, range(len(new_layers))): # For each layer
 
-        for data1, data2, node_index in zip(old_layer.data, new_layer.data, range(len(new_layer.data))):
+        for data1, data2, old_bias, new_bias, node_index in zip(old_layer.data, new_layer.data, old_layer_bias, new_layer_bias, range(len(new_layer.data))): # For each neuron
             diff = data1 - data2
             drift = diff.norm(2)
 
-            if (drift > 0.02):
+            if drift > 0.02:
                 suma += 1
 
                 # Copy neuron i into i' (w' introduction of edges or i')
@@ -622,6 +649,9 @@ def split_neurons(old_model, new_model):
                 new_layer_data[node_index] = data1
                 new_layer.data = new_layer_data
 
+                new_biases[layer_index][node_index] = old_bias
+                new_biases[layer_index].append(new_bias)
+
                 print("In layer %d split neuron %d" % (layer_index, node_index))
 
         sizes.append(new_layer.data.shape[0])
@@ -629,7 +659,10 @@ def split_neurons(old_model, new_model):
 
     print("# Number of neurons split: %d" % (suma))
 
-    return FeedForward(sizes, oldWeights=weights)
+    w_n = np.asarray(weights, dtype=object)
+    b_n = np.asarray(new_biases, dtype=object)
+
+    return FeedForward(sizes, oldWeights=w_n, oldBiases=b_n)
 
 
 if __name__ == '__main__':
