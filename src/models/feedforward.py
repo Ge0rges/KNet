@@ -38,6 +38,6 @@ class FeedForward(nn.Module):
 
         if biases is not None:
             biases = biases[index]
-            layer.bias = nn.Parameter(biases)
+            layer.bias = biases
 
         return layer

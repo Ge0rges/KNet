@@ -19,7 +19,7 @@ class ActionEncoder(nn.Module):
 
         # Decoder
         decoder_layers = [
-            self.get_layer(encoder_sizes[-2], encoder_sizes[-3], oldWeights, oldBiases, len(encoder_sizes) - 1)
+            self.get_layer(encoder_sizes[-1], encoder_sizes[-2], oldWeights, oldBiases, len(encoder_sizes) - 1)
         ]
 
         for i in range(len(encoder_sizes) - 3, -1, -1):
@@ -67,6 +67,6 @@ class ActionEncoder(nn.Module):
 
         if biases is not None:
             biases = biases[index]
-            layer.bias = nn.Parameter(biases)
+            layer.bias = biases
 
         return layer
