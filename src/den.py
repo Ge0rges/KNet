@@ -646,7 +646,7 @@ def split_neurons(old_model, new_model):
                 new_layer_weights.data = new_layer_weights_data
 
                 reshaped_bias = new_bias.unsqueeze(0)
-                new_layer_bias_data = torch.cat([new_layer_bias.data, reshaped_bias], dim=0)
+                new_layer_bias_data = torch.cat([new_layer_bias.data, reshaped_bias.data], dim=0)
                 new_layer_bias_data[node_index] = old_bias
                 new_layer_bias.data = new_layer_bias_data
 
