@@ -448,7 +448,7 @@ def split_neurons(old_model, new_model):
             diff = data1 - data2
             drift = diff.norm(2)
 
-            if (drift > 0.02):
+            if drift > 0.02:
                 suma += 1
 
                 # Copy neuron i into i' (w' introduction of edges or i')
@@ -463,7 +463,6 @@ def split_neurons(old_model, new_model):
                 new_biases[layer_index].append(new_bias)
 
                 print("In layer %d split neuron %d" % (layer_index, node_index))
-
 
         sizes.append(new_layer.data.shape[0])
         weights.append(new_layer.data)
