@@ -219,6 +219,7 @@ def main_ae():
             for hook in hooks:
                 hook.remove()
 
+            # Note: In ICLR 18 paper the order of these steps are switched, we believe this makes more sense.
             print("==> Splitting Neurons")
             model = split_neurons(model_copy, model)
 
@@ -473,8 +474,8 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         sizes.append(layer.data.shape[0] + EXPAND_BY_K)
     sizes[-1] -= EXPAND_BY_K
 
-    # TODO: Make module generation dynamic.
-    new_model = FeedForward(sizes, oldWeights=weights)
+    # TODO: Make module generation dynamic. BUG HERE Size is Wrong.
+    new_model = FeedForward(sizes, oldWeights=np.asarray(weights, dtype=object), oldBiases=np.asarray(biases, dtype=object))
 
     optimizer = optim.SGD(
         model.parameters(),
@@ -511,16 +512,13 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
 
             # Copy over old bias
             for i in range(param1.data.shape[0]):
-                row = []
-                for j in range(param1.data.shape[1]):
-                    row.append(float(param2.data[i, j]))
-                new_layer.append(row)
+                new_layer.append(float(param2.data[i]))
 
             # Copy over incoming bias for new neuron for previous existing
             for i in range(param1.data.shape[0], param2.data.shape[0]):
                 row = []
                 if float(param2[i].norm(1)) > ZERO_THRESHOLD:
-                    row.append(float(param2.data[i, j]))
+                    row.append(float(param2.data[i]))
                 new_layer.append(row)
 
             new_biases.append(new_layer)
@@ -558,7 +556,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     for i, weights in enumerate(added_neurons):
         new_sizes.append(sizes[i+1] + len(weights))
 
-    return FeedForward(new_sizes, oldWeights=np.asarray(new_weights), oldBiases=np.asarray(new_biases))
+    return FeedForward(new_sizes, oldWeights=np.asarray(new_weights, dtype=object), oldBiases=np.asarray(new_biases, dtype=object))
 
 
 def select_neurons(model, task):
@@ -632,10 +630,10 @@ def split_neurons(old_model, new_model):
     bias = []
 
     sizes.append(new_layers[0].data.shape[1])
-    for old_layer, new_layer, old_layer_bias, new_layer_bias, layer_index in zip(old_layers, new_layers, old_biases, new_biases, range(len(new_layers))): # For each layer
+    for old_layer_weights, new_layer_weights, old_layer_bias, new_layer_bias, layer_index in zip(old_layers, new_layers, old_biases, new_biases, range(len(new_layers))):  # For each layer
 
-        for data1, data2, old_bias, new_bias, node_index in zip(old_layer.data, new_layer.data, old_layer_bias, new_layer_bias, range(len(new_layer.data))): # For each neuron
-            diff = data1 - data2
+        for old_weights, new_weights, old_bias, new_bias, node_index in zip(old_layer_weights.data, new_layer_weights.data, old_layer_bias, new_layer_bias, range(len(new_layer_weights.data))):  # For each neuron
+            diff = old_weights - new_weights
             drift = diff.norm(2)
 
             if drift > 0.02:
@@ -644,26 +642,33 @@ def split_neurons(old_model, new_model):
                 # Copy neuron i into i' (w' introduction of edges or i')
                 # new_layer.data append data2
                 # new_layer.data replace old data2 with data1
-                reshaped_data2 = data2.unsqueeze(0)
-                new_layer_data = torch.cat([new_layer.data, reshaped_data2], dim=0)
-                new_layer_data[node_index] = data1
-                new_layer.data = new_layer_data
+                reshaped_weight = new_weights.unsqueeze(0)
+                new_layer_weights_data = torch.cat([new_layer_weights.data, reshaped_weight], dim=0)
+                new_layer_weights_data[node_index] = old_weights
+                new_layer_weights.data = new_layer_weights_data
 
-                new_biases[layer_index][node_index] = old_bias
-                new_biases[layer_index].append(new_bias)
+                reshaped_bias = new_bias.unsqueeze(0)
+                new_layer_bias_data = torch.cat([new_layer_bias.data, reshaped_bias], dim=0)
+                new_layer_bias_data[node_index] = old_bias
+                new_layer_bias.data = new_layer_bias_data
 
                 print("In layer %d split neuron %d" % (layer_index, node_index))
 
-        sizes.append(new_layer.data.shape[0])
-        weights.append(new_layer.data)
+        sizes.append(new_layer_weights.data.shape[0])
+        weights.append(new_layer_weights.data)
+        bias.append(new_layer_bias.data)
 
     print("# Number of neurons split: %d" % (suma))
 
     w_n = np.asarray(weights, dtype=object)
     b_n = np.asarray(new_biases, dtype=object)
 
+    # Sanity
+    if suma == 0:
+        return new_model
+
     return FeedForward(sizes, oldWeights=w_n, oldBiases=b_n)
 
 
 if __name__ == '__main__':
-    main_ae()
+    main()

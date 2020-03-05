@@ -257,5 +257,9 @@ class freeze(object):
     def __call__(self, new_model):
         for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
             for i in range(param1.data.shape[0]):
+                if 'bias' in name1:
+                    param2.grad[i] = 0
+                    continue
+
                 for j in range(param1.data.shape[1]):
                     param2.grad[i, j] = 0

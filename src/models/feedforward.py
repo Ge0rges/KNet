@@ -1,6 +1,6 @@
 import torch.nn as nn
 import torch
-
+import numpy as np
 
 class FeedForward(nn.Module):
 
@@ -34,10 +34,32 @@ class FeedForward(nn.Module):
 
         if weights is not None:
             weights = weights[index]
-            layer.weight = nn.Parameter(weights)
+
+            if isinstance(weights, list):
+                weights = np.asarray(weights, dtype=float)
+
+            if isinstance(weights, np.ndarray):
+                weights = torch.from_numpy(weights)
+
+            if isinstance(weights, torch.Tensor):
+                weights = nn.Parameter(weights)
+
+            if isinstance(weights, torch.nn.Parameter):
+                layer.weight = weights
 
         if biases is not None:
             biases = biases[index]
-            layer.bias = biases
+
+            if isinstance(biases, list):
+                biases = np.asarray(biases, dtype=float)
+
+            if isinstance(biases, np.ndarray):
+                biases = torch.from_numpy(biases)
+
+            if isinstance(biases, torch.Tensor):
+                biases = nn.Parameter(biases)
+
+            if isinstance(biases, torch.nn.Parameter):
+                layer.weight = biases
 
         return layer
