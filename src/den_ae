@@ -43,7 +43,7 @@ L1_COEFF = 1e-5
 # L2 REGULARIZATION
 L2_COEFF = 1e-5
 
-#LOSS_THRE
+# LOSS_THRE
 LOSS_THRESHOLD = 1e-2
 
 # Dynamic Expansion
@@ -53,7 +53,7 @@ EXPAND_BY_K = 10
 ZERO_THRESHOLD = 1e-4
 
 # Classes
-ALL_CLASSES = range(10)
+ALL_CLASSES = range(28 * 28)
 
 # Manual seed
 SEED = 20
@@ -251,22 +251,6 @@ def main_ae():
         print("%d: %f" % (i + 1, p))
 
 
-class my_hook(object):
-
-    def __init__(self, mask1, mask2):
-        self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
-        self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
-
-    def __call__(self, grad):
-
-        grad_clone = grad.clone()
-        if self.mask1.size:
-            grad_clone[self.mask1, :] = 0
-        if self.mask2.size:
-            grad_clone[:, self.mask2] = 0
-        return grad_clone
-
-
 def dynamic_expansion(model, trainloader, validloader, cls, task):
     # k = EXPAND_BY_K
 
@@ -414,6 +398,23 @@ def select_neurons(model, task):
         print("layer %d: %d / %d" % (nr + 1, sel, neurons))
 
     return hooks
+
+
+class my_hook(object):
+
+    def __init__(self, mask1, mask2):
+        self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
+        self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
+
+    def __call__(self, grad):
+        grad_clone = grad.clone()
+        if self.mask1.size:
+            grad_clone[self.mask1, :] = 0
+
+        if self.mask2.size:
+            grad_clone[:, self.mask2] = 0
+
+        return grad_clone
 
 
 def split_neurons(old_model, new_model):
