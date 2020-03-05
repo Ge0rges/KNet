@@ -474,7 +474,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         sizes.append(layer.data.shape[0] + EXPAND_BY_K)
     sizes[-1] -= EXPAND_BY_K
 
-    # TODO: Make module generation dynamic. BUG HERE Size is Wrong.
+    # TODO: Make module generation dynamic
     new_model = FeedForward(sizes, oldWeights=np.asarray(weights, dtype=object), oldBiases=np.asarray(biases, dtype=object))
 
     optimizer = optim.SGD(
@@ -516,10 +516,8 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
 
             # Copy over incoming bias for new neuron for previous existing
             for i in range(param1.data.shape[0], param2.data.shape[0]):
-                row = []
                 if float(param2[i].norm(1)) > ZERO_THRESHOLD:
-                    row.append(float(param2.data[i]))
-                new_layer.append(row)
+                    new_layer.append(float(param2.data[i]))
 
             new_biases.append(new_layer)
 
