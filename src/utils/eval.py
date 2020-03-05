@@ -61,13 +61,29 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
             targets = targets.cuda()
 
         inputs = Variable(inputs)
-        targets = Variable(targets)
         outputs = model(inputs).data
 
-        sum_targets = torch.cat((sum_targets, targets), 0)
+        shape = outputs.size()[1]
+        outputs = outputs[:, shape - len(all_classes):]
+
+        targets = targets.long()
+        new_targets = []
+        targets = targets[:, shape - len(all_classes):]
+        for j in range(targets.size()[0]):
+            found = False
+            for i in range(len(all_classes)):
+                if targets[j, i] == 1 and not found:
+                    new_targets.append(i)
+                    found = True
+        new_targets = torch.LongTensor(new_targets)
+
+        sum_targets = torch.cat((sum_targets, new_targets), 0)
         sum_outputs = torch.cat((sum_outputs, outputs), 0)
 
-    sum_area = AUROC(sum_outputs.cpu().numpy(), sum_targets.cpu().numpy())
+    sum_area = 0
+    for cls in classes:
+        scores = sum_outputs[:, all_classes.index(cls)]
+        sum_area += AUROC(scores.cpu().numpy(), (sum_targets == cls).cpu().numpy())
 
     return (sum_area / len(classes))
 

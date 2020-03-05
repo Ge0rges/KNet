@@ -13,6 +13,10 @@ import torch.optim as optim
 
 from models import FeedForward
 from utils import *
+from utils.datasets import load_AE_MNIST
+from models import  ActionEncoder
+from utils.train import trainAE
+from utils.eval import calc_avg_AE_AUROC
 
 # PATHS
 CHECKPOINT = "./checkpoints/mnist-den"
@@ -59,6 +63,192 @@ random.seed(SEED)
 torch.manual_seed(SEED)
 if CUDA:
     torch.cuda.manual_seed_all(SEED)
+
+
+def main_ae():
+    # if not os.path.isdir(CHECKPOINT):
+    #     os.makedirs(CHECKPOINT)
+
+    print('==> Preparing dataset')
+
+    trainloader, validloader, testloader = load_AE_MNIST(batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
+
+    print("==> Creating model")
+    model = ActionEncoder()
+
+    if CUDA:
+        model = model.cuda()
+        model = nn.DataParallel(model)
+        cudnn.benchmark = True
+
+    # initialize parameters
+
+    for name, param in model.named_parameters():
+        if 'bias' in name:
+            param.data.zero_()
+        elif 'weight' in name:
+            param.data.normal_(0, 0.005)
+
+    print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
+
+    criterion = nn.BCELoss()
+
+    CLASSES = []
+    AUROCs = []
+
+    for t, cls in enumerate(ALL_CLASSES):
+
+        print('\nTask: [%d | %d]\n' % (t + 1, len(ALL_CLASSES)))
+
+        CLASSES.append(cls)
+
+        if t == 0:
+            print("==> Learning")
+
+            optimizer = optim.SGD(model.parameters(),
+                                  lr=LEARNING_RATE,
+                                  momentum=MOMENTUM,
+                                  weight_decay=WEIGHT_DECAY
+                                  )
+
+            penalty = l1_penalty(coeff=L1_COEFF)
+            best_loss = 1e10
+            learning_rate = LEARNING_RATE
+            # epochs = 10
+
+            for epoch in range(MAX_EPOCHS):
+
+                # decay learning rate
+                if (epoch + 1) % EPOCHS_DROP == 0:
+                    learning_rate *= LR_DROP
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = learning_rate
+
+                print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+
+                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
+                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
+
+                # save model
+                # is_best = test_loss < best_loss
+                # best_loss = min(test_loss, best_loss)
+                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
+
+                suma = 0
+                for p in model.parameters():
+                    p = p.data.cpu().numpy()
+                    suma += (abs(p) < ZERO_THRESHOLD).sum()
+                print("Number of zero weights: %d" % (suma))
+
+        else:
+            # copy model
+            model_copy = copy.deepcopy(model)
+
+            print("==> Selective Retraining")
+
+            # Solve Eq.3
+
+            # freeze all layers except the last one (last 2 parameters)
+            params = list(model.parameters())
+            for param in params[:-2]:
+                param.requires_grad = False
+
+            optimizer = optim.SGD(
+                filter(lambda p: p.requires_grad, model.parameters()),
+                lr=LEARNING_RATE,
+                momentum=MOMENTUM,
+                weight_decay=WEIGHT_DECAY
+            )
+
+            penalty = l1_penalty(coeff=L1_COEFF)
+            best_loss = 1e10
+            learning_rate = LEARNING_RATE
+
+            for epoch in range(MAX_EPOCHS):
+
+                # decay learning rate
+                if (epoch + 1) % EPOCHS_DROP == 0:
+                    learning_rate *= LR_DROP
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = learning_rate
+
+                print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+
+                trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty,
+                      use_cuda=CUDA)
+                trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
+
+            for param in model.parameters():
+                param.requires_grad = True
+
+            print("==> Selecting Neurons")
+            hooks = select_neurons(model, t)
+
+            print("==> Training Selected Neurons")
+
+            optimizer = optim.SGD(
+                model.parameters(),
+                lr=LEARNING_RATE,
+                momentum=MOMENTUM,
+                weight_decay=1e-4
+            )
+
+            best_loss = 1e10
+            learning_rate = LEARNING_RATE
+
+            for epoch in range(MAX_EPOCHS):
+
+                # decay learning rate
+                if (epoch + 1) % EPOCHS_DROP == 0:
+                    learning_rate *= LR_DROP
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = learning_rate
+
+                print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+
+                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer,
+                                   use_cuda=CUDA)
+                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, use_cuda=CUDA)
+
+                # save model
+                # is_best = test_loss < best_loss
+                # best_loss = min(test_loss, best_loss)
+                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
+
+            # remove hooks
+            for hook in hooks:
+                hook.remove()
+
+            print("==> Splitting Neurons")
+            model = split_neurons(model_copy, model)
+
+            # Could be train_loss or test_loss
+            if train_loss > LOSS_THRESHOLD:
+                print("==> Dynamic Expansion")
+                model = dynamic_expansion(model, trainloader, validloader, cls, t)
+
+            #   add k neurons to all layers.
+            #   optimize training on those weights with l1 regularization, and an addition cost based on
+            #   the norm_2 of the weights of each individual neuron.
+            #
+            #   remove all neurons which have no weights that are non_zero
+            #   save network.
+
+        print("==> Calculating AUROC")
+
+        # filepath_best = os.path.join(CHECKPOINT, "best.pt")
+        # checkpoint = torch.load(filepath_best)
+        # model.load_state_dict(checkpoint['state_dict'])
+
+        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
+
+        print('AUROC: {}'.format(auroc))
+
+        AUROCs.append(auroc)
+
+    print('\nAverage Per-task Performance over number of tasks')
+    for i, p in enumerate(AUROCs):
+        print("%d: %f" % (i + 1, p))
 
 
 def main():
@@ -443,4 +633,4 @@ def split_neurons(old_model, new_model):
 
 
 if __name__ == '__main__':
-    main()
+    main_ae()

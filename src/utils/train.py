@@ -30,10 +30,8 @@ def one_hot(targets, classes):
             targets_onehot[i][classes.index(t)] = 1
     return targets_onehot
 
-def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False, model_type="FeedForward"):
+def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False):
     # switch to train or evaluate mode
-    if model_type == "AutoEncoder":
-        return trainAE(batchloader, model, criterion, optimizer, penalty, test, use_cuda)
     if test:
         model.eval()
     else:
@@ -102,8 +100,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
     return losses.avg
 
 
-def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False,
-          use_cuda=False):
+def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None, penalty=None, test=False, use_cuda=False):
     # switch to train or evaluate mode
     if test:
         model.eval()
@@ -121,7 +118,6 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
         bar = Bar('Training', max=len(batchloader))
 
     for batch_idx, (inputs, targets) in enumerate(batchloader):
-
         # measure data loading time
         data_time.update(time.time() - end)
 

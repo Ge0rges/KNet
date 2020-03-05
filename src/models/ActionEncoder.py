@@ -19,12 +19,12 @@ class ActionEncoder(nn.Module):
 
         # Decoder
         decoder_layers = [
-            self.get_layer(encoder_sizes[-2], encoder_sizes[-3], oldWeights, len(encoder_sizes) - 1)
+            self.get_layer(encoder_sizes[-1], encoder_sizes[-2], oldWeights, len(encoder_sizes) - 1)
         ]
 
         for i in range(len(encoder_sizes) - 3, -1, -1):
             decoder_layers.append(nn.ReLU(True))
-            decoder_layers.append(self.get_layer(encoder_sizes[i + 1], encoder_sizes[i], oldWeights, i))
+            decoder_layers.append(self.get_layer(encoder_sizes[i+1], encoder_sizes[i], oldWeights, i))
 
         decoder_layers.append(nn.Tanh())
 
@@ -47,12 +47,11 @@ class ActionEncoder(nn.Module):
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
-        x = x.view(-1, 28*28)
+        # x = x.view(-1, 28*28)
         x = self.encoder(x)
         y = self.action(x)
         x = self.decoder(x)
         x = self.activation(x)
-
         return torch.cat([x, y], 1)
 
     def get_layer(self, input, output, weights=None, index=0):
