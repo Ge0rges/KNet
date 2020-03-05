@@ -54,15 +54,13 @@ class ActionEncoder(nn.Module):
         x = self.activation(x)
         return torch.cat([x, y], 1)
 
-    def get_layer(self, input, output, weights=None, biases=None, index=0):
-        if weights is None and biases is None:
-            return nn.Linear(input, output)
-
+    def get_layer(self, input, output, init_weights=None, init_biases=None, index=0):
         layer = nn.Linear(input, output)
 
-        if weights is not None:
-            weights = weights[index]
+        if init_weights is not None:
+            weights = init_weights[index]
 
+            # Type checking
             if isinstance(weights, list):
                 weights = np.asarray(weights, dtype=float)
 
@@ -75,9 +73,22 @@ class ActionEncoder(nn.Module):
             if isinstance(weights, torch.nn.Parameter):
                 layer.weight = weights
 
-        if biases is not None:
-            biases = biases[index]
+            # Padding
+            weights = layer.weight.data
 
+            if input != weights.shape[1]:
+                weights = torch.cat([weights, torch.rand(weights.shape[0], input - weights.shape[1])], dim=1)
+
+            if output != weights.shape[0]:
+                weights = torch.cat([weights, torch.rand(output - weights.shape[0], input)], dim=0)
+
+            # Set
+            layer.weight = nn.Parameter(weights)
+
+        if init_biases is not None:
+            biases = init_biases[index]
+
+            # Type checking
             if isinstance(biases, list):
                 biases = np.asarray(biases, dtype=float)
 
@@ -88,6 +99,16 @@ class ActionEncoder(nn.Module):
                 biases = nn.Parameter(biases)
 
             if isinstance(biases, torch.nn.Parameter):
-                layer.weight = biases
+                layer.bias = biases
+
+            # Padding
+            biases = layer.bias.data
+            biases = torch.cat([biases, torch.rand(output - biases.shape[0])], dim=0)
+
+            # Set
+            layer.bias = nn.Parameter(biases)
+
+            # Update the oldBiases to include padding
+            init_biases[index] = layer.bias.data
 
         return layer
