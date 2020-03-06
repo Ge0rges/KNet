@@ -354,15 +354,28 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     return ActionEncoder(new_sizes, oldWeights=np.asarray(new_weights, dtype=object), oldBiases=np.asarray(new_biases, dtype=object))
 
 
-def select_neurons(model, task):
-    prev_active = [True] * len(ALL_CLASSES)
-    prev_active[task] = False
+def get_modules(model):
+    modules = {}
 
-    layers = []
     for name, param in model.named_parameters():
         if 'bias' not in name:
-            layers.append(param)
-    layers = reversed(layers)
+            module = name[0: name.indexOf('.')]
+            if module not in modules.keys():
+                modules[module] = []
+            modules[module].append(param)
+
+    return modules
+
+
+def select_neurons(model, task):
+    modules = get_modules(model)
+
+    action_hooks = gen_hooks(modules['action'])
+    decoder_hooks = gen_hooks(modules['decoder'])
+    encoder_hooks = gen_hooks(modules['encoder'])
+
+
+def gen_hooks(layers, prev_active=None):
 
     hooks = []
     selected = []
