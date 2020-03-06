@@ -446,6 +446,9 @@ def split_neurons(old_model, new_model):
 
         # Don't split first and last layer
         if layer_index == 0 or layer_index == len(new_layers) -1:
+            sizes.append(new_layer_weights.data.shape[0])
+            weights.append(new_layer_weights.data)
+            bias.append(new_layer_bias.data)
             continue
 
         for old_weights, new_weights, old_bias, new_bias, node_index in zip(old_layer_weights.data, new_layer_weights.data, old_layer_bias, new_layer_bias, range(len(new_layer_weights.data))):  # For each neuron

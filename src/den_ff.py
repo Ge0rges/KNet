@@ -266,21 +266,22 @@ class my_hook(object):
 def dynamic_expansion(model, trainloader, validloader, cls, task):
     # k = EXPAND_BY_K
 
-    layers = []
+    layers_weights = []
     biases = []
     for name, param in model.named_parameters():
         if 'bias' not in name:
-            layers.append(param)
+            layers_weights.append(param)
 
         elif 'bias' in name:
-            biases.append(param)
+            biases.append(param.data)
 
     sizes = []
     weights = []
-    sizes.append(layers[0].data.shape[1])
-    for layer in layers:
-        weights.append(layer.data)
-        sizes.append(layer.data.shape[0] + EXPAND_BY_K)
+    sizes.append(layers_weights[0].data.shape[1])
+    for weight in layers_weights:
+        weights.append(weight.data)
+        sizes.append(weight.data.shape[0] + EXPAND_BY_K)
+
     sizes[-1] -= EXPAND_BY_K
 
     # TODO: Make module generation dynamic
@@ -440,7 +441,10 @@ def split_neurons(old_model, new_model):
     for old_layer_weights, new_layer_weights, old_layer_bias, new_layer_bias, layer_index in zip(old_layers, new_layers, old_biases, new_biases, range(len(new_layers))):  # For each layer
 
         # Don't split first and last layer
-        if layer_index == 0 or layer_index == len(new_layers) -1:
+        if layer_index == 0 or layer_index == len(new_layers)-1:
+            sizes.append(new_layer_weights.data.shape[0])
+            weights.append(new_layer_weights.data)
+            bias.append(new_layer_bias.data)
             continue
 
         for old_weights, new_weights, old_bias, new_bias, node_index in zip(old_layer_weights.data, new_layer_weights.data, old_layer_bias, new_layer_bias, range(len(new_layer_weights.data))):  # For each neuron
@@ -470,6 +474,7 @@ def split_neurons(old_model, new_model):
 
     print("# Number of neurons split: %d" % (suma))
 
+    # No need to pad, get_layer does that for us.
     w_n = np.asarray(weights, dtype=object)
     b_n = np.asarray(new_biases, dtype=object)
 
