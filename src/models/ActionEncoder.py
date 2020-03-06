@@ -2,6 +2,7 @@ import torch.nn as nn
 import torch
 import numpy as np
 
+
 class ActionEncoder(nn.Module):
     def __init__(self, encoder_sizes=(28 * 28, 128, 64, 12, 10), action_sizes=[10, 10, 10, 10], oldWeights=None, oldBiases=None):
         super(ActionEncoder, self).__init__()
