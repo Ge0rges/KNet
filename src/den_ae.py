@@ -354,15 +354,28 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     return ActionEncoder(new_sizes, oldWeights=np.asarray(new_weights, dtype=object), oldBiases=np.asarray(new_biases, dtype=object))
 
 
-def select_neurons(model, task):
-    prev_active = [True] * len(ALL_CLASSES)
-    prev_active[task] = False
+def get_modules(model):
+    modules = {}
 
-    layers = []
     for name, param in model.named_parameters():
         if 'bias' not in name:
-            layers.append(param)
-    layers = reversed(layers)
+            module = name[0: name.indexOf('.')]
+            if module not in modules.keys():
+                modules[module] = []
+            modules[module].append(param)
+
+    return modules
+
+
+def select_neurons(model, task):
+    modules = get_modules(model)
+
+    action_hooks = gen_hooks(modules['action'])
+    decoder_hooks = gen_hooks(modules['decoder'])
+    encoder_hooks = gen_hooks(modules['encoder'])
+
+
+def gen_hooks(layers, prev_active=None):
 
     hooks = []
     selected = []
@@ -383,7 +396,7 @@ def select_neurons(model, task):
             for y in range(y_size):
                 weight = data[x, y]
                 # check if weight is active
-                if (weight > ZERO_THRESHOLD):
+                if weight > ZERO_THRESHOLD:
                     # mark connected neuron as active
                     active[y] = False
 
@@ -446,6 +459,9 @@ def split_neurons(old_model, new_model):
 
         # Don't split first and last layer
         if layer_index == 0 or layer_index == len(new_layers) -1:
+            sizes.append(new_layer_weights.data.shape[0])
+            weights.append(new_layer_weights.data)
+            bias.append(new_layer_bias.data)
             continue
 
         for old_weights, new_weights, old_bias, new_bias, node_index in zip(old_layer_weights.data, new_layer_weights.data, old_layer_bias, new_layer_bias, range(len(new_layer_weights.data))):  # For each neuron
@@ -458,7 +474,7 @@ def split_neurons(old_model, new_model):
                 # Copy neuron i into i' (w' introduction of edges or i')
                 # new_layer.data append data2
                 # new_layer.data replace old data2 with data1
-                reshaped_weight = new_weights.unsqueeze(0)
+                reshaped_weight = new_weights.unsqueeze(0) # TODO this neuron is supposed to be trained yo
                 new_layer_weights_data = torch.cat([new_layer_weights.data, reshaped_weight], dim=0)
                 new_layer_weights_data[node_index] = old_weights
                 new_layer_weights.data = new_layer_weights_data
@@ -473,7 +489,7 @@ def split_neurons(old_model, new_model):
         weights.append(new_layer_weights.data)
         bias.append(new_layer_bias.data)
 
-    print("# Number of neurons split: %d" % (suma))
+    print("# Number of neurons split: %d" % suma)
 
     w_n = np.asarray(weights, dtype=object)
     b_n = np.asarray(new_biases, dtype=object)
