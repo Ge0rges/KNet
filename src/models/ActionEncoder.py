@@ -28,7 +28,7 @@ class ActionEncoder(nn.Module):
             decoder_layers.append(nn.ReLU(True))
             decoder_layers.append(self.get_layer(encoder_sizes[i + 1], encoder_sizes[i], oldWeights, oldBiases, i))
 
-        decoder_layers.append(nn.Sigmoid)
+        decoder_layers.append(nn.Sigmoid())
 
         self.decoder = nn.Sequential(*decoder_layers)
 
