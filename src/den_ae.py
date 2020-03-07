@@ -53,7 +53,7 @@ EXPAND_BY_K = 10
 ZERO_THRESHOLD = 1e-4
 
 # Classes
-ALL_CLASSES = range(28 * 28)
+ALL_CLASSES = range(10)
 
 # Manual seed
 SEED = 20
@@ -359,7 +359,7 @@ def get_modules(model):
 
     for name, param in model.named_parameters():
         if 'bias' not in name:
-            module = name[0: name.indexOf('.')]
+            module = name[0: name.index('.')]
             if module not in modules.keys():
                 modules[module] = []
             modules[module].append(param)
@@ -384,8 +384,9 @@ def gen_hooks(layers, prev_active=None):
     hooks = []
     selected = []
 
-    for layer in layers:
+    layers = reversed(layers)
 
+    for layer in layers:
         x_size, y_size = layer.size()
 
         active = [True] * y_size
