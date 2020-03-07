@@ -529,6 +529,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                        use_cuda=CUDA, freeze=freeze_grad)
     test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
 
+    return new_model
+
 
 if __name__ == '__main__':
     main_ae()
