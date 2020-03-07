@@ -396,7 +396,7 @@ def select_neurons(model, task):
             for y in range(y_size):
                 weight = data[x, y]
                 # check if weight is active
-                if (weight > ZERO_THRESHOLD):
+                if weight > ZERO_THRESHOLD:
                     # mark connected neuron as active
                     active[y] = False
 
@@ -457,7 +457,7 @@ def split_neurons(old_model, new_model):
                 # Copy neuron i into i' (w' introduction of edges or i')
                 # new_layer.data append data2
                 # new_layer.data replace old data2 with data1
-                reshaped_weight = new_weights.unsqueeze(0)
+                reshaped_weight = new_weights.unsqueeze(0) # TODO this neuron is supposed to be trained yo
                 new_layer_weights_data = torch.cat([new_layer_weights.data, reshaped_weight], dim=0)
                 new_layer_weights_data[node_index] = old_weights
                 new_layer_weights.data = new_layer_weights_data
@@ -472,7 +472,7 @@ def split_neurons(old_model, new_model):
         weights.append(new_layer_weights.data)
         bias.append(new_layer_bias.data)
 
-    print("# Number of neurons split: %d" % (suma))
+    print("# Number of neurons split: %d" % suma)
 
     # No need to pad, get_layer does that for us.
     w_n = np.asarray(weights, dtype=object)
