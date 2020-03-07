@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, ConcatDataset, Dataset, TensorDataset
 from train import one_hot
 import numpy as np
 import os
+import torchvision
 
 from misc import ClassSampler, GaussianNoise, AESampler
 
@@ -14,8 +15,69 @@ DATA = './data'
 AE_DATA = './data/AE'
 # only contains the data since the labels are in fact just the data points themselves for the autoencodeur
 AE_FILE = AE_DATA + '/data.csv.npy'
-
 ALL_CLASSES = range(10)
+
+MAX = 300
+BANANA_PROCESSED_DATA = './data/banana/processed'
+BANANA_LABEL = 1
+CAR_LABEL = 2
+ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL]
+
+
+def dataset_setup(data_path, save_path, name):
+    if not os.path.isdir(data_path):
+        print("not dir")
+    train_dataset = torchvision.datasets.ImageFolder(
+        root=data_path,
+        transform=torchvision.transforms.ToTensor(),
+    )
+    cur = 0
+    f_count = 0
+    l = len(train_dataset)
+    while cur < l:
+        data = []
+        count = 0
+        threshold = min(MAX, l - cur)
+        while count < threshold:
+            data.append(train_dataset[cur + count][0].numpy().astype(np.float64))
+            count += 1
+        print("SAVING BATCH {} OF {} SAMPLES".format(f_count, threshold))
+        np.save("{}/{}_{}".format(save_path, name, f_count), data)
+        cur += count
+        f_count += 1
+
+
+def banana_loader(batch_size=256, num_workers=4):
+    data = []
+    count = 0
+    filepath = BANANA_PROCESSED_DATA + '/banana_{}.npy'.format(count)
+    while os.path.isfile(filepath):
+        print(filepath)
+        partial = np.load(filepath)
+        data.extend(partial)
+        count += 1
+        filepath = BANANA_PROCESSED_DATA + '/banana_{}.npy'.format(count)
+
+    labels = [BANANA_LABEL]*len(data)
+
+    data = torch.Tensor(data)
+    print(data.size())
+    labels = torch.Tensor(labels)
+    print(labels.size())
+    labels = one_hot(labels, ALL_CUSTOM_LABELS)
+    print(labels.size())
+
+    trainsampler = ClassSampler(labels, len(ALL_CUSTOM_LABELS), start_from=0, amount=800)
+    trainloader = DataLoader(data, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    validsampler = ClassSampler(labels, len(ALL_CUSTOM_LABELS), start_from=800, amount=197)
+    validloader = DataLoader(data, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = ClassSampler(labels, len(ALL_CUSTOM_LABELS), start_from=997, amount=300)
+    testloader = DataLoader(data, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    return (trainloader, validloader, testloader)
+
 
 def load_AE_MNIST(batch_size=256, num_workers=4):
     # if not os.path.isfile(AE_FILE):
@@ -124,4 +186,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    main()
+    # dataset_setup('./data/banana/compiled', BANANA_PROCESSED_DATA, 'banana')
+    banana_loader()
