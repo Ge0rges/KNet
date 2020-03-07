@@ -370,7 +370,10 @@ def get_modules(model):
 def select_neurons(model, task):
     modules = get_modules(model)
 
-    action_hooks = gen_hooks(modules['action'])
+    prev_active = [True] * 10
+    prev_action[task] = False
+
+    action_hooks, prev_active = gen_hooks(modules['action'], )
     decoder_hooks = gen_hooks(modules['decoder'])
     encoder_hooks = gen_hooks(modules['encoder'])
 
@@ -410,7 +413,7 @@ def gen_hooks(layers, prev_active=None):
     for nr, (sel, neurons) in enumerate(reversed(selected)):
         print("layer %d: %d / %d" % (nr + 1, sel, neurons))
 
-    return hooks
+    return hooks, prev_active
 
 
 class my_hook(object):

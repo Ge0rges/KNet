@@ -4,8 +4,9 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, encoder_sizes=(28 * 28, 128, 64, 12, 10), action_sizes=[10, 10, 10, 10], oldWeights=None, oldBiases=None):
+    def __init__(self, encoder_sizes=(28 * 28, 128, 64, 12, 10), action_sizes=(10, 10, 10, 10), oldWeights=None, oldBiases=None):
         super(ActionEncoder, self).__init__()
+        self.phase = 'ACTION'
 
         # Encoder
         encoder_layers = [
@@ -27,12 +28,9 @@ class ActionEncoder(nn.Module):
             decoder_layers.append(nn.ReLU(True))
             decoder_layers.append(self.get_layer(encoder_sizes[i + 1], encoder_sizes[i], oldWeights, oldBiases, i))
 
-        decoder_layers.append(nn.Tanh())
+        decoder_layers.append(nn.Sigmoid)
 
         self.decoder = nn.Sequential(*decoder_layers)
-
-        # Activation
-        self.activation = nn.Sigmoid()
 
         # Action
         action_layers = [
@@ -51,8 +49,12 @@ class ActionEncoder(nn.Module):
         # x = x.view(-1, 28*28)
         x = self.encoder(x)
         y = self.action(x)
+
+        if self.action is 'ACTION':
+            return y
         x = self.decoder(x)
-        x = self.activation(x)
+        if self.action is 'GENERATE':
+            return x
         return torch.cat([x, y], 1)
 
     def get_layer(self, input, output, init_weights=None, init_biases=None, index=0):
