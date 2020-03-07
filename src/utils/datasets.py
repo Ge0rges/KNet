@@ -17,7 +17,7 @@ AE_DATA = './data/AE'
 AE_FILE = AE_DATA + '/data.csv.npy'
 ALL_CLASSES = range(10)
 
-MAX = 300
+MAX_FILE_SIZE = 49000000
 BANANA_PROCESSED_DATA = './data/banana/processed'
 BANANA_LABEL = 1
 CAR_LABEL = 2
@@ -34,6 +34,9 @@ def dataset_setup(data_path, save_path, name):
     cur = 0
     f_count = 0
     l = len(train_dataset)
+    in_size = sum([i for i in train_dataset[0][0].size()])
+    MAX = int((MAX_FILE_SIZE - 100000)/(in_size*8))  # 100000 is for the overhead
+    print(MAX)
     while cur < l:
         data = []
         count = 0
@@ -186,5 +189,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    # dataset_setup('./data/banana/compiled', BANANA_PROCESSED_DATA, 'banana')
-    banana_loader()
+    dataset_setup('./data/banana/compiled', BANANA_PROCESSED_DATA, 'banana')

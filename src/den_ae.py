@@ -371,15 +371,16 @@ def select_neurons(model, task):
     modules = get_modules(model)
 
     prev_active = [True] * 10
-    prev_action[task] = False
+    prev_active[task] = False
 
-    action_hooks, prev_active = gen_hooks(modules['action'], )
-    decoder_hooks = gen_hooks(modules['decoder'])
-    encoder_hooks = gen_hooks(modules['encoder'])
+    action_hooks, prev_active = gen_hooks(modules['action'], prev_active)
+    encoder_hooks, _ = gen_hooks(modules['encoder'], prev_active)
+
+    hooks = action_hooks + encoder_hooks
+    return hooks
 
 
 def gen_hooks(layers, prev_active=None):
-
     hooks = []
     selected = []
 
