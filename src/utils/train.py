@@ -12,7 +12,7 @@ from progress.bar import Bar
 
 from .misc import AverageMeter
 
-__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty', 'freeze']
+__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty']
 
 # Manual seed
 SEED = 20
