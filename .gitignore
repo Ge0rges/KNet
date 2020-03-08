@@ -125,3 +125,4 @@ MNIST/
 
 # Model Checkpoints
 src/checkpoints/
+*.icloud
