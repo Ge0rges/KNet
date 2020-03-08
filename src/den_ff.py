@@ -216,7 +216,7 @@ def main():
                 hook.remove()
 
             print("==> Splitting Neurons")
-            model = split_neurons(model_copy, model)
+            model = split_neurons(model_copy, model, trainloader, validloader, cls)
 
             # Could be train_loss or test_loss
             if train_loss > LOSS_THRESHOLD:
@@ -413,7 +413,7 @@ def select_neurons(model, task):
     return hooks
 
 
-def split_neurons(old_model, new_model):
+def split_neurons(old_model, new_model, trainloader, validloader, cls):
     old_biases = []
     old_layers = []
     for name, param in old_model.named_parameters():
@@ -457,7 +457,7 @@ def split_neurons(old_model, new_model):
                 # Copy neuron i into i' (w' introduction of edges or i')
                 # new_layer.data append data2
                 # new_layer.data replace old data2 with data1
-                reshaped_weight = new_weights.unsqueeze(0) # TODO this neuron is supposed to be trained yo
+                reshaped_weight = new_weights.unsqueeze(0)
                 new_layer_weights_data = torch.cat([new_layer_weights.data, reshaped_weight], dim=0)
                 new_layer_weights_data[node_index] = old_weights
                 new_layer_weights.data = new_layer_weights_data
@@ -474,15 +474,32 @@ def split_neurons(old_model, new_model):
 
     print("# Number of neurons split: %d" % suma)
 
+    # Be efficient.
+    if suma == 0:
+        return new_model
+
     # No need to pad, get_layer does that for us.
     w_n = np.asarray(weights, dtype=object)
     b_n = np.asarray(new_biases, dtype=object)
 
-    # Sanity
-    if suma == 0:
-        return new_model
+    # Train newly added nodes
+    new_model = FeedForward(sizes, oldWeights=w_n, oldBiases=b_n)
 
-    return FeedForward(sizes, oldWeights=w_n, oldBiases=b_n)
+    optimizer = optim.SGD(
+        new_model.parameters(),
+        lr=LEARNING_RATE,
+        momentum=MOMENTUM,
+        weight_decay=1e-4
+    )
+
+    criterion = nn.BCELoss()
+    penalty = l1l2_penalty(L1_COEFF, L2_COEFF, new_model)
+
+    freeze_grad = freeze(old_model)
+
+    train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer,
+                       use_cuda=CUDA, freeze=freeze_grad)
+    test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
 
 
 if __name__ == '__main__':

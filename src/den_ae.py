@@ -220,7 +220,7 @@ def main_ae():
 
             # Note: In ICLR 18 paper the order of these steps are switched, we believe this makes more sense.
             print("==> Splitting Neurons")
-            model = split_neurons(model_copy, model)
+            model = split_neurons(model_copy, model, trainloader, validloader, cls)
 
             # Could be train_loss or test_loss
             if train_loss > LOSS_THRESHOLD:
@@ -370,7 +370,10 @@ def get_modules(model):
 def select_neurons(model, task):
     modules = get_modules(model)
 
-    action_hooks = gen_hooks(modules['action'])
+    prev_active = [True] * 10
+    prev_action[task] = False
+
+    action_hooks, prev_active = gen_hooks(modules['action'], )
     decoder_hooks = gen_hooks(modules['decoder'])
     encoder_hooks = gen_hooks(modules['encoder'])
 
@@ -410,7 +413,7 @@ def gen_hooks(layers, prev_active=None):
     for nr, (sel, neurons) in enumerate(reversed(selected)):
         print("layer %d: %d / %d" % (nr + 1, sel, neurons))
 
-    return hooks
+    return hooks, prev_active
 
 
 class my_hook(object):
@@ -430,7 +433,7 @@ class my_hook(object):
         return grad_clone
 
 
-def split_neurons(old_model, new_model):
+def split_neurons(old_model, new_model, trainloader, validloader, cls):
     old_biases = []
     old_layers = []
     for name, param in old_model.named_parameters():
@@ -455,16 +458,22 @@ def split_neurons(old_model, new_model):
     bias = []
 
     sizes.append(new_layers[0].data.shape[1])
-    for old_layer_weights, new_layer_weights, old_layer_bias, new_layer_bias, layer_index in zip(old_layers, new_layers, old_biases, new_biases, range(len(new_layers))):  # For each layer
+    for old_layer_weights, new_layer_weights, old_layer_bias, new_layer_bias, layer_index in zip(old_layers, new_layers,
+                                                                                                 old_biases, new_biases,
+                                                                                                 range(len(
+                                                                                                         new_layers))):  # For each layer
 
         # Don't split first and last layer
-        if layer_index == 0 or layer_index == len(new_layers) -1:
+        if layer_index == 0 or layer_index == len(new_layers) - 1:
             sizes.append(new_layer_weights.data.shape[0])
             weights.append(new_layer_weights.data)
             bias.append(new_layer_bias.data)
             continue
 
-        for old_weights, new_weights, old_bias, new_bias, node_index in zip(old_layer_weights.data, new_layer_weights.data, old_layer_bias, new_layer_bias, range(len(new_layer_weights.data))):  # For each neuron
+        for old_weights, new_weights, old_bias, new_bias, node_index in zip(old_layer_weights.data,
+                                                                            new_layer_weights.data, old_layer_bias,
+                                                                            new_layer_bias, range(
+                        len(new_layer_weights.data))):  # For each neuron
             diff = old_weights - new_weights
             drift = diff.norm(2)
 
@@ -474,7 +483,7 @@ def split_neurons(old_model, new_model):
                 # Copy neuron i into i' (w' introduction of edges or i')
                 # new_layer.data append data2
                 # new_layer.data replace old data2 with data1
-                reshaped_weight = new_weights.unsqueeze(0) # TODO this neuron is supposed to be trained yo
+                reshaped_weight = new_weights.unsqueeze(0)
                 new_layer_weights_data = torch.cat([new_layer_weights.data, reshaped_weight], dim=0)
                 new_layer_weights_data[node_index] = old_weights
                 new_layer_weights.data = new_layer_weights_data
@@ -491,14 +500,32 @@ def split_neurons(old_model, new_model):
 
     print("# Number of neurons split: %d" % suma)
 
-    w_n = np.asarray(weights, dtype=object)
-    b_n = np.asarray(new_biases, dtype=object)
-
-    # Sanity
+    # Be efficient.
     if suma == 0:
         return new_model
 
-    return ActionEncoder(sizes, oldWeights=w_n, oldBiases=b_n)
+    # No need to pad, get_layer does that for us.
+    w_n = np.asarray(weights, dtype=object)
+    b_n = np.asarray(new_biases, dtype=object)
+
+    # Train newly added nodes
+    new_model = ActionEncoder(sizes, oldWeights=w_n, oldBiases=b_n)
+
+    optimizer = optim.SGD(
+        new_model.parameters(),
+        lr=LEARNING_RATE,
+        momentum=MOMENTUM,
+        weight_decay=1e-4
+    )
+
+    criterion = nn.BCELoss()
+    penalty = l1l2_penalty(L1_COEFF, L2_COEFF, new_model)
+
+    freeze_grad = freeze(old_model)
+
+    train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer,
+                       use_cuda=CUDA, freeze=freeze_grad)
+    test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
 
 
 if __name__ == '__main__':
