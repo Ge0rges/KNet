@@ -264,23 +264,23 @@ class my_hook(object):
 
 
 def dynamic_expansion(model, trainloader, validloader, cls, task):
-    # k = EXPAND_BY_K
-
-    layers_weights = []
-    biases = []
+    sizes, weights, biases, hooks = [], [], [], []
     for name, param in model.named_parameters():
         if 'bias' not in name:
-            layers_weights.append(param)
+            if len(sizes) == 0:
+                sizes.append(param.data.shape[1])
+
+            weights.append(param.data)
+            sizes.append(param.data.shape[0] + EXPAND_BY_K)
+
+            # Register hook to freeze param
+            active_weights = [False] * (param.data.shape[0] - EXPAND_BY_K)
+            active_weights.extend([True] * EXPAND_BY_K)
+            hook = param.register_hook(freeze_hook(active_weights))
+            hooks.append(hook)
 
         elif 'bias' in name:
             biases.append(param.data)
-
-    sizes = []
-    weights = []
-    sizes.append(layers_weights[0].data.shape[1])
-    for weight in layers_weights:
-        weights.append(weight.data)
-        sizes.append(weight.data.shape[0] + EXPAND_BY_K)
 
     sizes[-1] -= EXPAND_BY_K
 
@@ -308,9 +308,12 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
 
         penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
-        freeze_grad = freeze(model)
-        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA, freeze=freeze_grad)
+        train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA)
         test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
+
+    # Remove hooks
+    for hook in hooks:
+        hook.remove()
 
     new_biases = []
     new_weights = []
@@ -400,7 +403,7 @@ def select_neurons(model, task):
                     # mark connected neuron as active
                     active[y] = False
 
-        h = layer.register_hook(my_hook(prev_active, active))
+        h = layer.register_hook(active_grads_hook(prev_active, active))
 
         hooks.append(h)
         prev_active = active
@@ -495,11 +498,44 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
     criterion = nn.BCELoss()
     penalty = l1l2_penalty(L1_COEFF, L2_COEFF, new_model)
 
-    freeze_grad = freeze(old_model)
-
     train_loss = train(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer,
-                       use_cuda=CUDA, freeze=freeze_grad)
+                       use_cuda=CUDA)
     test_loss = train(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
+
+    return new_model
+
+
+class freeze_hook(object):
+    def __init__(self, active_weights):
+        self.active_weights = active_weights
+
+    def __call__(self, grad):
+
+        grad_clone = grad.clone()
+
+        for i in range(grad.shape[0]):
+            for j in range(grad.shape[1]):
+
+                if not self.active_weights[i, j]:
+                    grad_clone[i, j] = 0
+
+        return grad_clone
+
+
+class active_grads_hook(object):
+
+    def __init__(self, mask1, mask2):
+        self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
+        self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
+
+    def __call__(self, grad):
+
+        grad_clone = grad.clone()
+        if self.mask1.size:
+            grad_clone[self.mask1, :] = 0
+        if self.mask2.size:
+            grad_clone[:, self.mask2] = 0
+        return grad_clone
 
 
 if __name__ == '__main__':
