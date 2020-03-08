@@ -103,7 +103,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
 
 
 def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None, penalty=None, test=False,
-          use_cuda=False, freeze=None):
+          use_cuda=False):
     # switch to train or evaluate mode
     if test:
         model.eval()
@@ -149,8 +149,6 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
             # compute gradient and do SGD step
             optimizer.zero_grad()
             loss.backward()
-            if freeze:
-                freeze(model)
             optimizer.step()
 
         # measure elapsed time
@@ -169,6 +167,7 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
 
     bar.finish()
     return losses.avg
+
 
 def save_checkpoint(state, path, is_best = False):
     filepath = os.path.join(path, "last.pt")
@@ -248,18 +247,3 @@ class l1l2_penalty(object):
                     row[j] = param2.data[i, j]
                 penalty += row.norm(2)
         return self.l2_coeff * penalty
-
-
-class freeze(object):
-    def __init__(self, model):
-        self.old_model = model
-
-    def __call__(self, new_model):
-        for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
-            for i in range(param1.data.shape[0]):
-                if 'bias' in name1:
-                    param2.grad[i] = 0
-                    continue
-
-                for j in range(param1.data.shape[1]):
-                    param2.grad[i, j] = 0
