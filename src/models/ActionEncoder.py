@@ -31,14 +31,17 @@ class ActionEncoder(nn.Module):
         x = self.encoder(x)
         y = self.action(x)
 
-        if self.action is 'ACTION':
+        if self.phase is 'ACTION':
             return y
+
         x = self.decoder(x)
-        if self.action is 'GENERATE':
+        if self.phase is 'GENERATE':
             return x
-        if self.action is 'BOTH':
+
+        if self.phase is 'BOTH':
             return torch.cat([x, y], 1)
-        return ReferenceError()
+
+        raise ReferenceError
 
     def set_module(self, label, sizes, oldWeights=None, oldBiases=None):
         sizes = sizes[label]
