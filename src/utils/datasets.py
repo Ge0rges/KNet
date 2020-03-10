@@ -18,8 +18,10 @@ AE_DATA = './data/AE'
 AE_FILE = AE_DATA + '/data.csv.npy'
 ALL_CLASSES = range(10)
 
-MAX_FILE_SIZE = 48000000
+MAX_FILE_SIZE = 500000000
+
 BANANA_PROCESSED_DATA = './data/banana/processed'
+CAR_PROCESSED_DATA = './data/car/processed'
 BANANA_LABEL = 1
 CAR_LABEL = 2
 ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL]
@@ -54,7 +56,7 @@ def dataset_setup(data_path, save_path, name):
         f_count += 1
 
 
-def car_reshaping(new_size=(480, 640), colors=3):
+def car_reshaping(new_size=(640, 480), colors=3):
     filepath = './data/car/raw/'
     files = []
     for (dirpath, dirnames, filenames) in os.walk(filepath):
@@ -66,8 +68,37 @@ def car_reshaping(new_size=(480, 640), colors=3):
         new_img.save('./data/car/processed/car_{}.jpg'.format(count))
         count += 1
 
-def car_loader():
-    pass
+
+def car_loader(batch_size=256, num_workers=4):
+    data = []
+    count = 0
+    filepath = CAR_PROCESSED_DATA + '/car_{}.npy'.format(count)
+    while os.path.isfile(filepath):
+        print(filepath)
+        partial = np.load(filepath)
+        data.extend(partial)
+        count += 1
+        filepath = CAR_PROCESSED_DATA + '/car_{}.npy'.format(count)
+
+    labels = [CAR_LABEL] * len(data)
+
+    data = torch.Tensor(data)
+    print(data.size())
+    labels = torch.Tensor(labels)
+    print(labels.size())
+    # labels = one_hot(labels, ALL_CUSTOM_LABELS)
+    # print(labels.size())
+
+    trainsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=0, amount=800)
+    trainloader = DataLoader(data, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    validsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=800, amount=197)
+    validloader = DataLoader(data, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=997, amount=300)
+    testloader = DataLoader(data, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    return (trainloader, validloader, testloader)
 
 
 def banana_loader(batch_size=256, num_workers=4):
@@ -90,13 +121,13 @@ def banana_loader(batch_size=256, num_workers=4):
     # labels = one_hot(labels, ALL_CUSTOM_LABELS)
     # print(labels.size())
 
-    trainsampler = ClassSampler(labels, range(len(ALL_CUSTOM_LABELS)), start_from=0, amount=800)
+    trainsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=0, amount=800)
     trainloader = DataLoader(data, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
-    validsampler = ClassSampler(labels, range(len(ALL_CUSTOM_LABELS)), start_from=800, amount=197)
+    validsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=800, amount=197)
     validloader = DataLoader(data, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
 
-    testsampler = ClassSampler(labels, range(len(ALL_CUSTOM_LABELS)), start_from=997, amount=300)
+    testsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=997, amount=300)
     testloader = DataLoader(data, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
     return (trainloader, validloader, testloader)
@@ -209,5 +240,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    dataset_setup('./data/banana/compiled', BANANA_PROCESSED_DATA, 'banana')
-    # banana_loader()
+    # dataset_setup('./data/banana/compiled', BANANA_PROCESSED_DATA, 'banana')
+    banana_loader()
