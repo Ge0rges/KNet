@@ -143,8 +143,8 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         # print("min", np.min(outputs))
         # print("mean", np.mean(outputs))
         # calculate loss
-        generate_loss = criterion(generate_output, targets)
-        action_loss = criterion(action_output, targets)
+        generate_loss = criterion(generate_output, targets[:, :generate_output.size()[1]])
+        action_loss = criterion(action_output, targets[:, generate_output.size()[1]:])
 
         if penalty is not None:
             generate_loss = generate_loss + penalty(model)
