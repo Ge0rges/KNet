@@ -7,6 +7,7 @@ import numpy as np
 import os
 import torchvision
 from PIL import Image
+import re
 
 from misc import ClassSampler, GaussianNoise, AESampler
 
@@ -18,7 +19,7 @@ AE_DATA = './data/AE'
 AE_FILE = AE_DATA + '/data.csv.npy'
 ALL_CLASSES = range(10)
 
-MAX_FILE_SIZE = 500000000
+MAX_FILE_SIZE = 5000000000
 
 BANANA_PROCESSED_DATA = './data/banana/processed'
 CAR_PROCESSED_DATA = './data/car/processed'
@@ -27,7 +28,7 @@ CAR_LABEL = 2
 ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL]
 
 
-def dataset_setup(data_path, save_path, name):
+def dataset_setup(data_path, save_path, filenames):
     if not os.path.isdir(data_path):
         print("not dir")
     train_dataset = torchvision.datasets.ImageFolder(
@@ -51,21 +52,28 @@ def dataset_setup(data_path, save_path, name):
             data.append(train_dataset[cur + count][0].numpy().astype(np.float64))
             count += 1
         print("SAVING BATCH {} OF {} SAMPLES".format(f_count, threshold))
-        np.save("{}/{}_{}".format(save_path, name, f_count), data)
+        np.save("{}/{}_{}".format(save_path, filenames, f_count), data)
         cur += count
         f_count += 1
 
 
-def car_reshaping(new_size=(480, 640), colors=3):
+def car_reshaping(new_size=(640, 480), colors=3):
     filepath = './data/car/raw/'
     files = []
+
     for (dirpath, dirnames, filenames) in os.walk(filepath):
-        files.extend(filenames)
+        print((dirpath, dirnames, filenames))
+        for file in filenames:
+            if file.endswith(".jpg"):
+                files.append(dirpath + "/" + file)
+        # files.extend(filenames)
+
     count = 0
     for f in files:
         img = Image.open(f)
         new_img = img.resize(new_size)
-        new_img.save('./data/car/processed/car_{}.jpg'.format(count))
+        new_img.save("./data/car/resized/1/car_{}.jpg".format(count))
+        print(count)
         count += 1
 
 
@@ -240,5 +248,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    # dataset_setup('./data/banana/compiled', BANANA_PROCESSED_DATA, 'banana')
-    banana_loader()
+    # car_reshaping()
+    dataset_setup("./data/car/resized", CAR_PROCESSED_DATA, 'car')
