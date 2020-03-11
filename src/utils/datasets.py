@@ -22,39 +22,10 @@ ALL_CLASSES = range(10)
 MAX_FILE_SIZE = 5000000000
 
 BANANA_PROCESSED_DATA = './data/banana/processed'
-CAR_PROCESSED_DATA = './data/car/processed'
+CAR_RESIZED_DATA = './data/car/resized'
 BANANA_LABEL = 1
 CAR_LABEL = 2
 ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL]
-
-
-def dataset_setup(data_path, save_path, filenames):
-    if not os.path.isdir(data_path):
-        print("not dir")
-    train_dataset = torchvision.datasets.ImageFolder(
-        root=data_path,
-        transform=torchvision.transforms.ToTensor(),
-    )
-    cur = 0
-    f_count = 0
-    l = len(train_dataset)
-
-    in_size = 1
-    for i in train_dataset[0][0].size():
-        in_size *= i
-
-    MAX = int((MAX_FILE_SIZE - 100000)/(in_size*8))  # 100000 is for the overhead
-    while cur < l:
-        data = []
-        count = 0
-        threshold = min(MAX, l - cur)
-        while count < threshold:
-            data.append(train_dataset[cur + count][0].numpy().astype(np.float64))
-            count += 1
-        print("SAVING BATCH {} OF {} SAMPLES".format(f_count, threshold))
-        np.save("{}/{}_{}".format(save_path, filenames, f_count), data)
-        cur += count
-        f_count += 1
 
 
 def car_reshaping(new_size=(640, 480), colors=3):
@@ -78,67 +49,117 @@ def car_reshaping(new_size=(640, 480), colors=3):
 
 
 def car_loader(batch_size=256, num_workers=4):
-    data = []
-    count = 0
-    filepath = CAR_PROCESSED_DATA + '/car_{}.npy'.format(count)
-    while os.path.isfile(filepath):
-        print(filepath)
-        partial = np.load(filepath)
-        data.extend(partial)
-        count += 1
-        filepath = CAR_PROCESSED_DATA + '/car_{}.npy'.format(count)
+    if not os.path.isdir(CAR_RESIZED_DATA):
+        print("not dir")
+    dataset = torchvision.datasets.ImageFolder(
+        root=CAR_RESIZED_DATA,
+        transform=torchvision.transforms.ToTensor(),
+    )
 
-    labels = [CAR_LABEL] * len(data)
-
-    data = torch.Tensor(data)
-    print(data.size())
-    labels = torch.Tensor(labels)
-    print(labels.size())
+    data = list(i[0].numpy() for i in dataset)
+    num_samples = len(data)
+    class_labels = [CAR_LABEL] * num_samples
+    #
+    # data = torch.Tensor(data)
+    # print(data.size())
+    # labels = torch.Tensor(labels)
+    # print(labels.size())
     # labels = one_hot(labels, ALL_CUSTOM_LABELS)
     # print(labels.size())
+    tensor_data = torch.Tensor(data)
+    # tensor_data = tensor_data.view(-1, 28 * 28)
 
-    trainsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=0, amount=800)
-    trainloader = DataLoader(data, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    tensor_labels = torch.Tensor(data)
+    # tensor_labels = tensor_labels.view(-1, 28*28)
 
-    validsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=800, amount=197)
-    validloader = DataLoader(data, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    tensor_class_labels = torch.Tensor(class_labels)
+    tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
 
-    testsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=997, amount=300)
-    testloader = DataLoader(data, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 1)
+
+    dataset = TensorDataset(tensor_data, tensor_labels)
+
+    labels = [i[1] for i in dataset]
+
+    train_size = int(num_samples * 0.7)
+    trainsampler = AESampler(labels, start_from=0, amount=train_size)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    valid_size = int(num_samples * 0.05)
+    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(labels, start_from=(train_size + valid_size))
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    print("Done preparing banana AE dataloader")
 
     return (trainloader, validloader, testloader)
 
 
 def banana_loader(batch_size=256, num_workers=4):
-    data = []
-    count = 0
-    filepath = BANANA_PROCESSED_DATA + '/banana_{}.npy'.format(count)
-    while os.path.isfile(filepath):
-        print(filepath)
-        partial = np.load(filepath)
-        data.extend(partial)
-        count += 1
-        filepath = BANANA_PROCESSED_DATA + '/banana_{}.npy'.format(count)
 
-    labels = [BANANA_LABEL]*len(data)
+    if not os.path.isdir(BANANA_PROCESSED_DATA):
+        print("not dir")
+    dataset = torchvision.datasets.ImageFolder(
+        root=BANANA_PROCESSED_DATA,
+        transform=torchvision.transforms.ToTensor(),
+    )
 
-    data = torch.Tensor(data)
-    print(data.size())
-    labels = torch.Tensor(labels)
-    print(labels.size())
+    data = list(i[0].numpy() for i in dataset)
+    num_samples = len(data)
+    class_labels = [BANANA_LABEL]*num_samples
+
+    # labels = torch.Tensor(class_labels)
+    # print(labels.size())
     # labels = one_hot(labels, ALL_CUSTOM_LABELS)
     # print(labels.size())
 
-    trainsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=0, amount=800)
-    trainloader = DataLoader(data, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    tensor_data = torch.Tensor(data)
+    # tensor_data = tensor_data.view(-1, 28 * 28)
 
-    validsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=800, amount=197)
-    validloader = DataLoader(data, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    tensor_labels = torch.Tensor(data)
+    # tensor_labels = tensor_labels.view(-1, 28*28)
 
-    testsampler = ClassSampler(labels, ALL_CUSTOM_LABELS, start_from=997, amount=300)
-    testloader = DataLoader(data, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    tensor_class_labels = torch.Tensor(class_labels)
+    tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
+
+    tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 1)
+
+    dataset = TensorDataset(tensor_data, tensor_labels)
+
+    labels = [i[1] for i in dataset]
+
+    train_size = int(num_samples*0.7)
+    trainsampler = AESampler(labels, start_from=0, amount=train_size)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    valid_size = int(num_samples*0.05)
+    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(labels, start_from=(train_size + valid_size))
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    print("Done preparing banana AE dataloader")
 
     return (trainloader, validloader, testloader)
+
+
+def banana_and_car_loader(batch_size=256, num_workers=4):
+    if not os.path.isdir(BANANA_PROCESSED_DATA):
+        print("not dir")
+    banana_dataset = torchvision.datasets.ImageFolder(
+        root=BANANA_PROCESSED_DATA,
+        transform=torchvision.transforms.ToTensor(),
+    )
+
+    if not os.path.isdir(CAR_RESIZED_DATA):
+        print("not dir")
+    car_dataset = torchvision.datasets.ImageFolder(
+        root=CAR_RESIZED_DATA,
+        transform=torchvision.transforms.ToTensor(),
+    )
 
 
 def load_AE_MNIST(batch_size=256, num_workers=4):
@@ -157,7 +178,7 @@ def load_AE_MNIST(batch_size=256, num_workers=4):
     testset = dataloader(root=DATA, train=False, download=False, transform=transform_all)
 
     allset = ConcatDataset([trainset, testset])
-    data = list(i[0].numpy().astype(np.float64) for i in allset)
+    data = list(i[0].numpy() for i in allset)
     # np.save(AE_FILE, data)
     # print("SAVED DATA")
         # now that we saved the data, reconstruct the data set
@@ -249,4 +270,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     # car_reshaping()
-    dataset_setup("./data/car/resized", CAR_PROCESSED_DATA, 'car')
+    banana_loader()
