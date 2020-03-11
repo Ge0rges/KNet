@@ -61,6 +61,7 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
             targets = targets.cuda()
 
         inputs = Variable(inputs)
+        model.phase = "BOTH"
         outputs = model(inputs).data
 
         shape = outputs.size()[1]

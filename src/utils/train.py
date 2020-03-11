@@ -30,6 +30,7 @@ def one_hot(targets, classes):
             targets_onehot[i][classes.index(t)] = 1
     return targets_onehot
 
+
 def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False, freeze=None):
     # switch to train or evaluate mode
     if test:
@@ -132,23 +133,34 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         targets = Variable(targets)
 
         # compute output
-        outputs = model(inputs)
+        model.phase = "GENERATE"
+        generate_output = model(inputs)
+
+        model.phase = "ACTION"
+        action_output = model(inputs)
+
         # print("max", np.max(outputs))
         # print("min", np.min(outputs))
         # print("mean", np.mean(outputs))
         # calculate loss
-        loss = criterion(outputs, targets)
+        generate_loss = criterion(generate_output, targets[:, :generate_output.size()[1]])
+        action_loss = criterion(action_output, targets[:, generate_output.size()[1]:])
 
         if penalty is not None:
-            loss = loss + penalty(model)
+            generate_loss = generate_loss + penalty(model)
+            action_loss = action_loss + penalty(model)
 
         # record loss
-        losses.update(loss.data[0], inputs.size(0))
+        losses.update(generate_loss.data[0]+action_loss.data[0], inputs.size(0))
 
         if not test:
             # compute gradient and do SGD step
             optimizer.zero_grad()
-            loss.backward()
+            generate_loss.backward()
+            optimizer.step()
+
+            optimizer.zero_grad()
+            action_loss.backward()
             optimizer.step()
 
         # measure elapsed time

@@ -4,45 +4,26 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, encoder_sizes=(28 * 28, 128, 64, 12, 10), action_sizes=(10, 10, 10, 10), oldWeights=None, oldBiases=None):
+    def __init__(self, sizes={
+        'encoder': (28 * 28, 128, 64, 12, 10),
+        'decoder': (10, 12, 64, 128, 28 * 28),
+        'action': (10, 10, 10, 10)
+    }, oldWeights=None, oldBiases=None):
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
 
         # Encoder
-        encoder_layers = [
-            self.get_layer(encoder_sizes[0], encoder_sizes[1], oldWeights, oldBiases, 0)
-        ]
-
-        for i in range(1, len(encoder_sizes) - 1):
-            encoder_layers.append(nn.ReLU(True))
-            encoder_layers.append(self.get_layer(encoder_sizes[i], encoder_sizes[i + 1], oldWeights, oldBiases, i))
-
+        encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
-        decoder_layers = [
-            self.get_layer(encoder_sizes[-1], encoder_sizes[-2], oldWeights, oldBiases, len(encoder_sizes) - 1)
-        ]
-
-        for i in range(len(encoder_sizes) - 3, -1, -1):
-            decoder_layers.append(nn.ReLU(True))
-            decoder_layers.append(self.get_layer(encoder_sizes[i + 1], encoder_sizes[i], oldWeights, oldBiases, i))
-
+        decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
         decoder_layers.append(nn.Sigmoid())
-
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
-        action_layers = [
-            self.get_layer(action_sizes[0], action_sizes[1], oldWeights, oldBiases, 0)
-        ]
-
-        for i in range(1, len(action_sizes) - 1):
-            nn.ReLU(True)
-            encoder_layers.append(self.get_layer(action_sizes[i], action_sizes[i+1], oldWeights, oldBiases, i))
-
+        action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
         action_layers.append(nn.Softmax())
-
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
@@ -50,12 +31,35 @@ class ActionEncoder(nn.Module):
         x = self.encoder(x)
         y = self.action(x)
 
-        if self.action is 'ACTION':
+        if self.phase is 'ACTION':
             return y
+
         x = self.decoder(x)
-        if self.action is 'GENERATE':
+        if self.phase is 'GENERATE':
             return x
-        return torch.cat([x, y], 1)
+
+        if self.phase is 'BOTH':
+            return torch.cat([x, y], 1)
+
+        raise ReferenceError
+
+    def set_module(self, label, sizes, oldWeights=None, oldBiases=None):
+        sizes = sizes[label]
+
+        if oldWeights:
+            oldWeights = oldWeights[label]
+        if oldBiases:
+            oldBiases = oldBiases[label]
+
+        layers = [
+            self.get_layer(sizes[0], sizes[1], oldWeights, oldBiases, 0)
+        ]
+
+        for i in range(1, len(sizes) - 1):
+            layers.append(nn.ReLU(True))
+            layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
+
+        return layers
 
     def get_layer(self, input, output, init_weights=None, init_biases=None, index=0):
         layer = nn.Linear(input, output)

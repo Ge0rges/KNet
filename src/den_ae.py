@@ -252,28 +252,35 @@ def main_ae():
 
 
 def dynamic_expansion(model, trainloader, validloader, cls, task):
-    sizes, weights, biases, hooks = [], [], [], []
-    for name, param in model.named_parameters():
-        if 'bias' not in name:
-            if len(sizes) == 0:
-                sizes.append(param.data.shape[1])
+    sizes, weights, biases, hooks = {}, {}, {}, []
 
-            weights.append(param.data)
-            sizes.append(param.data.shape[0] + EXPAND_BY_K)
+    modules = get_modules(model)
+    for dict_key, module in modules.items():
+        sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
+        for module_name, param in module:
+            if 'bias' not in module_name:
+                if len(sizes) == 0:
+                    sizes[dict_key].append(param.data.shape[1])
 
-            # Register hook to freeze param
-            active_weights = [False] * (param.data.shape[0] - EXPAND_BY_K)
-            active_weights.extend([True] * EXPAND_BY_K)
-            hook = param.register_hook(freeze_hook(active_weights))
-            hooks.append(hook)
+                weights[dict_key].append(param.data)
+                sizes[dict_key].append(param.data.shape[0] + EXPAND_BY_K)
 
-        elif 'bias' in name:
-            biases.append(param.data)
+                # Register hook to freeze param
+                active_weights = [False] * (param.data.shape[0] - EXPAND_BY_K)
+                active_weights.extend([True] * EXPAND_BY_K)
+                hook = param.register_hook(freeze_hook(active_weights))
+                hooks.append(hook)
 
-    sizes[-1] -= EXPAND_BY_K
+            elif 'bias' in module_name:
+                biases[dict_key].append(param.data)
+            else:
+                return LookupError()
+
+        if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
+            sizes[dict_key][-1] -= EXPAND_BY_K
 
     # TODO: Make module generation dynamic
-    new_model = ActionEncoder(sizes, oldWeights=np.asarray(weights, dtype=object), oldBiases=np.asarray(biases, dtype=object))
+    new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
     optimizer = optim.SGD(
         model.parameters(),
@@ -303,57 +310,61 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     for hook in hooks:
         hook.remove()
 
-    new_biases = []
-    new_weights = []
-    weight_indexes = []
-    added_neurons = []
-    for ((name1, param1), (name2, param2)) in zip(model.named_parameters(), new_model.named_parameters()):
-        if 'bias' in name1:
-            new_layer = []
+    new_modules = get_modules(new_model)
 
-            # Copy over old bias
-            for i in range(param1.data.shape[0]):
-                new_layer.append(float(param2.data[i]))
+    new_biases = {}
+    new_weights = {}
+    new_sizes = {}
+    for ((name1, layers1), (name2, layers2)) in zip(modules, new_modules):
+        weight_indexes = []
+        added_neurons = []
+        for ((label2, param1), (label2, param2)) in zip(layers1, layers2):
+            if 'bias' in name1:
+                new_layer = []
 
-            # Copy over incoming bias for new neuron for previous existing
-            for i in range(param1.data.shape[0], param2.data.shape[0]):
-                if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                # Copy over old bias
+                for i in range(param1.data.shape[0]):
                     new_layer.append(float(param2.data[i]))
 
-            new_biases.append(new_layer)
+                # Copy over incoming bias for new neuron for previous existing
+                for i in range(param1.data.shape[0], param2.data.shape[0]):
+                    if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                        new_layer.append(float(param2.data[i]))
 
-        else:
-            new_layer = []
+                new_biases[name2].append(new_layer)
 
-            # Copy over old neurons
-            for i in range(param1.data.shape[0]):
-                row = []
-                for j in range(param1.data.shape[1]):
-                    row.append(float(param2.data[i, j]))
-                new_layer.append(row)
+            else:
+                new_layer = []
 
-            # Copy over output weights for new neuron for previous existing neuron in the next layer
-            for j in range(param1.data.shape[1], param2.data.shape[1]):
+                # Copy over old neurons
                 for i in range(param1.data.shape[0]):
-                    if j in weight_indexes:
-                        new_layer[i].append(float(param2.data[i, j]))
-
-            # Copy over incoming weights for new neuron for previous existing
-            weight_indexes = []  # Marks neurons with none zero incoming weights
-            for i in range(param1.data.shape[0], param2.data.shape[0]):
-                row = []
-                if float(param2[i].norm(1)) > ZERO_THRESHOLD:
-                    weight_indexes.append(i)
-                    for j in range(param2.data.shape[1]):
+                    row = []
+                    for j in range(param1.data.shape[1]):
                         row.append(float(param2.data[i, j]))
-                new_layer.append(row)
+                    new_layer.append(row)
 
-            new_weights.append(new_layer)
-            added_neurons.append(weight_indexes)
+                # Copy over output weights for new neuron for previous existing neuron in the next layer
+                for j in range(param1.data.shape[1], param2.data.shape[1]):
+                    for i in range(param1.data.shape[0]):
+                        if j in weight_indexes:
+                            new_layer[i].append(float(param2.data[i, j]))
 
-    new_sizes = [sizes[0]]
-    for i, weights in enumerate(added_neurons):
-        new_sizes.append(sizes[i+1] + len(weights))
+                # Copy over incoming weights for new neuron for previous existing
+                weight_indexes = []  # Marks neurons with none zero incoming weights
+                for i in range(param1.data.shape[0], param2.data.shape[0]):
+                    row = []
+                    if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                        weight_indexes.append(i)
+                        for j in range(param2.data.shape[1]):
+                            row.append(float(param2.data[i, j]))
+                    new_layer.append(row)
+
+                new_weights[name2].append(new_layer)
+                added_neurons.append(weight_indexes)
+
+        new_sizes[name2] = [sizes[0]]
+        for i, weights in enumerate(added_neurons):
+            new_sizes[name2].append(sizes[i+1] + len(weights))
 
     return ActionEncoder(new_sizes, oldWeights=np.asarray(new_weights, dtype=object), oldBiases=np.asarray(new_biases, dtype=object))
 
@@ -362,11 +373,10 @@ def get_modules(model):
     modules = {}
 
     for name, param in model.named_parameters():
-        if 'bias' not in name:
-            module = name[0: name.index('.')]
-            if module not in modules.keys():
-                modules[module] = []
-            modules[module].append(param)
+        module = name[0: name.index('.')]
+        if module not in modules.keys():
+            modules[module] = []
+        modules[module].append((name, param))
 
     return modules
 
@@ -390,7 +400,10 @@ def gen_hooks(layers, prev_active=None):
 
     layers = reversed(layers)
 
-    for layer in layers:
+    for name, layer in layers:
+        if 'bias' in name:
+            continue
+
         x_size, y_size = layer.size()
 
         active = [True] * y_size
