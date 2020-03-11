@@ -255,15 +255,15 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     sizes, weights, biases, hooks = {}, {}, {}, []
 
     modules = get_modules(model)
-    for name, module in modules:
-        sizes[name], weights[name], biases[name] = [], [], []
-        for name, param in module:
-            if 'bias' not in name:
+    for dict_key, module in modules.items():
+        sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
+        for module_name, param in module:
+            if 'bias' not in module_name:
                 if len(sizes) == 0:
-                    sizes[name].append(param.data.shape[1])
+                    sizes[dict_key].append(param.data.shape[1])
 
-                weights[name].append(param.data)
-                sizes[name].append(param.data.shape[0] + EXPAND_BY_K)
+                weights[dict_key].append(param.data)
+                sizes[dict_key].append(param.data.shape[0] + EXPAND_BY_K)
 
                 # Register hook to freeze param
                 active_weights = [False] * (param.data.shape[0] - EXPAND_BY_K)
@@ -271,14 +271,16 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
                 hook = param.register_hook(freeze_hook(active_weights))
                 hooks.append(hook)
 
-            elif 'bias' in name:
-                biases[name].append(param.data)
+            elif 'bias' in module_name:
+                biases[dict_key].append(param.data)
             else:
                 return LookupError()
-        sizes[name][-1] -= EXPAND_BY_K
+
+        if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
+            sizes[dict_key][-1] -= EXPAND_BY_K
 
     # TODO: Make module generation dynamic
-    new_model = ActionEncoder(sizes, oldWeights=np.asarray(weights, dtype=object), oldBiases=np.asarray(biases, dtype=object))
+    new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
     optimizer = optim.SGD(
         model.parameters(),
@@ -399,6 +401,9 @@ def gen_hooks(layers, prev_active=None):
     layers = reversed(layers)
 
     for name, layer in layers:
+        if 'bias' in name:
+            continue
+
         x_size, y_size = layer.size()
 
         active = [True] * y_size
