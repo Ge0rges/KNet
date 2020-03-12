@@ -55,8 +55,7 @@ def car_loader(batch_size=256, num_workers=4):
         root=CAR_RESIZED_DATA,
         transform=torchvision.transforms.ToTensor(),
     )
-
-    data = list(i[0].numpy() for i in dataset)
+    data = list(i[0].numpy().astype(np.float64) for i in dataset)
     num_samples = len(data)
     class_labels = [CAR_LABEL] * num_samples
     #
@@ -78,7 +77,6 @@ def car_loader(batch_size=256, num_workers=4):
     tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 1)
 
     dataset = TensorDataset(tensor_data, tensor_labels)
-
     labels = [i[1] for i in dataset]
 
     train_size = int(num_samples * 0.7)
@@ -106,7 +104,7 @@ def banana_loader(batch_size=256, num_workers=4):
         transform=torchvision.transforms.ToTensor(),
     )
 
-    data = list(i[0].numpy() for i in dataset)
+    data = list(i[0].numpy().astype(np.float64) for i in dataset)
     num_samples = len(data)
     class_labels = [BANANA_LABEL]*num_samples
 
@@ -160,6 +158,8 @@ def banana_and_car_loader(batch_size=256, num_workers=4):
         root=CAR_RESIZED_DATA,
         transform=torchvision.transforms.ToTensor(),
     )
+    banana_data = [banana[0].numpy().astype(np.float64) for banana in banana_dataset]
+    car_data = []
 
 
 def load_AE_MNIST(batch_size=256, num_workers=4):
@@ -178,7 +178,7 @@ def load_AE_MNIST(batch_size=256, num_workers=4):
     testset = dataloader(root=DATA, train=False, download=False, transform=transform_all)
 
     allset = ConcatDataset([trainset, testset])
-    data = list(i[0].numpy() for i in allset)
+    data = list(i[0].numpy().astype(np.float64) for i in allset)
     # np.save(AE_FILE, data)
     # print("SAVED DATA")
         # now that we saved the data, reconstruct the data set
@@ -270,4 +270,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     # car_reshaping()
-    banana_loader()
+    car_loader()
