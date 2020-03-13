@@ -259,7 +259,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
         sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
         for module_name, param in module:
             if 'bias' not in module_name:
-                if len(sizes) == 0:
+                if len(sizes[dict_key]) == 0:
                     sizes[dict_key].append(param.data.shape[1])
 
                 weights[dict_key].append(param.data)
@@ -318,6 +318,9 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     for ((name1, layers1), (name2, layers2)) in zip(modules, new_modules):
         weight_indexes = []
         added_neurons = []
+        new_biases[name2] = []
+        new_weights[name2] = []
+        new_sizes[name2] = []
         for ((label2, param1), (label2, param2)) in zip(layers1, layers2):
             if 'bias' in name1:
                 new_layer = []
