@@ -502,6 +502,10 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
             new_neurons = new_layers[key]
 
             for i, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
+                # Add existing neuron back
+                new_layer_weights.append(new_neuron[1])
+                new_layer_biases.append(new_neuron[0])
+
                 # Increment layer size
                 new_layer_size += 1
 
@@ -524,11 +528,6 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                     # Modify new_param  bias to split.
                     new_layer_biases[i] = old_neuron[0]
                     append_to_end_biases.append(0)  # New bias is 0
-
-                else:
-                    # Add existing neuron back
-                    new_layer_weights.append(new_neuron[1])
-                    new_layer_biases.append(new_neuron[0])
 
             # Append the split weights and biases to end of layer
             new_layer_weights.extend(append_to_end_weights)
