@@ -460,7 +460,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
             # Build the key for this layer
             split = new_param_name.split(".")
             assert len(split) == 3  # "action.0.bias"
-            key = split[0] + split[1] # 'action0"
+            key = split[0] + split[1]  # 'action0"
 
             # Construct the neurons
             if "bias" in new_param_name:
@@ -481,9 +481,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
         old_biases = None
         new_biases = None
 
-
-        for key in old_layers.keys():  # For each layer
-            # Rebuild per layer bias and weight tensors
+        # For each layer, rebuild the weight and bias tensors.
+        for key in old_layers.keys():
             new_layer_weights = []
             new_layer_biases = []
             new_layer_size = 0
