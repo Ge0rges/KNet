@@ -482,8 +482,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                     new_layers[key] = []
 
                 for i, new_weights in enumerate(new_param.data):
-                    old_layers[key].append((old_biases[key][i], old_param.data[i]))
-                    new_layers[key].append((new_biases[key][i], new_weights))
+                    old_layers[key].append((old_biases[key][i].data, old_param.data[i]))
+                    new_layers[key].append((new_biases[key][i].data, new_weights))
 
         # No need for these.
         old_biases = None
