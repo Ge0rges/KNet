@@ -231,9 +231,8 @@ class l1l2_penalty(object):
     def l1(self, new_model):
         penalty = 0
         for (name, param) in new_model.named_parameters():
-            if 'bias' in name:
-                continue
-            penalty += param.norm(1)
+            if 'bias' not in name:
+                penalty += param.norm(1)
 
         return self.l1_coeff * penalty
 
@@ -248,4 +247,5 @@ class l1l2_penalty(object):
                 for j in range(param2.data.shape[1]):
                     row[j] = param2.data[i, j]
                 penalty += row.norm(2)
+
         return self.l2_coeff * penalty
