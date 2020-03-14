@@ -549,7 +549,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                 sizes[dict_key][-1] -= len(append_to_end_weights)
 
     # How many split?
-    print("# Number of neurons split: %d" % suma)l
+    print("# Number of neurons split: %d" % suma)
 
     # Be efficient
     if suma == 0:
