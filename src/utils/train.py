@@ -186,7 +186,7 @@ def save_checkpoint(state, path, is_best = False):
 
 
 class l2_penalty(object):
-    def __init__(self, model, coeff = 5e-2):
+    def __init__(self, model, coeff=5e-2):
         self.old_model = model
         self.coeff = coeff
 
@@ -237,6 +237,7 @@ class l1l2_penalty(object):
             for i in range(param1.data.shape[0], param2.data.shape[0]):
                 for j in range(param2.data.shape[1]):
                     penalty += param2[i, j].norm(1)
+
             for j in range(param1.data.shape[1], param2.data.shape[1]):
                 for i in range(param1.data.shape[0]):
                     penalty += param2[i, j].norm(1)
