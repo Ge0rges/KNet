@@ -4,9 +4,6 @@ import shutil
 import random
 
 import torch
-from torch import nn
-import numpy as np
-from src.models import ActionEncoder, FeedForward
 from torch.autograd import Variable
 from progress.bar import Bar
 
@@ -124,7 +121,6 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
     for batch_idx, (inputs, targets) in enumerate(batchloader):
         # measure data loading time
         data_time.update(time.time() - end)
-
         if use_cuda:
             inputs = inputs.cuda()
             targets = targets.cuda()
