@@ -480,11 +480,11 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                     new_layer_weights_data[i] = old_param.data[i]
 
             for i in split_neurons:
-                old_bias = old_module[0][1][i]
-                new_bias = new_module[0][1][i]
+                old_bias = old_module[0][1].data[i]
+                new_bias = new_module[0][1].data[i]
 
                 # Modify new+param to split.
-                new_layer_bias_data = torch.cat([new_module[0].data, new_bias.data], dim=0)
+                new_layer_bias_data = torch.cat([new_module[0][1].data, new_bias.data], dim=0)
                 new_layer_bias_data[i] = old_bias
 
             # Update dicts
