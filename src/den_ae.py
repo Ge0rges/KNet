@@ -503,7 +503,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
 
             for i, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
                 # Add existing neuron back
-                new_layer_weights.append(new_neuron[1])
+                new_layer_weights.append(new_neuron[1].tolist())
                 new_layer_biases.append(new_neuron[0])
 
                 # Increment layer size
@@ -523,7 +523,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
 
                     # Modify new_param weight to split
                     new_layer_weights[i] = old_neuron[1]
-                    append_to_end_weights.append(torch.rand(len(new_neuron[1]), 1))  # New weights are random
+                    random_weights = torch.rand(len(new_neuron[1]), 1)
+                    append_to_end_weights.append(random_weights.tolist())  # New weights are random
 
                     # Modify new_param  bias to split.
                     new_layer_biases[i] = old_neuron[0]
