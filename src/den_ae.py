@@ -446,11 +446,11 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
 
     old_modules = get_modules(old_model)
     new_modules = get_modules(new_model)
-    for _, old_module, dict_key, new_module, in zip(old_modules.items(), new_modules.items()):
+    for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
 
         sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
-        for old_module_name, old_param, new_module_name, new_param in zip(old_module, new_module):
+        for (old_module_name, old_param), (new_module_name, new_param) in zip(old_module, new_module):
             new_layer_weights_data = new_param.data
             new_layer_bias_data = new_param.data
             k = 0
