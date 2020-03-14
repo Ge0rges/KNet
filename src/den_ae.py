@@ -428,9 +428,9 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                     suma += 1
                     new_layer_size += 1  # Increment again because added neuron
 
-                    # Need that first size
+                    # Need input size
                     if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(len(new_neuron[1]))  # Double check
+                        sizes[dict_key].append(len(new_neuron[1]))
 
                     # Modify new_param weight to split
                     new_layer_weights[i] = old_neuron[1]
