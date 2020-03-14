@@ -280,97 +280,8 @@ def dynamic_expansion(model, trainloader, validloader, cls):
         if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
             sizes[dict_key][-1] -= EXPAND_BY_K
 
-    # TODO: Make module generation dynamic
-    new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
-
-    optimizer = optim.SGD(
-        model.parameters(),
-        lr=LEARNING_RATE,
-        momentum=MOMENTUM,
-        weight_decay=1e-4
-    )
-
-    learning_rate = LR_DROP
-    criterion = nn.BCELoss()
-
-    for epoch in range(MAX_EPOCHS):
-
-        # decay learning rate
-        if (epoch + 1) % EPOCHS_DROP == 0:
-            learning_rate *= LR_DROP
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = learning_rate
-
-        print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
-
-        penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
-        train_loss = trainAE(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, optimizer=optimizer, use_cuda=CUDA)
-        test_loss = trainAE(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True, use_cuda=CUDA)
-
-    # Remove hooks
-    for hook in hooks:
-        hook.remove()
-
-    new_modules = get_modules(new_model)
-
-    new_biases = {}
-    new_weights = {}
-    new_sizes = {}
-    for ((name1, layers1), (name2, layers2)) in zip(modules.items(), new_modules.items()):
-        weight_indexes = []
-        added_neurons = []
-        new_biases[name2] = []
-        new_weights[name2] = []
-        new_sizes[name2] = []
-        for ((label1, param1), (label2, param2)) in zip(layers1, layers2):
-            if 'bias' in label1:
-                new_layer = []
-
-                # Copy over old bias
-                for i in range(param1.data.shape[0]):
-                    new_layer.append(float(param2.data[i]))
-
-                # Copy over incoming bias for new neuron for previous existing
-                for i in range(param1.data.shape[0], param2.data.shape[0]):
-                    if float(param2[i].norm(1)) > ZERO_THRESHOLD:
-                        new_layer.append(float(param2.data[i]))
-
-                new_biases[name2].append(new_layer)
-
-            else:
-                new_layer = []
-
-                # Copy over old neurons
-                for i in range(param1.data.shape[0]):
-                    row = []
-                    for j in range(param1.data.shape[1]):
-                        row.append(float(param2.data[i, j]))
-                    new_layer.append(row)
-
-                # Copy over output weights for new neuron for previous existing neuron in the next layer
-                for j in range(param1.data.shape[1], param2.data.shape[1]):
-                    for i in range(param1.data.shape[0]):
-                        if j in weight_indexes:
-                            new_layer[i].append(float(param2.data[i, j]))
-
-                # Copy over incoming weights for new neuron for previous existing
-                weight_indexes = []  # Marks neurons with none zero incoming weights
-                for i in range(param1.data.shape[0], param2.data.shape[0]):
-                    row = []
-                    if float(param2[i].norm(1)) > ZERO_THRESHOLD:
-                        weight_indexes.append(i)
-                        for j in range(param2.data.shape[1]):
-                            row.append(float(param2.data[i, j]))
-                    new_layer.append(row)
-
-                new_weights[name2].append(new_layer)
-                added_neurons.append(weight_indexes)
-
-        new_sizes[name2] = [sizes[name2][0]]
-        for i, weights in enumerate(added_neurons):
-            new_sizes[name2].append(sizes[name2][i+1] + len(weights))
-
-    return ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
+    # From here, everything taken from DE. #
+    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks)
 
 
 def get_modules(model):
@@ -560,11 +471,15 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
     model = new_model
 
     # From here, everything taken from DE. #
+    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks)
+
+
+def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks):
     # TODO: Make module generation dynamic
     new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
     optimizer = optim.SGD(
-        model.parameters(),
+        new_model.parameters(),
         lr=LEARNING_RATE,
         momentum=MOMENTUM,
         weight_decay=1e-4
