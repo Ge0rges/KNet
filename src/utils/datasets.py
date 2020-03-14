@@ -48,6 +48,25 @@ def car_reshaping(new_size=(640, 480), colors=3):
         count += 1
 
 
+def banana_reshaping(new_size=(640, 480), colors=3):
+    filepath = './data/banana/raw'
+    files = []
+
+    for (dirpath, dirnames, filenames) in os.walk(filepath):
+        print((dirpath, dirnames, filenames))
+        for file in filenames:
+            if file.endswith(".jpg"):
+                files.append(dirpath + "/" + file)
+
+    count = 0
+    for f in files:
+        img = Image.open(f)
+        new_img = img.resize(new_size)
+        new_img.save("./data/banana/processed/1/banana_{}.jpg".format(count))
+        print(count)
+        count += 1
+
+
 def car_loader(batch_size=256, num_workers=4):
     if not os.path.isdir(CAR_RESIZED_DATA):
         print("not dir")
@@ -126,17 +145,17 @@ def banana_loader(batch_size=256, num_workers=4):
 
     dataset = TensorDataset(tensor_data, tensor_labels)
 
-    labels = [i[1] for i in dataset]
+    class_labels = [i[1] for i in dataset]
 
     train_size = int(num_samples*0.7)
-    trainsampler = AESampler(labels, start_from=0, amount=train_size)
+    trainsampler = AESampler(class_labels, start_from=0, amount=train_size)
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
     valid_size = int(num_samples*0.05)
-    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    validsampler = AESampler(class_labels, start_from=train_size, amount=valid_size)
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
 
-    testsampler = AESampler(labels, start_from=(train_size + valid_size))
+    testsampler = AESampler(class_labels, start_from=(train_size + valid_size))
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
     print("Done preparing banana AE dataloader")
@@ -252,4 +271,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     # car_reshaping()
-    car_loader()
+    banana_loader()
