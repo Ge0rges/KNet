@@ -542,15 +542,14 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
             # Register hook to freeze param
             active_weights = [False] * (len(new_layer_weights) - len(append_to_end_weights))
             active_weights.extend([True] * len(append_to_end_weights))
-            hook = new_neurons[0][2].register_hook(freeze_hook(active_weights))  # First new_param, correct? raise error
-            raise NotImplementedError  # look one line above before removing.
+            hook = new_neurons[0][2].register_hook(freeze_hook(active_weights))  # All neurons belong to same param.
             hooks.append(hook)
 
             if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
                 sizes[dict_key][-1] -= len(append_to_end_weights)
 
     # How many split?
-    print("# Number of neurons split: %d" % suma)
+    print("# Number of neurons split: %d" % suma)l
 
     # Be efficient
     if suma == 0:
