@@ -447,67 +447,99 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
     old_modules = get_modules(old_model)
     new_modules = get_modules(new_model)
     for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
-
+        # Initialize the dicts
         sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
-        for (old_module_name, old_param), (new_module_name, new_param) in zip(old_module, new_module):
-            new_layer_weights_data = new_param.data
-            new_layer_bias_data = new_param.data
-            split_neurons = []
-            k = 0
+        # Make  per layer bias/weight pairs
+        old_layers = {} # "{action0": [(bias, weights), ...], ...}
+        new_layers = {}
 
-            for i, new_point in enumerate(new_param.data):
-                if 'bias' in new_module_name:
-                    continue
+        old_biases = {}
+        new_biases = {}
+        for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
+            # Build the key for this layer
+            split = new_param_name.split(".")
+            assert len(split) == 3  # "action.0.bias"
+            key = split[0] + split[1] # 'action0"
 
-                old_point = old_param.data[i]
+            # Construct the neurons
+            if "bias" in new_param_name:
+                new_biases[key] = new_param
+                old_biases[key] = old_param
 
-                diff = old_point - new_point
+            else:
+                # Initialize the keys
+                if key not in old_layers.keys():
+                    old_layers[key] = []
+                    new_layers[key] = []
+
+                for i, new_weights in enumerate(new_param.data):
+                    old_layers[key].append((old_biases[key][i], old_param.data[i]))
+                    new_layers[key].append((new_biases[key][i], new_weights))
+
+        # No need for these.
+        old_biases = None
+        new_biases = None
+
+
+        for key in old_layers.keys():  # For each layer
+            # Rebuild per layer bias and weight tensors
+            new_layer_weights = []
+            new_layer_biases = []
+            new_layer_size = 0
+            append_to_end_weights = []
+            append_to_end_biases = []
+
+            # Get the neurons for this layer
+            old_neurons = old_layers[key]
+            new_neurons = new_layers[key]
+
+            for i, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
+                # Increment layer size
+                new_layer_size += 1
+
+                # Check drift
+                diff = old_neuron[1] - new_neuron[1]
                 drift = diff.norm(2)
 
                 if drift > 0.02:
                     suma += 1
-                    k += 1
+                    new_layer_size += 1  # Increment again because added neuron
+
+                    # Need that first size
                     if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(new_param.data.shape[1])
+                        sizes[dict_key].append(len(new_neuron[1]))  # Double check
 
-                    # Keep track to do  bias later
-                    split_neurons.append(i)
+                    # Modify new_param weight to split
+                    new_layer_weights[i] = old_neuron[1]
+                    append_to_end_weights.append(torch.rand(len(new_neuron[1]), 1))  # New weights are random
 
-                    # Modify new_param to split
-                    reshaped_weight = new_point.unsqueeze(0)
-                    new_layer_weights_data = torch.cat([new_layer_weights_data, reshaped_weight], dim=0)
-                    new_layer_weights_data[i] = old_param.data[i]
+                    # Modify new_param  bias to split.
+                    new_layer_biases[i] = old_neuron[0]
+                    append_to_end_biases.append(0)  # New bias is 0
 
-            for i in split_neurons:
-                old_bias = old_module[0][1].data[i]
-                new_bias = new_module[0][1].data[i]
+                else:
+                    # Add existing neuron back
+                    new_layer_weights.append(new_neuron[1])
+                    new_layer_biases.append(new_neuron[0])
 
-                # Modify new+param to split.
-                new_layer_bias_data = torch.cat([new_module[0][1].data, new_bias.data], dim=0)
-                new_layer_bias_data[i] = old_bias
+            # Append the split weights and biases to end of layer
+            new_layer_weights.extend(append_to_end_weights)
+            new_layer_weights.extend(append_to_end_biases)
 
             # Update dicts
-            if "bias" not in new_module_name:
-                # Add to dict
-                weights[dict_key].append(new_layer_weights_data)
-                sizes[dict_key].append(new_param.data.shape[0] + k)
+            weights[dict_key].append(new_layer_weights)
+            biases[dict_key].append(new_layer_biases)
+            sizes[dict_key].append(new_layer_size)
 
-                # Register hook to freeze param
-                active_weights = [False] * (new_param.data.shape[0] - k)
-                active_weights.extend([True] * 1)
-                hook = new_param.register_hook(freeze_hook(active_weights))
-                hooks.append(hook)
+            # Register hook to freeze param
+            active_weights = [False] * (len(new_layer_weights) - len(append_to_end_weights))
+            active_weights.extend([True] * len(append_to_end_weights))
+            hook = new_param.register_hook(freeze_hook(active_weights))
+            hooks.append(hook)
 
-            elif "bias" in new_module_name:
-                # Add to dict, sizes should have been already or will be modified.
-                biases[dict_key].append(new_layer_bias_data)
-
-            else:
-                raise LookupError()
-
-        if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
-            sizes[dict_key][-1] -= 1
+            if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
+                sizes[dict_key][-1] -= len(append_to_end_weights)
 
     # How many split?
     print("# Number of neurons split: %d" % suma)
@@ -520,7 +552,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
     modules = new_modules
     model = new_model
 
-    ## From here, everything taken from DE.
+    # From here, everything taken from DE. #
     # TODO: Make module generation dynamic
     new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
