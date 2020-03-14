@@ -144,24 +144,6 @@ def banana_loader(batch_size=256, num_workers=4):
     return (trainloader, validloader, testloader)
 
 
-def banana_and_car_loader(batch_size=256, num_workers=4):
-    if not os.path.isdir(BANANA_PROCESSED_DATA):
-        print("not dir")
-    banana_dataset = torchvision.datasets.ImageFolder(
-        root=BANANA_PROCESSED_DATA,
-        transform=torchvision.transforms.ToTensor(),
-    )
-
-    if not os.path.isdir(CAR_RESIZED_DATA):
-        print("not dir")
-    car_dataset = torchvision.datasets.ImageFolder(
-        root=CAR_RESIZED_DATA,
-        transform=torchvision.transforms.ToTensor(),
-    )
-    banana_data = [banana[0].numpy().astype(np.float64) for banana in banana_dataset]
-    car_data = []
-
-
 def load_AE_MNIST(batch_size=256, num_workers=4):
     # if not os.path.isfile(AE_FILE):
     #     if not os.path.isdir(AE_DATA):
