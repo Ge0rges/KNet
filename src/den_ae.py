@@ -225,7 +225,7 @@ def main_ae():
             # Could be train_loss or test_loss
             if train_loss > LOSS_THRESHOLD:
                 print("==> Dynamic Expansion")
-                model = dynamic_expansion(model, trainloader, validloader, cls, t)
+                model = dynamic_expansion(model, trainloader, validloader, cls)
 
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
@@ -482,8 +482,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                     new_layers[key] = []
 
                 for i, new_weights in enumerate(new_param.data):
-                    old_layers[key].append((old_biases[key][i].data, old_param.data[i]))
-                    new_layers[key].append((new_biases[key][i].data, new_weights))
+                    old_layers[key].append((old_biases[key][i].data, old_param.data[i], old_param))
+                    new_layers[key].append((new_biases[key][i].data, new_weights, new_param))
 
         # No need for these.
         old_biases = None
@@ -542,7 +542,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
             # Register hook to freeze param
             active_weights = [False] * (len(new_layer_weights) - len(append_to_end_weights))
             active_weights.extend([True] * len(append_to_end_weights))
-            hook = new_param.register_hook(freeze_hook(active_weights))
+            hook = new_neurons[0][2].register_hook(freeze_hook(active_weights))  # First new_param, correct? raise error
+            raise NotImplementedError  # look one line above before removing.
             hooks.append(hook)
 
             if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
