@@ -417,6 +417,8 @@ def select_neurons(model, task):
 
 
 def split_neurons(old_model, new_model, trainloader, validloader, cls):
+    raise NotImplementedError
+
     old_biases = []
     old_layers = []
     for name, param in old_model.named_parameters():
