@@ -365,7 +365,7 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
                 new_weights[name2].append(new_layer)
                 added_neurons.append(weight_indexes)
 
-        new_sizes[name2] = [sizes[0]]
+        new_sizes[name2] = [sizes[name2]]
         for i, weights in enumerate(added_neurons):
             new_sizes[name2].append(sizes[i+1] + len(weights))
 
