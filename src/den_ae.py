@@ -453,9 +453,13 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
         for (old_module_name, old_param), (new_module_name, new_param) in zip(old_module, new_module):
             new_layer_weights_data = new_param.data
             new_layer_bias_data = new_param.data
+            split_neurons = []
             k = 0
 
             for i, new_point in enumerate(new_param.data):
+                if 'bias' in new_module_name:
+                    continue
+
                 old_point = old_param.data[i]
 
                 diff = old_point - new_point
@@ -464,23 +468,26 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                 if drift > 0.02:
                     suma += 1
                     k += 1
-                    if 'bias' not in new_module_name:
-                        if len(sizes[dict_key]) == 0:
-                            sizes[dict_key].append(new_param.data.shape[1])
+                    if len(sizes[dict_key]) == 0:
+                        sizes[dict_key].append(new_param.data.shape[1])
 
-                        # Modify new_param to split
-                        reshaped_weight = new_point.unsqueeze(0)
-                        new_layer_weights_data = torch.cat([new_layer_weights_data, reshaped_weight], dim=0)
-                        new_layer_weights_data[i] = old_param.data[i]
+                    # Keep track to do  bias later
+                    split_neurons.append(i)
 
-                    elif 'bias' in new_module_name:
-                        # Modify new+param to split.
-                        new_layer_bias_data = torch.cat([new_param.data, new_point.data], dim=0)
-                        new_layer_bias_data[i] = old_param.data[0]
+                    # Modify new_param to split
+                    reshaped_weight = new_point.unsqueeze(0)
+                    new_layer_weights_data = torch.cat([new_layer_weights_data, reshaped_weight], dim=0)
+                    new_layer_weights_data[i] = old_param.data[i]
 
-                    else:
-                        raise LookupError()
+            for i in split_neurons:
+                old_bias = old_module[0][1][i]
+                new_bias = new_module[0][1][i]
 
+                # Modify new+param to split.
+                new_layer_bias_data = torch.cat([new_module[0].data, new_bias.data], dim=0)
+                new_layer_bias_data[i] = old_bias
+
+            # Update dicts
             if "bias" not in new_module_name:
                 # Add to dict
                 weights[dict_key].append(new_layer_weights_data)
