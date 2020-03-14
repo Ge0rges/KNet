@@ -315,14 +315,14 @@ def dynamic_expansion(model, trainloader, validloader, cls, task):
     new_biases = {}
     new_weights = {}
     new_sizes = {}
-    for ((name1, layers1), (name2, layers2)) in zip(modules, new_modules):
+    for ((name1, layers1), (name2, layers2)) in zip(modules.items(), new_modules.items()):
         weight_indexes = []
         added_neurons = []
         new_biases[name2] = []
         new_weights[name2] = []
         new_sizes[name2] = []
-        for ((label2, param1), (label2, param2)) in zip(layers1, layers2):
-            if 'bias' in name1:
+        for ((label1, param1), (label2, param2)) in zip(layers1, layers2):
+            if 'bias' in label1:
                 new_layer = []
 
                 # Copy over old bias
