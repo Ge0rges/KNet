@@ -202,19 +202,35 @@ def load_AE_MNIST(batch_size=256, num_workers=4):
 
     dataset = TensorDataset(tensor_data, tensor_labels)
 
+    check_for_nan(dataset)
+
     labels = [i[1] for i in dataset]
     trainsampler = AESampler(labels, start_from=0, amount=1000)
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    check_for_nan(trainloader)
 
     validsampler = AESampler(labels, start_from=1000, amount=200)
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    check_for_nan(validloader)
 
     testsampler = AESampler(labels, start_from=1200, amount=5000)
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    check_for_nan(testloader)
 
     print("Done preparing AE dataloader")
 
     return (trainloader, validloader, testloader)
+
+
+def check_for_nan(dataset):
+    print("checking for nan input")
+    found = 0
+    for idx, sample in enumerate(dataset):
+        if sample != sample:
+            found += 1
+            print("sample #{} contains nan".format(idx))
+    if found > 0:
+        print("found a total of {} tensors with nan".format(found))
 
 
 def load_MNIST(batch_size = 256, num_workers = 4):
@@ -271,4 +287,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     # car_reshaping()
-    banana_loader()
+    check_for_nan(torch.Tensor([1, 2, np.nan]))
+    load_AE_MNIST()
