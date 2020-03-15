@@ -1,0 +1,130 @@
+from __future__ import print_function, absolute_import
+
+import torch
+from torch.autograd import Variable
+import numpy as np
+
+__all__ = ['accuracy', 'calc_avg_AUROC', 'AUROC']
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
+    """Calculates average of the AUROC for selected classes in the dataset
+    """
+    sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
+    sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
+
+    for batch_idx, (inputs, targets) in enumerate(batchloader):
+
+        if use_cuda:
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+
+        inputs = Variable(inputs)
+        outputs = model(inputs).data
+
+        sum_targets = torch.cat((sum_targets, targets), 0)
+        sum_outputs = torch.cat((sum_outputs, outputs), 0)
+
+    sum_area = 0
+    for cls in classes:
+        scores = sum_outputs[:, all_classes.index(cls)]
+        sum_area += AUROC(scores.cpu().numpy(), (sum_targets == cls).cpu().numpy())
+    
+    return (sum_area / len(classes))
+
+def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
+    """Calculates average of the AUROC for the autoencoder
+    """
+
+    # TODO: still doesn't work
+    sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
+    sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
+
+    for batch_idx, (inputs, targets) in enumerate(batchloader):
+
+        if use_cuda:
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+
+        inputs = Variable(inputs)
+        model.phase = "BOTH"
+        outputs = model(inputs).data
+
+        shape = outputs.size()[1]
+        outputs = outputs[:, shape - len(all_classes):]
+
+        targets = targets.long()
+        new_targets = []
+        targets = targets[:, shape - len(all_classes):]
+        for j in range(targets.size()[0]):
+            found = False
+            for i in range(len(all_classes)):
+                if targets[j, i] == 1 and not found:
+                    new_targets.append(i)
+                    found = True
+        new_targets = torch.LongTensor(new_targets)
+
+        sum_targets = torch.cat((sum_targets, new_targets), 0)
+        sum_outputs = torch.cat((sum_outputs, outputs), 0)
+
+    sum_area = 0
+    for cls in classes:
+        scores = sum_outputs[:, all_classes.index(cls)]
+        sum_area += AUROC(scores.cpu().numpy(), (sum_targets == cls).cpu().numpy())
+
+    return (sum_area / len(classes))
+
+def AUROC(scores, targets):
+    """Calculates the Area Under the Curve.
+    Args:
+        scores: Probabilities that target should be possitively classified.
+        targets: 0 for negative, and 1 for positive examples.
+    """
+    # case when number of elements added are 0
+    if scores.shape[0] == 0:
+        return 0.5
+    
+    # sorting the arrays
+    scores, sortind = torch.sort(torch.from_numpy(
+        scores), dim=0, descending=True)
+    scores = scores.numpy()
+    sortind = sortind.numpy()
+
+    # creating the roc curve
+    tpr = np.zeros(shape=(scores.size + 1), dtype=np.float64)
+    fpr = np.zeros(shape=(scores.size + 1), dtype=np.float64)
+
+    for i in range(1, scores.size + 1):
+        if targets[sortind[i - 1]] == 1:
+            tpr[i] = tpr[i - 1] + 1
+            fpr[i] = fpr[i - 1]
+        else:
+            tpr[i] = tpr[i - 1]
+            fpr[i] = fpr[i - 1] + 1
+
+    tpr /= (targets.sum() * 1.0)
+    fpr /= ((targets - 1.0).sum() * -1.0)
+
+    # calculating area under curve using trapezoidal rule
+    n = tpr.shape[0]
+    h = fpr[1:n] - fpr[0:n - 1]
+    sum_h = np.zeros(fpr.shape)
+    sum_h[0:n - 1] = h
+    sum_h[1:n] += h
+    area = (sum_h * tpr).sum() / 2.0
+
+    return area
