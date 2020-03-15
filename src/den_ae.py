@@ -435,7 +435,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                     # Modify new_param weight to split
                     new_layer_weights[i] = old_neuron[1].tolist()
                     random_weights = torch.rand(1, len(new_neuron[1]))
-                    append_to_end_weights.append(random_weights.tolist())  # New weights are random
+                    append_to_end_weights.append(random_weights.tolist()[0])  # New weights are random
 
                     # Modify new_param  bias to split.
                     new_layer_biases[i] = old_neuron[0]
