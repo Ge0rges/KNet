@@ -362,24 +362,24 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
         sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
         # Make  per layer bias/weight pairs
-        old_layers = {}  # "{action0": [(bias, weights), ...], ...}
-        new_layers = {}
+        old_layers = []  # "{action0": [(bias, weights), ...], ...}
+        new_layers = []
 
-        old_biases = {}
-        new_biases = {}
+        old_biases = []
+        new_biases = []
+
+        if dict_key is 'action':
+            print()
 
         # First get all biases.
         for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
-            # Build the key for this layer
-            split = new_param_name.split(".")
-            assert len(split) == 3  # "action.0.bias"
-            key = split[0] + split[1]  # 'action0"
 
             # Construct the neurons
             if "bias" in new_param_name:
-                new_biases[key] = new_param
-                old_biases[key] = old_param
+                new_biases.append(new_param)
+                old_biases.append(old_param)
 
+        index = 0
         # Then match with weights.
         for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
             if "bias" not in new_param_name:
@@ -388,20 +388,21 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                 assert len(split) == 3  # "action.0.bias"
                 key = split[0] + split[1]  # 'action0"
 
-                if key not in old_layers.keys():
-                    old_layers[key] = []
-                    new_layers[key] = []
+                old_layers.append([])
+                new_layers.append([])
 
                 for i, new_weights in enumerate(new_param.data):
-                    old_layers[key].append((old_biases[key][i].data, old_param.data[i], old_param))
-                    new_layers[key].append((new_biases[key][i].data, new_weights, new_param))
+                    old_layers[index].append((old_biases[index][i].data, old_param.data[i], old_param))
+                    new_layers[index].append((new_biases[index][i].data, new_weights, new_param))
+
+                index += 1
 
         # No need for these.
         old_biases = None
         new_biases = None
 
         # For each layer, rebuild the weight and bias tensors.
-        for key in old_layers.keys():
+        for index in range(len(old_layers)):
             new_layer_weights = []
             new_layer_biases = []
             new_layer_size = 0
@@ -409,8 +410,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
             append_to_end_biases = []
 
             # Get the neurons for this layer
-            old_neurons = old_layers[key]
-            new_neurons = new_layers[key]
+            old_neurons = old_layers[index]
+            new_neurons = new_layers[index]
 
             # For each neuron add the weights and biases back, check drift.
             for i, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
