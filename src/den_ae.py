@@ -379,42 +379,28 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                 new_biases.append(new_param)
                 old_biases.append(old_param)
 
-        index = 0
         # Then match with weights.
+        weight_index = 0
         for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
             if "bias" not in new_param_name:
-                # Build the key for this layer
-                split = new_param_name.split(".")
-                assert len(split) == 3  # "action.0.bias"
-                key = split[0] + split[1]  # 'action0"
-
                 old_layers.append([])
                 new_layers.append([])
 
-                for i, new_weights in enumerate(new_param.data):
-                    old_layers[index].append((old_biases[index][i].data, old_param.data[i], old_param))
-                    new_layers[index].append((new_biases[index][i].data, new_weights, new_param))
-
-                index += 1
-
-        # No need for these.
-        old_biases = None
-        new_biases = None
+                for j, new_weights in enumerate(new_param.data):
+                    old_layers[weight_index].append((old_biases[weight_index].data[j], old_param.data[j], old_param))
+                    new_layers[weight_index].append((new_biases[weight_index].data[j], new_weights, new_param))
+                weight_index += 1
 
         # For each layer, rebuild the weight and bias tensors.
-        for index in range(len(old_layers)):
+        for old_neurons, new_neurons in zip(old_layers, new_layers):
             new_layer_weights = []
             new_layer_biases = []
             new_layer_size = 0
             append_to_end_weights = []
             append_to_end_biases = []
 
-            # Get the neurons for this layer
-            old_neurons = old_layers[index]
-            new_neurons = new_layers[index]
-
             # For each neuron add the weights and biases back, check drift.
-            for i, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
+            for j, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
                 # Add existing neuron back
                 new_layer_weights.append(new_neuron[1].tolist())
                 new_layer_biases.append(new_neuron[0])
@@ -435,12 +421,12 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                     new_layer_size += 1  # Increment again because added neuron
 
                     # Modify new_param weight to split
-                    new_layer_weights[i] = old_neuron[1].tolist()
+                    new_layer_weights[j] = old_neuron[1].tolist()
                     random_weights = torch.rand(1, len(new_neuron[1]))
                     append_to_end_weights.append(random_weights.tolist()[0])  # New weights are random
 
                     # Modify new_param  bias to split.
-                    new_layer_biases[i] = old_neuron[0]
+                    new_layer_biases[j] = old_neuron[0]
                     append_to_end_biases.append(0)  # New bias is 0
 
             # Append the split weights and biases to end of layer
