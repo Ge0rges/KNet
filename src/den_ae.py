@@ -443,7 +443,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
 
             # Append the split weights and biases to end of layer
             new_layer_weights.extend(append_to_end_weights)
-            new_layer_weights.extend(append_to_end_biases)
+            new_layer_biases.extend(append_to_end_biases)
 
             # Update dicts
             weights[dict_key].append(new_layer_weights)
