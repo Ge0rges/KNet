@@ -412,6 +412,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
             old_neurons = old_layers[key]
             new_neurons = new_layers[key]
 
+            # For each neuron add the weights and biases back, check drift.
             for i, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
                 # Add existing neuron back
                 new_layer_weights.append(new_neuron[1].tolist())
@@ -420,6 +421,10 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                 # Increment layer size
                 new_layer_size += 1
 
+                # Need input size
+                if len(sizes[dict_key]) == 0:
+                    sizes[dict_key].append(len(new_neuron[1]))
+
                 # Check drift
                 diff = old_neuron[1] - new_neuron[1]
                 drift = diff.norm(2)
@@ -427,10 +432,6 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
                 if drift > 0.02:
                     suma += 1
                     new_layer_size += 1  # Increment again because added neuron
-
-                    # Need input size
-                    if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(len(new_neuron[1]))
 
                     # Modify new_param weight to split
                     new_layer_weights[i] = old_neuron[1].tolist()
