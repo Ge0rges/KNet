@@ -466,12 +466,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
     if suma == 0:
         return new_model
 
-    # Some var name changes for DE code.
-    modules = new_modules
-    model = new_model
-
     # From here, everything taken from DE. #
-    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks)
+    return train_new_neurons(new_model, new_modules, cls, trainloader, validloader, sizes, weights, biases, hooks)
 
 
 def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks):
