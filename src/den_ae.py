@@ -22,7 +22,7 @@ CHECKPOINT = "./checkpoints/mnist-den"
 
 # BATCH
 BATCH_SIZE = 256
-NUM_WORKERS = 4
+NUM_WORKERS = 0
 
 # SGD
 LEARNING_RATE = 0.01
