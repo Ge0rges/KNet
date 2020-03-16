@@ -3,8 +3,11 @@ from __future__ import print_function, absolute_import
 import torch
 from torch.autograd import Variable
 import numpy as np
+from sklearn.metrics import roc_curve, auc, roc_auc_score
+from sklearn.preprocessing import label_binarize
 
 __all__ = ['accuracy', 'calc_avg_AUROC', 'AUROC']
+
 
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
@@ -20,6 +23,7 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
 
 def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
     """Calculates average of the AUROC for selected classes in the dataset
@@ -46,6 +50,7 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_class
     
     return (sum_area / len(classes))
 
+
 def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
     """Calculates average of the AUROC for the autoencoder
     """
@@ -54,39 +59,31 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
     sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
     sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
 
-    for batch_idx, (inputs, targets) in enumerate(batchloader):
+    for idx, (input, target) in enumerate(batchloader):
+        target = target[:, target.size()[1] - len(all_classes):]
+        target = label_binarize(target, all_classes)
+        input = Variable(input)
+        model.phase = "ACTION"
+        output = model(input).data
 
-        if use_cuda:
-            inputs = inputs.cuda()
-            targets = targets.cuda()
+        target = torch.LongTensor(target)
+        sum_targets = torch.cat((sum_targets, target), 0)
+        sum_outputs = torch.cat((sum_outputs, output), 0)
 
-        inputs = Variable(inputs)
-        model.phase = "BOTH"
-        outputs = model(inputs).data
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(len(classes)):
+        fpr[i], tpr[i], _ = roc_curve(sum_targets[:, i], sum_outputs[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
 
-        shape = outputs.size()[1]
-        outputs = outputs[:, shape - len(all_classes):]
+    fpr["micro"], tpr["micro"], _ = roc_curve(np.ravel(sum_targets.numpy()), np.ravel(sum_outputs.numpy()))
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 
-        targets = targets.long()
-        new_targets = []
-        targets = targets[:, shape - len(all_classes):]
-        for j in range(targets.size()[0]):
-            found = False
-            for i in range(len(all_classes)):
-                if targets[j, i] == 1 and not found:
-                    new_targets.append(i)
-                    found = True
-        new_targets = torch.LongTensor(new_targets)
+    return roc_auc
 
-        sum_targets = torch.cat((sum_targets, new_targets), 0)
-        sum_outputs = torch.cat((sum_outputs, outputs), 0)
+    # return (sum_area / len(classes))
 
-    sum_area = 0
-    for cls in classes:
-        scores = sum_outputs[:, all_classes.index(cls)]
-        sum_area += AUROC(scores.cpu().numpy(), (sum_targets == cls).cpu().numpy())
-
-    return (sum_area / len(classes))
 
 def AUROC(scores, targets):
     """Calculates the Area Under the Curve.
