@@ -115,7 +115,7 @@ def main_ae():
             learning_rate = LEARNING_RATE
             # epochs = 10
 
-            for epoch in range(MAX_EPOCHS * 5):
+            for epoch in range(MAX_EPOCHS):
 
                 # decay learning rate
                 if (epoch + 1) % EPOCHS_DROP == 0:
