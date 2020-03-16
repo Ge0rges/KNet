@@ -139,24 +139,22 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         # print("min", np.min(outputs))
         # print("mean", np.mean(outputs))
         # calculate loss
-        generate_loss = criterion(generate_output, targets[:, :generate_output.size()[1]])
+        generate_loss = torch.nn.MSELoss()(generate_output, targets[:, :generate_output.size()[1]])
         action_loss = criterion(action_output, targets[:, generate_output.size()[1]:])
 
         if penalty is not None:
             generate_loss = generate_loss + penalty(model)
             action_loss = action_loss + penalty(model)
 
+        total_loss = generate_loss + action_loss
+
         # record loss
-        losses.update(generate_loss.data[0]+action_loss.data[0], inputs.size(0))
+        losses.update(total_loss.data[0], inputs.size(0))
 
         if not test:
             # compute gradient and do SGD step
             optimizer.zero_grad()
-            generate_loss.backward()
-            optimizer.step()
-
-            optimizer.zero_grad()
-            action_loss.backward()
+            total_loss.backward()
             optimizer.step()
 
         # measure elapsed time
@@ -164,13 +162,16 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         end = time.time()
 
         # plot progress
-        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
+        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f} | Gen Loss: {gen_loss: .4f} | Action Loss: {action_loss: .4f}'.format(
             batch=batch_idx + 1,
             size=len(batchloader),
             data=data_time.avg,
             bt=batch_time.avg,
             total=bar.elapsed_td,
-            loss=losses.avg)
+            loss=losses.avg,
+            gen_loss=float(generate_loss),
+            action_loss=float(action_loss)
+        )
         bar.next()
 
     bar.finish()

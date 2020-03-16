@@ -25,16 +25,16 @@ BATCH_SIZE = 256
 NUM_WORKERS = 0
 
 # SGD
-LEARNING_RATE = 0.01
+LEARNING_RATE = 1
 MOMENTUM = 0.9
 WEIGHT_DECAY = 0
 
 # Step Decay
-LR_DROP = 0.5
+LR_DROP = 0.75
 EPOCHS_DROP = 20
 
 # MISC
-MAX_EPOCHS = 20
+MAX_EPOCHS = 40
 CUDA = False
 
 # L1 REGULARIZATION
@@ -115,7 +115,7 @@ def main_ae():
             learning_rate = LEARNING_RATE
             # epochs = 10
 
-            for epoch in range(MAX_EPOCHS):
+            for epoch in range(MAX_EPOCHS * 5):
 
                 # decay learning rate
                 if (epoch + 1) % EPOCHS_DROP == 0:

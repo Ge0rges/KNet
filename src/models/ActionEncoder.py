@@ -5,9 +5,9 @@ import numpy as np
 
 class ActionEncoder(nn.Module):
     def __init__(self, sizes={
-        'encoder': (28 * 28, 128, 64, 12, 10),
+        'encoder': (28 * 28, 312, 128, 10),
         'decoder': (10, 12, 64, 128, 28 * 28),
-        'action': (10, 10, 10, 10)
+        'action': (10, 10, 10)
     }, oldWeights=None, oldBiases=None):
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
@@ -18,7 +18,6 @@ class ActionEncoder(nn.Module):
 
         # Decoder
         decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        decoder_layers.append(nn.Sigmoid())
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
