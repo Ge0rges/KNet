@@ -14,28 +14,27 @@ from misc import ClassSampler, GaussianNoise, AESampler
 __all__ = ['load_MNIST', 'load_CIFAR']
 
 DATA = './data'
-AE_DATA = './data/AE'
 # only contains the data since the labels are in fact just the data points themselves for the autoencodeur
-AE_FILE = AE_DATA + '/data.csv.npy'
 ALL_CLASSES = range(10)
 
-MAX_FILE_SIZE = 5000000000
-
-BANANA_PROCESSED_DATA = './data/banana/processed'
+BANANA_RESIZED_DATA = './data/banana/resized'
 CAR_RESIZED_DATA = './data/car/resized'
+BANANACAR_RESIZED_DATA = './data/bananacar/resized'
+
 BANANA_LABEL = 1
 CAR_LABEL = 2
-ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL]
+BANANACAR_LABEL = 3
+ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL, BANANACAR_LABEL]
 
 
-def car_reshaping(new_size=(640, 480), colors=3):
-    filepath = './data/car/raw/'
+def dataset_reshaping(name, new_size=(640, 480), colors=3):
+    filepath = './data/{}/raw/'.format(name)
     files = []
 
     for (dirpath, dirnames, filenames) in os.walk(filepath):
         print((dirpath, dirnames, filenames))
         for file in filenames:
-            if file.endswith(".jpg"):
+            if file.endswith(".jpg") or file.endswith(".jfif"):
                 files.append(dirpath + "/" + file)
         # files.extend(filenames)
 
@@ -43,26 +42,7 @@ def car_reshaping(new_size=(640, 480), colors=3):
     for f in files:
         img = Image.open(f)
         new_img = img.resize(new_size)
-        new_img.save("./data/car/resized/1/car_{}.jpg".format(count))
-        print(count)
-        count += 1
-
-
-def banana_reshaping(new_size=(640, 480), colors=3):
-    filepath = './data/banana/raw'
-    files = []
-
-    for (dirpath, dirnames, filenames) in os.walk(filepath):
-        print((dirpath, dirnames, filenames))
-        for file in filenames:
-            if file.endswith(".jpg"):
-                files.append(dirpath + "/" + file)
-
-    count = 0
-    for f in files:
-        img = Image.open(f)
-        new_img = img.resize(new_size)
-        new_img.save("./data/banana/processed/1/banana_{}.jpg".format(count))
+        new_img.save("./data/{}/resized/1/{}_{}.jpg".format(name, name, count))
         print(count)
         count += 1
 
@@ -77,18 +57,10 @@ def car_loader(batch_size=256, num_workers=4):
     data = list(i[0].numpy().astype(np.float64) for i in dataset)
     num_samples = len(data)
     class_labels = [CAR_LABEL] * num_samples
-    #
-    # data = torch.Tensor(data)
-    # print(data.size())
-    # labels = torch.Tensor(labels)
-    # print(labels.size())
-    # labels = one_hot(labels, ALL_CUSTOM_LABELS)
-    # print(labels.size())
+
     tensor_data = torch.Tensor(data)
-    # tensor_data = tensor_data.view(-1, 28 * 28)
 
     tensor_labels = torch.Tensor(data)
-    # tensor_labels = tensor_labels.view(-1, 28*28)
 
     tensor_class_labels = torch.Tensor(class_labels)
     tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
@@ -109,34 +81,26 @@ def car_loader(batch_size=256, num_workers=4):
     testsampler = AESampler(labels, start_from=(train_size + valid_size))
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
-    print("Done preparing banana AE dataloader")
+    print("Done preparing car AE dataloader")
 
     return (trainloader, validloader, testloader)
 
 
 def banana_loader(batch_size=256, num_workers=4):
 
-    if not os.path.isdir(BANANA_PROCESSED_DATA):
+    if not os.path.isdir(BANANA_RESIZED_DATA):
         print("not dir")
-    dataset = torchvision.datasets.ImageFolder(
-        root=BANANA_PROCESSED_DATA,
-        transform=torchvision.transforms.ToTensor(),
+    dataset = torchvision.datasets.ImageFolder(BANANA_RESIZED_DATA,
+                                               transform=torchvision.transforms.ToTensor(),
     )
 
     data = list(i[0].numpy().astype(np.float64) for i in dataset)
     num_samples = len(data)
     class_labels = [BANANA_LABEL]*num_samples
 
-    # labels = torch.Tensor(class_labels)
-    # print(labels.size())
-    # labels = one_hot(labels, ALL_CUSTOM_LABELS)
-    # print(labels.size())
-
     tensor_data = torch.Tensor(data)
-    # tensor_data = tensor_data.view(-1, 28 * 28)
 
     tensor_labels = torch.Tensor(data)
-    # tensor_labels = tensor_labels.view(-1, 28*28)
 
     tensor_class_labels = torch.Tensor(class_labels)
     tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
@@ -163,10 +127,50 @@ def banana_loader(batch_size=256, num_workers=4):
     return (trainloader, validloader, testloader)
 
 
+def bananacar_loader(batch_size=256, num_workers=4):
+
+    if not os.path.isdir(BANANACAR_RESIZED_DATA):
+        print("not dir")
+    dataset = torchvision.datasets.ImageFolder(
+        root=BANANACAR_RESIZED_DATA,
+        transform=torchvision.transforms.ToTensor(),
+    )
+
+    data = list(i[0].numpy().astype(np.float64) for i in dataset)
+    num_samples = len(data)
+    class_labels = [BANANACAR_LABEL]*num_samples
+
+    tensor_data = torch.Tensor(data)
+
+    tensor_labels = torch.Tensor(data)
+
+    tensor_class_labels = torch.Tensor(class_labels)
+    tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
+
+    tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 1)
+
+    dataset = TensorDataset(tensor_data, tensor_labels)
+
+    class_labels = [i[1] for i in dataset]
+
+    train_size = int(num_samples*0.7)
+    trainsampler = AESampler(class_labels, start_from=0, amount=train_size)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    valid_size = int(num_samples*0.05)
+    validsampler = AESampler(class_labels, start_from=train_size, amount=valid_size)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(class_labels, start_from=(train_size + valid_size))
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    print("Done preparing bananacar AE dataloader")
+
+    return (trainloader, validloader, testloader)
+
+
 def load_AE_MNIST(batch_size=256, num_workers=4):
-    # if not os.path.isfile(AE_FILE):
-    #     if not os.path.isdir(AE_DATA):
-    #         os.makedirs(AE_DATA)
+
     dataloader = datasets.MNIST
 
     transform_all = transforms.Compose([
@@ -286,6 +290,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    # car_reshaping()
-    check_for_nan(torch.Tensor([1, 2, np.nan]))
-    load_AE_MNIST()
+    dataset_reshaping("bananacar")
