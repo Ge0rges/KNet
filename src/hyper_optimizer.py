@@ -5,7 +5,7 @@ import random
 SEED = 20
 random.seed(SEED)
 
-def optimize_hypers(generation_size=2, epochs=2):
+def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
     assert generation_size > 0
     assert epochs > 0
 
@@ -74,7 +74,7 @@ def optimize_hypers(generation_size=2, epochs=2):
 
         # Bottom 80% explores
         for worker in workers[int(len(workers) * 0.8):]:
-            worker[1] = explore(workers, params_bounds)[1]
+            worker[1] = explore(workers, params_bounds, standard_deviation)[1]
 
     return best_worker
 
