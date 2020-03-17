@@ -22,7 +22,6 @@ class ActionEncoder(nn.Module):
 
         # Action
         action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        action_layers.append(nn.Softmax())
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
@@ -55,7 +54,7 @@ class ActionEncoder(nn.Module):
         ]
 
         for i in range(1, len(sizes) - 1):
-            layers.append(nn.ReLU(True))
+            # layers.append(nn.Sigmoid())
             layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
 
         return layers
