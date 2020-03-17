@@ -122,7 +122,7 @@ def main():
 
                 print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
 
-                train_loss = train(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
+                train_loss = train(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=None, use_cuda=CUDA)
                 test_loss = train(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
 
                 # save model

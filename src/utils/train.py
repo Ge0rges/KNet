@@ -132,8 +132,14 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         model.phase = "GENERATE"
         generate_output = model(inputs)
 
+        # print("GENERATE")
+        # print(generate_output[0])
+
         model.phase = "ACTION"
         action_output = model(inputs)
+
+        # print("ACTION")
+        # print(action_output[0])
 
         # print("max", np.max(outputs))
         # print("min", np.min(outputs))
@@ -146,7 +152,7 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
             generate_loss = generate_loss + penalty(model)
             action_loss = action_loss + penalty(model)
 
-        total_loss = generate_loss + action_loss
+        total_loss = action_loss
 
         # record loss
         losses.update(total_loss.data[0], inputs.size(0))

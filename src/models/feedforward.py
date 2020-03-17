@@ -2,9 +2,10 @@ import torch.nn as nn
 import torch
 import numpy as np
 
+
 class FeedForward(nn.Module):
 
-    def __init__(self, sizes=(28 * 28, 312, 128, 10), oldWeights=None, oldBiases=None):
+    def __init__(self, sizes=(28 * 28, 128, 64, 10), oldWeights=None, oldBiases=None):
         super(FeedForward, self).__init__()
         self.input_size = sizes[0]
         self.output_size = sizes[-1]
@@ -15,6 +16,7 @@ class FeedForward(nn.Module):
             layers.append(nn.ReLU(True))
             layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
 
+        layers.append(nn.Sigmoid())
         layers.append(nn.Softmax())
 
         self.classifier = nn.Sequential(*layers)

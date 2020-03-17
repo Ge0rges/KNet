@@ -90,7 +90,7 @@ def main_ae():
 
     print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
-    criterion = nn.BCELoss()
+    criterion = nn.BCEWithLogitsLoss()
 
     CLASSES = []
     AUROCs = []
@@ -125,8 +125,8 @@ def main_ae():
 
                 print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
 
-                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
-                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
+                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=None, use_cuda=CUDA)
+                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=None, use_cuda=CUDA)
 
                 # save model
                 # is_best = test_loss < best_loss

@@ -5,9 +5,9 @@ import numpy as np
 
 class ActionEncoder(nn.Module):
     def __init__(self, sizes={
-        'encoder': (28 * 28, 312, 128, 10),
-        'decoder': (10, 12, 64, 128, 28 * 28),
-        'action': (10, 10, 10)
+        'encoder': (28 * 28, 128, 20),
+        'decoder': (20, 128, 28 * 28),
+        'action': (20, 20, 10)
     }, oldWeights=None, oldBiases=None):
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
@@ -22,7 +22,6 @@ class ActionEncoder(nn.Module):
 
         # Action
         action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        action_layers.append(nn.Softmax())
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
@@ -55,7 +54,7 @@ class ActionEncoder(nn.Module):
         ]
 
         for i in range(1, len(sizes) - 1):
-            layers.append(nn.ReLU(True))
+            # layers.append(nn.Sigmoid())
             layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
 
         return layers
