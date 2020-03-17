@@ -90,7 +90,7 @@ def main_ae():
 
     print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.BCELoss()
 
     CLASSES = []
     AUROCs = []
