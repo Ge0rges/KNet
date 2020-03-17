@@ -129,21 +129,14 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         targets = Variable(targets)
 
         # compute output
+        model.float()
         model.phase = "GENERATE"
         generate_output = model(inputs)
 
-        # print("GENERATE")
-        # print(generate_output[0])
 
         model.phase = "ACTION"
         action_output = model(inputs)
 
-        # print("ACTION")
-        # print(action_output[0])
-
-        # print("max", np.max(outputs))
-        # print("min", np.min(outputs))
-        # print("mean", np.mean(outputs))
         # calculate loss
         generate_loss = torch.nn.MSELoss()(generate_output, targets[:, :generate_output.size()[1]])
         action_loss = criterion(action_output, targets[:, generate_output.size()[1]:])

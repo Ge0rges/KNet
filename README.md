@@ -79,6 +79,7 @@ Unavailable
 - subprocess32 3.2.7
 - torch 0.3.1
 - torchvision 0.2.1
+- sklearn 0.0
 
 ## Style Guide
 We use the industry standard [PEP8].
