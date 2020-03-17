@@ -17,45 +17,10 @@ from models import ActionEncoder
 from utils.train import trainAE
 from utils.eval import calc_avg_AE_AUROC
 
-# PATHS
-CHECKPOINT = "./checkpoints/mnist-den"
-
-# BATCH
-BATCH_SIZE = 256
-NUM_WORKERS = 0
-
-# SGD
-LEARNING_RATE = 1
-MOMENTUM = 0.9
-WEIGHT_DECAY = 0
-
-# Step Decay
-LR_DROP = 0.5
-EPOCHS_DROP = 10
-
-# MISC
-MAX_EPOCHS = 40
-CUDA = False
-
-# L1 REGULARIZATION
-L1_COEFF = 1e-5
-
-# L2 REGULARIZATION
-L2_COEFF = 1e-5
-
-# LOSS_THRE
-LOSS_THRESHOLD = 1e-2
-
-# Dynamic Expansion
-EXPAND_BY_K = 10
-
-# weight below this value will be considered as zero
-ZERO_THRESHOLD = 1e-4
-
-# Classes
+# Non-ML Hyperparams
 ALL_CLASSES = range(10)
-
-# Manual seed
+NUM_WORKERS = 0
+CUDA = False
 SEED = 20
 
 random.seed(SEED)
@@ -64,13 +29,26 @@ if CUDA:
     torch.cuda.manual_seed_all(SEED)
 
 
-def main_ae():
-    # if not os.path.isdir(CHECKPOINT):
-    #     os.makedirs(CHECKPOINT)
+def main_ae(learning_rate=1, batch_size=256, loss_threshold=1e-2, split_train_new_hypers=None,  expand_by_k=10,
+            max_epochs=1, weight_decay=0, lr_drop=0.5, l1_coeff=1e-5, epochs_drop=10, zero_threshold=1e-4,
+            de_train_new_hypers=None, l2_coeff=1e-5, momentum=0.9): # DO NOT MODIFY ORDER.
+
+    # Default hypers for inner training
+    if split_train_new_hypers is None:
+        split_train_new_hypers = [learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold]
+    else:
+        split_train_new_hypers = split_train_new_hypers.values()
+        assert len(split_train_new_hypers) == 8
+
+    if de_train_new_hypers is None:
+        de_train_new_hypers = [learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold]
+    else:
+        de_train_new_hypers = de_train_new_hypers.values()
+        assert len(de_train_new_hypers) == 8
 
     print('==> Preparing dataset')
 
-    trainloader, validloader, testloader = load_AE_MNIST(batch_size=BATCH_SIZE, num_workers=NUM_WORKERS)
+    trainloader, validloader, testloader = load_AE_MNIST(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     model = ActionEncoder()
@@ -81,7 +59,6 @@ def main_ae():
         cudnn.benchmark = True
 
     # initialize parameters
-
     for name, param in model.named_parameters():
         if 'bias' in name:
             param.data.zero_()
@@ -105,25 +82,20 @@ def main_ae():
             print("==> Learning")
 
             optimizer = optim.SGD(model.parameters(),
-                                  lr=LEARNING_RATE,
-                                  momentum=MOMENTUM,
-                                  weight_decay=WEIGHT_DECAY
+                                  lr=learning_rate,
+                                  momentum=momentum,
+                                  weight_decay=weight_decay
                                   )
 
-            penalty = l1_penalty(coeff=L1_COEFF)
-            best_loss = 1e10
-            learning_rate = LEARNING_RATE
-            # epochs = 10
-
-            for epoch in range(MAX_EPOCHS):
+            for epoch in range(max_epochs):
 
                 # decay learning rate
-                if (epoch + 1) % EPOCHS_DROP == 0:
-                    learning_rate *= LR_DROP
+                if (epoch + 1) % epochs_drop == 0:
+                    learning_rate *= lr_drop
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=None, use_cuda=CUDA)
                 test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=None, use_cuda=CUDA)
@@ -136,7 +108,7 @@ def main_ae():
                 suma = 0
                 for p in model.parameters():
                     p = p.data.cpu().numpy()
-                    suma += (abs(p) < ZERO_THRESHOLD).sum()
+                    suma += (abs(p) < zero_threshold).sum()
                 print("Number of zero weights: %d" % (suma))
 
         else:
@@ -154,24 +126,22 @@ def main_ae():
 
             optimizer = optim.SGD(
                 filter(lambda p: p.requires_grad, model.parameters()),
-                lr=LEARNING_RATE,
-                momentum=MOMENTUM,
-                weight_decay=WEIGHT_DECAY
+                lr=learning_rate,
+                momentum=momentum,
+                weight_decay=weight_decay
             )
 
-            penalty = l1_penalty(coeff=L1_COEFF)
-            best_loss = 1e10
-            learning_rate = LEARNING_RATE
+            penalty = l1_penalty(coeff=l1_coeff)
 
-            for epoch in range(MAX_EPOCHS):
+            for epoch in range(max_epochs):
 
                 # decay learning rate
-                if (epoch + 1) % EPOCHS_DROP == 0:
-                    learning_rate *= LR_DROP
+                if (epoch + 1) % epochs_drop == 0:
+                    learning_rate *= lr_drop
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty,
                       use_cuda=CUDA)
@@ -181,29 +151,26 @@ def main_ae():
                 param.requires_grad = True
 
             print("==> Selecting Neurons")
-            hooks = select_neurons(model, t)
+            hooks = select_neurons(model, t, zero_threshold)
 
             print("==> Training Selected Neurons")
 
             optimizer = optim.SGD(
                 model.parameters(),
-                lr=LEARNING_RATE,
-                momentum=MOMENTUM,
+                lr=learning_rate,
+                momentum=momentum,
                 weight_decay=1e-4
             )
 
-            best_loss = 1e10
-            learning_rate = LEARNING_RATE
-
-            for epoch in range(MAX_EPOCHS):
+            for epoch in range(max_epochs):
 
                 # decay learning rate
-                if (epoch + 1) % EPOCHS_DROP == 0:
-                    learning_rate *= LR_DROP
+                if (epoch + 1) % epochs_drop == 0:
+                    learning_rate *= lr_drop
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer,
                                    use_cuda=CUDA)
@@ -220,12 +187,12 @@ def main_ae():
 
             # Note: In ICLR 18 paper the order of these steps are switched, we believe this makes more sense.
             print("==> Splitting Neurons")
-            model = split_neurons(model_copy, model, trainloader, validloader, cls)
+            model = split_neurons(model_copy, model, trainloader, validloader, cls, split_train_new_hypers)
 
             # Could be train_loss or test_loss
-            if train_loss > LOSS_THRESHOLD:
+            if train_loss > loss_threshold:
                 print("==> Dynamic Expansion")
-                model = dynamic_expansion(model, trainloader, validloader, cls)
+                model = dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_train_new_hypers)
 
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
@@ -250,8 +217,10 @@ def main_ae():
     for i, p in enumerate(AUROCs):
         print("%d: %f" % (i + 1, p))
 
+    return AUROCs
 
-def dynamic_expansion(model, trainloader, validloader, cls):
+
+def dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_train_new_hypers):
     sizes, weights, biases, hooks = {}, {}, {}, []
 
     modules = get_modules(model)
@@ -263,11 +232,11 @@ def dynamic_expansion(model, trainloader, validloader, cls):
                     sizes[dict_key].append(param.data.shape[1])
 
                 weights[dict_key].append(param.data)
-                sizes[dict_key].append(param.data.shape[0] + EXPAND_BY_K)
+                sizes[dict_key].append(param.data.shape[0] + expand_by_k)
 
                 # Register hook to freeze param
-                active_weights = [False] * (param.data.shape[0] - EXPAND_BY_K)
-                active_weights.extend([True] * EXPAND_BY_K)
+                active_weights = [False] * (param.data.shape[0] - expand_by_k)
+                active_weights.extend([True] * expand_by_k)
                 hook = param.register_hook(freeze_hook(active_weights))
                 hooks.append(hook)
 
@@ -278,10 +247,10 @@ def dynamic_expansion(model, trainloader, validloader, cls):
                 raise LookupError()
 
         if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
-            sizes[dict_key][-1] -= EXPAND_BY_K
+            sizes[dict_key][-1] -= expand_by_k
 
     # From here, everything taken from DE. #
-    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks)
+    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks, *de_train_new_hypers)
 
 
 def get_modules(model):
@@ -296,20 +265,20 @@ def get_modules(model):
     return modules
 
 
-def select_neurons(model, task):
+def select_neurons(model, task, zero_threshold):
     modules = get_modules(model)
 
     prev_active = [True] * 10
     prev_active[task] = False
 
-    action_hooks, prev_active = gen_hooks(modules['action'], prev_active)
-    encoder_hooks, _ = gen_hooks(modules['encoder'], prev_active)
+    action_hooks, prev_active = gen_hooks(modules['action'], zero_threshold, prev_active)
+    encoder_hooks, _ = gen_hooks(modules['encoder'], zero_threshold, prev_active)
 
     hooks = action_hooks + encoder_hooks
     return hooks
 
 
-def gen_hooks(layers, prev_active=None):
+def gen_hooks(layers, zero_threshold, prev_active=None):
     hooks = []
     selected = []
 
@@ -333,7 +302,7 @@ def gen_hooks(layers, prev_active=None):
             for y in range(y_size):
                 weight = data[x, y]
                 # check if weight is active
-                if weight > ZERO_THRESHOLD:
+                if weight > zero_threshold:
                     # mark connected neuron as active
                     active[y] = False
 
@@ -350,7 +319,7 @@ def gen_hooks(layers, prev_active=None):
     return hooks, prev_active
 
 
-def split_neurons(old_model, new_model, trainloader, validloader, cls):
+def split_neurons(old_model, new_model, trainloader, validloader, cls, split_train_new_hypers):
     sizes, weights, biases, hooks = {}, {}, {}, []
 
     suma = 0
@@ -455,34 +424,35 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls):
         return new_model
 
     # From here, everything taken from DE. #
-    return train_new_neurons(new_model, new_modules, cls, trainloader, validloader, sizes, weights, biases, hooks)
+    return train_new_neurons(new_model, new_modules, cls, trainloader, validloader, sizes, weights, biases, hooks, *split_train_new_hypers)
 
 
-def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks):
+def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks,
+                      learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold):
     # TODO: Make module generation dynamic
     new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
     optimizer = optim.SGD(
         new_model.parameters(),
-        lr=LEARNING_RATE,
-        momentum=MOMENTUM,
+        lr=learning_rate,
+        momentum=momentum,
         weight_decay=1e-4
     )
 
-    learning_rate = LR_DROP
+    learning_rate = lr_drop
     criterion = nn.BCELoss()
 
-    for epoch in range(MAX_EPOCHS):
+    for epoch in range(max_epochs):
 
         # decay learning rate
-        if (epoch + 1) % EPOCHS_DROP == 0:
-            learning_rate *= LR_DROP
+        if (epoch + 1) % epochs_drop == 0:
+            learning_rate *= lr_drop
             for param_group in optimizer.param_groups:
                 param_group['lr'] = learning_rate
 
-        print('Epoch: [%d | %d]' % (epoch + 1, MAX_EPOCHS))
+        print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-        penalty = l1l2_penalty(L1_COEFF, L2_COEFF, model)
+        penalty = l1l2_penalty(l1_coeff, l2_coeff, model)
         train_loss = trainAE(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty,
                              optimizer=optimizer, use_cuda=CUDA)
         test_loss = trainAE(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True,
@@ -513,7 +483,7 @@ def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weig
 
                 # Copy over incoming bias for new neuron for previous existing
                 for i in range(param1.data.shape[0], param2.data.shape[0]):
-                    if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                    if float(param2[i].norm(1)) > zero_threshold:
                         new_layer.append(float(param2.data[i]))
 
                 new_biases[name2].append(new_layer)
@@ -538,7 +508,7 @@ def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weig
                 weight_indexes = []  # Marks neurons with none zero incoming weights
                 for i in range(param1.data.shape[0], param2.data.shape[0]):
                     row = []
-                    if float(param2[i].norm(1)) > ZERO_THRESHOLD:
+                    if float(param2[i].norm(1)) > zero_threshold:
                         weight_indexes.append(i)
                         for j in range(param2.data.shape[1]):
                             row.append(float(param2.data[i, j]))
