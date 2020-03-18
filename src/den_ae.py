@@ -29,22 +29,42 @@ if CUDA:
     torch.cuda.manual_seed_all(SEED)
 
 
-def main_ae(learning_rate=1, batch_size=256, loss_threshold=1e-2, split_train_new_hypers=None,  expand_by_k=10,
-            max_epochs=1, weight_decay=0, lr_drop=0.5, l1_coeff=1e-10, zero_threshold=1e-4, epochs_drop=10,
-            de_train_new_hypers=None, l2_coeff=1e-10, momentum=0.9):  # DO NOT MODIFY ORDER.
+def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None):
 
-    # Default hypers for inner training
+    # Default hypers for training
+    learning_rate = 1
+    batch_size = 256
+    loss_threshold = 1e-2
+    expand_by_k = 10
+    max_epochs = 1
+    weight_decay = 0
+    lr_drop = 0.5
+    l1_coeff = 1e-10
+    zero_threshold = 1e-4
+    epochs_drop = 10
+    l2_coeff = 1e-10
+    momentum = 0.9
+
+    if main_hypers is not None:
+        learning_rate = main_hypers["learning_rate"]
+        batch_size = main_hypers["batch_size"]
+        loss_threshold = main_hypers["loss_threshold"]
+        expand_by_k = main_hypers["expand_by_k"]
+        max_epochs = main_hypers["max_epochs"]
+        weight_decay = main_hypers["weight_decay"]
+        lr_drop = main_hypers["lr_drop"]
+        l1_coeff = main_hypers["l1_coeff"]
+        zero_threshold = main_hypers["zero_threshold"]
+        epochs_drop = main_hypers["epochs_drop"]
+        l2_coeff = main_hypers["l2_coeff"]
+        momentum = main_hypers["momentum"]
+
     if split_train_new_hypers is None:
         split_train_new_hypers = [learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold]
-    else:
-        split_train_new_hypers = split_train_new_hypers.values()
-        assert len(split_train_new_hypers) == 8
 
     if de_train_new_hypers is None:
         de_train_new_hypers = [learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold]
-    else:
-        de_train_new_hypers = de_train_new_hypers.values()
-        assert len(de_train_new_hypers) == 8
+
 
     print('==> Preparing dataset')
 
@@ -252,7 +272,7 @@ def dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_trai
             sizes[dict_key][-1] -= expand_by_k
 
     # From here, everything taken from DE. #
-    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks, *de_train_new_hypers)
+    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks, de_train_new_hypers)
 
 
 def get_modules(model):
@@ -426,11 +446,20 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
         return new_model
 
     # From here, everything taken from DE. #
-    return train_new_neurons(new_model, new_modules, cls, trainloader, validloader, sizes, weights, biases, hooks, *split_train_new_hypers)
+    return train_new_neurons(new_model, new_modules, cls, trainloader, validloader, sizes, weights, biases, hooks, split_train_new_hypers)
 
 
-def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks,
-                      epochs_drop, zero_threshold, l1_coeff, l2_coeff, max_epochs, learning_rate, lr_drop, momentum):
+def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks, hypers):
+    # Get params
+    learning_rate = hypers["learning_rate"]
+    max_epochs = hypers["max_epochs"]
+    lr_drop = hypers["lr_drop"]
+    l1_coeff = hypers["l1_coeff"]
+    zero_threshold = hypers["zero_threshold"]
+    epochs_drop = hypers["epochs_drop"]
+    l2_coeff = hypers["l2_coeff"]
+    momentum = hypers["momentum"]
+
     # TODO: Make module generation dynamic
     new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 

@@ -1,5 +1,4 @@
 from den_ae import main_ae
-from collections import OrderedDict
 import random
 
 SEED = 20
@@ -10,7 +9,7 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
     assert generation_size > 0
     assert epochs > 0
 
-    params_bounds = OrderedDict({
+    params_bounds = {
         "batch_size" : (1, 500, int),
         "learning_rate": (10e-10, 1, float),
         "momentum": (0, 10, float),
@@ -24,7 +23,7 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
         "expand_by_k": (0, 50, int),
         "zero_threshold": (0, 10e-5, float),
 
-        "split_train_new_hypers": OrderedDict({
+        "split_train_new_hypers": {
             "learning_rate": (10e-10, 1, float),
             "momentum": (0, 10, float),
             "lr_drop": (0, 1, float),
@@ -33,9 +32,9 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
             "l1_coeff": (0, 10e-5, float),
             "l2_coeff": (0, 10e-5, float),
             "zero_threshold": (0, 10e-5, float),
-        }),
+        },
 
-        "de_train_new_hypers" : OrderedDict({
+        "de_train_new_hypers" : {
             "learning_rate": (1e-10, 1, float),
             "momentum": (0, 10, float),
             "lr_drop": (0, 1, float),
@@ -44,8 +43,8 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
             "l1_coeff": (0, 10e-5, float),
             "l2_coeff": (0, 10e-5, float),
             "zero_threshold": (0, 10e-5, float),
-        })
-    })
+        }
+    }
 
     # Generate initial params
     workers = []
@@ -85,7 +84,7 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
 def random_init(params_bounds):
     # Safely iterate over dict or list
     iterator = None
-    if isinstance(params_bounds, OrderedDict):
+    if isinstance(params_bounds, dict):
         iterator = params_bounds.items()
 
     elif isinstance(params_bounds, list):
@@ -95,10 +94,10 @@ def random_init(params_bounds):
         raise NotImplementedError
 
     # Build the params
-    params = OrderedDict()
+    params = {}
 
     for key, value in iterator:
-        if isinstance(value, OrderedDict):
+        if isinstance(value, dict):
             params[key] = random_init(value)
 
         elif isinstance(value, list):
@@ -135,7 +134,7 @@ def exploit(workers, worker):
 def explore(params, param_bounds, standard_deviation=0.1):
     # Safely iterate
     iterator = None
-    if isinstance(params, OrderedDict):
+    if isinstance(params, dict):
         iterator = params.items()
 
     elif isinstance(params, list):
@@ -146,7 +145,7 @@ def explore(params, param_bounds, standard_deviation=0.1):
 
     # Recursive calls till base case
     for key, value in iterator:
-        if isinstance(value, OrderedDict):
+        if isinstance(value, dict):
             params[key] = explore(value, param_bounds[key], standard_deviation)
 
         elif isinstance(value, list):
