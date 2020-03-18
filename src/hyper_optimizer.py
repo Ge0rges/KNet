@@ -29,8 +29,8 @@ def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
             "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 1, float),
-            "l2_coeff": (0, 1, float),
+            "l1_coeff": (0, 1e-5, float),
+            "l2_coeff": (0, 1e-5, float),
             "zero_threshold": (0, 1, float),
         }),
 
@@ -40,9 +40,9 @@ def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
             "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 1, float),
-            "l2_coeff": (0, 1, float),
-            "zero_threshold": (0, 1, float),
+            "l1_coeff": (0, 1e-5, float),
+            "l2_coeff": (0, 1e-5, float),
+            "zero_threshold": (0, 1e-5, float),
         })
     })
 

@@ -133,6 +133,8 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         model.phase = "GENERATE"
         generate_output = model(inputs)
 
+        if batch_idx == 40:
+            print()
 
         model.phase = "ACTION"
         action_output = model(inputs)

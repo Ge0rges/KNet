@@ -30,8 +30,8 @@ if CUDA:
 
 
 def main_ae(learning_rate=1, batch_size=256, loss_threshold=1e-2, split_train_new_hypers=None,  expand_by_k=10,
-            max_epochs=1, weight_decay=0, lr_drop=0.5, l1_coeff=1e-5, epochs_drop=10, zero_threshold=1e-4,
-            de_train_new_hypers=None, l2_coeff=1e-5, momentum=0.9): # DO NOT MODIFY ORDER.
+            max_epochs=1, weight_decay=0, lr_drop=0.5, l1_coeff=1e-10, epochs_drop=10, zero_threshold=1e-4,
+            de_train_new_hypers=None, l2_coeff=1e-10, momentum=0.9): # DO NOT MODIFY ORDER.
 
     # Default hypers for inner training
     if split_train_new_hypers is None:
@@ -87,6 +87,8 @@ def main_ae(learning_rate=1, batch_size=256, loss_threshold=1e-2, split_train_ne
                                   weight_decay=weight_decay
                                   )
 
+            penalty = l1_penalty(coeff=l1_coeff)
+
             for epoch in range(max_epochs):
 
                 # decay learning rate
@@ -97,8 +99,8 @@ def main_ae(learning_rate=1, batch_size=256, loss_threshold=1e-2, split_train_ne
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=None, use_cuda=CUDA)
-                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=None, use_cuda=CUDA)
+                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
+                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
 
                 # save model
                 # is_best = test_loss < best_loss
@@ -558,4 +560,4 @@ class active_grads_hook(object):
 
 
 if __name__ == '__main__':
-    main_ae()
+    main_ae(max_epochs=5)
