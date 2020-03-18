@@ -5,7 +5,8 @@ import random
 SEED = 20
 random.seed(SEED)
 
-def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
+
+def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
     assert generation_size > 0
     assert epochs > 0
 
@@ -54,7 +55,9 @@ def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
     # Train our models
     best_worker = None
     for epoch in range(epochs):
+        print("Optimization Epoch: ", epoch, "/", epochs)
         for i, worker in enumerate(workers):
+            print("Running worker:", i, "/", len(workers))
             # No need to train top 20% beyond the first epoch.
             if epoch > 0 and i > int(len(workers)*0.8):
                 continue

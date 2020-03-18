@@ -430,7 +430,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
 
 
 def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks,
-                      learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold):
+                      epochs_drop, zero_threshold, l1_coeff, l2_coeff, max_epochs, learning_rate, lr_drop, momentum):
     # TODO: Make module generation dynamic
     new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
