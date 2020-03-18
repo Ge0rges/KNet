@@ -11,38 +11,38 @@ def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
 
     params_bounds = OrderedDict({
         "batch_size" : (1, 500, int),
-        "learning_rate" : (1e-10, 100, float),
-        "momentum" : (0, 10, float),
-        "weight_decay" : (0, 1, float),
-        "lr_drop" : (0, 1, float),
-        "epochs_drop" : (0, 20, int),
-        "max_epochs" : (1, 500, int),
-        "l1_coeff" : (0, 1, float),
-        "l2_coeff" : (0, 1, float),
-        "loss_threshold" : (0, 1, float),
-        "expand_by_k" : (0, 50, int),
-        "zero_threshold" : (0, 1, float),
+        "learning_rate": (10e-10, 1, float),
+        "momentum": (0, 10, float),
+        "weight_decay": (0, 1, float),
+        "lr_drop": (0, 1, float),
+        "epochs_drop": (0, 20, int),
+        "max_epochs": (1, 500, int),
+        "l1_coeff": (0, 0.0, float),
+        "l2_coeff": (0, 0.5, float),
+        "loss_threshold": (0, 1, float),
+        "expand_by_k": (0, 50, int),
+        "zero_threshold": (0, 10e-5, float),
 
-        "split_train_new_hypers" : OrderedDict({
-            "learning_rate": (1e-10, 100, float),
+        "split_train_new_hypers": OrderedDict({
+            "learning_rate": (10e-10, 1, float),
             "momentum": (0, 10, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
             "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 1e-5, float),
-            "l2_coeff": (0, 1e-5, float),
-            "zero_threshold": (0, 1, float),
+            "l1_coeff": (0, 10e-5, float),
+            "l2_coeff": (0, 10e-5, float),
+            "zero_threshold": (0, 10e-5, float),
         }),
 
         "de_train_new_hypers" : OrderedDict({
-            "learning_rate": (1e-10, 100, float),
+            "learning_rate": (1e-10, 1, float),
             "momentum": (0, 10, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
             "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 1e-5, float),
-            "l2_coeff": (0, 1e-5, float),
-            "zero_threshold": (0, 1e-5, float),
+            "l1_coeff": (0, 10e-5, float),
+            "l2_coeff": (0, 10e-5, float),
+            "zero_threshold": (0, 10e-5, float),
         })
     })
 
@@ -104,7 +104,8 @@ def random_init(params_bounds):
         elif isinstance(value, tuple):
             lower, upper, type = params_bounds[key]
 
-            params[key] = type(random.uniform(upper, lower))
+            rand = random.uniform(lower, upper)
+            params[key] = type(rand)
 
         else:
             raise NotImplementedError

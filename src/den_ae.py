@@ -30,8 +30,8 @@ if CUDA:
 
 
 def main_ae(learning_rate=1, batch_size=256, loss_threshold=1e-2, split_train_new_hypers=None,  expand_by_k=10,
-            max_epochs=1, weight_decay=0, lr_drop=0.5, l1_coeff=1e-10, epochs_drop=10, zero_threshold=1e-4,
-            de_train_new_hypers=None, l2_coeff=1e-10, momentum=0.9): # DO NOT MODIFY ORDER.
+            max_epochs=1, weight_decay=0, lr_drop=0.5, l1_coeff=1e-10, zero_threshold=1e-4, epochs_drop=10,
+            de_train_new_hypers=None, l2_coeff=1e-10, momentum=0.9):  # DO NOT MODIFY ORDER.
 
     # Default hypers for inner training
     if split_train_new_hypers is None:
