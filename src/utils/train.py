@@ -104,18 +104,16 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
     # switch to train or evaluate mode
     if test:
         model.eval()
+        bar = Bar('Testing', max=len(batchloader))
     else:
         model.train()
+        bar = Bar('Training', max=len(batchloader))
 
+    # Progress bar stuff
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
     end = time.time()
-
-    if test:
-        bar = Bar('Testing', max=len(batchloader))
-    else:
-        bar = Bar('Training', max=len(batchloader))
 
     for batch_idx, (inputs, targets) in enumerate(batchloader):
         # measure data loading time
