@@ -1,50 +1,50 @@
 from den_ae import main_ae
-from collections import OrderedDict
 import random
 
 SEED = 20
 random.seed(SEED)
 
-def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
+
+def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
     assert generation_size > 0
     assert epochs > 0
 
-    params_bounds = OrderedDict({
+    params_bounds = {
         "batch_size" : (1, 500, int),
-        "learning_rate" : (1e-10, 100, float),
-        "momentum" : (0, 10, float),
-        "weight_decay" : (0, 1, float),
-        "lr_drop" : (0, 1, float),
-        "epochs_drop" : (0, 20, int),
-        "max_epochs" : (1, 500, int),
-        "l1_coeff" : (0, 1, float),
-        "l2_coeff" : (0, 1, float),
-        "loss_threshold" : (0, 1, float),
-        "expand_by_k" : (0, 50, int),
-        "zero_threshold" : (0, 1, float),
+        "learning_rate": (10e-10, 1, float),
+        "momentum": (0, 10, float),
+        "weight_decay": (0, 1, float),
+        "lr_drop": (0, 1, float),
+        "epochs_drop": (0, 20, int),
+        "max_epochs": (1, 500, int),
+        "l1_coeff": (0, 0.0, float),
+        "l2_coeff": (0, 0.5, float),
+        "loss_threshold": (0, 1, float),
+        "expand_by_k": (0, 50, int),
+        "zero_threshold": (0, 10e-5, float),
 
-        "split_train_new_hypers" : OrderedDict({
-            "learning_rate": (1e-10, 100, float),
+        "split_train_new_hypers": {
+            "learning_rate": (10e-10, 1, float),
             "momentum": (0, 10, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
             "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 1e-5, float),
-            "l2_coeff": (0, 1e-5, float),
-            "zero_threshold": (0, 1, float),
-        }),
+            "l1_coeff": (0, 10e-5, float),
+            "l2_coeff": (0, 10e-5, float),
+            "zero_threshold": (0, 10e-5, float),
+        },
 
-        "de_train_new_hypers" : OrderedDict({
-            "learning_rate": (1e-10, 100, float),
+        "de_train_new_hypers" : {
+            "learning_rate": (1e-10, 1, float),
             "momentum": (0, 10, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
             "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 1e-5, float),
-            "l2_coeff": (0, 1e-5, float),
-            "zero_threshold": (0, 1e-5, float),
-        })
-    })
+            "l1_coeff": (0, 10e-5, float),
+            "l2_coeff": (0, 10e-5, float),
+            "zero_threshold": (0, 10e-5, float),
+        }
+    }
 
     # Generate initial params
     workers = []
@@ -54,12 +54,15 @@ def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
     # Train our models
     best_worker = None
     for epoch in range(epochs):
+
+        print("Optimization Epoch: %d/%d" % (epoch+1, epochs))
         for i, worker in enumerate(workers):
+            print("Running worker: %d/%d" % (i+1, len(workers)))
             # No need to train top 20% beyond the first epoch.
             if epoch > 0 and i > int(len(workers)*0.8):
                 continue
 
-            aurocs = main_ae(*(worker[1].values()))
+            aurocs = main_ae(worker[1])
             auroc = sum(aurocs)/len(aurocs)
 
             workers[1] = (auroc, worker[1])
@@ -82,7 +85,7 @@ def optimize_hypers(generation_size=2, epochs=2, standard_deviation=0.1):
 def random_init(params_bounds):
     # Safely iterate over dict or list
     iterator = None
-    if isinstance(params_bounds, OrderedDict):
+    if isinstance(params_bounds, dict):
         iterator = params_bounds.items()
 
     elif isinstance(params_bounds, list):
@@ -92,10 +95,10 @@ def random_init(params_bounds):
         raise NotImplementedError
 
     # Build the params
-    params = OrderedDict()
+    params = {}
 
     for key, value in iterator:
-        if isinstance(value, OrderedDict):
+        if isinstance(value, dict):
             params[key] = random_init(value)
 
         elif isinstance(value, list):
@@ -104,7 +107,8 @@ def random_init(params_bounds):
         elif isinstance(value, tuple):
             lower, upper, type = params_bounds[key]
 
-            params[key] = type(random.uniform(upper, lower))
+            rand = random.uniform(lower, upper)
+            params[key] = type(rand)
 
         else:
             raise NotImplementedError
@@ -131,7 +135,7 @@ def exploit(workers, worker):
 def explore(params, param_bounds, standard_deviation=0.1):
     # Safely iterate
     iterator = None
-    if isinstance(params, OrderedDict):
+    if isinstance(params, dict):
         iterator = params.items()
 
     elif isinstance(params, list):
@@ -142,7 +146,7 @@ def explore(params, param_bounds, standard_deviation=0.1):
 
     # Recursive calls till base case
     for key, value in iterator:
-        if isinstance(value, OrderedDict):
+        if isinstance(value, dict):
             params[key] = explore(value, param_bounds[key], standard_deviation)
 
         elif isinstance(value, list):
