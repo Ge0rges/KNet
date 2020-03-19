@@ -133,13 +133,15 @@ def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None,
         model.phase = "GENERATE"
         generate_output = model(inputs)
 
+        if batch_idx == 40:
+            print()
 
         model.phase = "ACTION"
         action_output = model(inputs)
 
         # calculate loss
         generate_loss = torch.nn.MSELoss()(generate_output, targets[:, :generate_output.size()[1]])
-        action_loss = criterion(action_output, targets[:, generate_output.size()[1]:])
+        action_loss = criterion(action_output, targets[:, :action_output.size()[1]])
 
         if penalty is not None:
             generate_loss = generate_loss + penalty(model)
