@@ -119,8 +119,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
-                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
+                train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
+                test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=CUDA)
 
                 # save model
                 # is_best = test_loss < best_loss
@@ -165,9 +165,9 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer, penalty=penalty,
+                trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty,
                       use_cuda=CUDA)
-                trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, penalty=penalty, use_cuda=CUDA)
+                trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=CUDA)
 
             for param in model.parameters():
                 param.requires_grad = True
@@ -194,9 +194,9 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                train_loss = trainAE(trainloader, model, criterion, ALL_CLASSES, [cls], optimizer=optimizer,
+                train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer,
                                    use_cuda=CUDA)
-                test_loss = trainAE(validloader, model, criterion, ALL_CLASSES, [cls], test=True, use_cuda=CUDA)
+                test_loss = trainAE(validloader, model, criterion, test=True, use_cuda=CUDA)
 
                 # save model
                 # is_best = test_loss < best_loss
@@ -484,9 +484,10 @@ def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weig
         print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
         penalty = l1l2_penalty(l1_coeff, l2_coeff, model)
-        train_loss = trainAE(trainloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty,
+        train_loss = trainAE(trainloader, new_model, criterion,
+                             penalty=penalty,
                              optimizer=optimizer, use_cuda=CUDA)
-        test_loss = trainAE(validloader, new_model, criterion, ALL_CLASSES, [cls], penalty=penalty, test=True,
+        test_loss = trainAE(validloader, new_model, criterion, penalty=penalty, test=True,
                             use_cuda=CUDA)
 
     # Remove hooks

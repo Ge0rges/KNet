@@ -100,8 +100,7 @@ def train(batchloader, model, criterion, all_classes, classes, optimizer = None,
     return losses.avg
 
 
-def trainAE(batchloader, model, criterion, all_classes, classes, optimizer=None, penalty=None, test=False,
-          use_cuda=False):
+def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False, use_cuda=False):
     # switch to train or evaluate mode
     if test:
         model.eval()
