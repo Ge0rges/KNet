@@ -62,10 +62,18 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
             if epoch > 0 and i > int(len(workers)*0.8):
                 continue
 
-            aurocs = main_ae(worker[1])
-            auroc = sum(aurocs)/len(aurocs)
+            success = False
+            while not success:
+                try:
+                    aurocs = main_ae(worker[1])
+                    auroc = sum(aurocs)/len(aurocs)
 
-            workers[1] = (auroc, worker[1])
+                    workers[i] = (auroc, worker[1])
+                    success = True
+
+                except:
+                    workers[i] = (worker[0], explore(worker, params_bounds, standard_deviation)[1])
+                    success = False
 
         # Sort the workers
         workers = sorted(workers, key=lambda x: x[0])
@@ -77,7 +85,7 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
 
         # Bottom 80% explores
         for worker in workers[int(len(workers) * 0.8):]:
-            worker[1] = explore(workers, params_bounds, standard_deviation)[1]
+            worker[1] = explore(worker, params_bounds, standard_deviation)[1]
 
     return best_worker
 

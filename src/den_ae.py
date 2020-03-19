@@ -32,18 +32,18 @@ if CUDA:
 def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None):
 
     # Default hypers for training
-    learning_rate = 1
+    learning_rate = 0.2
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 1
+    max_epochs = 5
     weight_decay = 0
     lr_drop = 0.5
     l1_coeff = 1e-10
     zero_threshold = 1e-4
     epochs_drop = 10
     l2_coeff = 1e-10
-    momentum = 0.9
+    momentum = 0.0
 
     if main_hypers is not None:
         learning_rate = main_hypers["learning_rate"]
@@ -589,4 +589,4 @@ class active_grads_hook(object):
 
 
 if __name__ == '__main__':
-    main_ae(max_epochs=5)
+    main_ae()
