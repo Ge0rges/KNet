@@ -72,7 +72,7 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
                     success = True
 
                 except:
-                    workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation)[1])
+                    workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
                     success = False
 
         # Sort the workers
@@ -85,7 +85,7 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
 
         # Bottom 80% explores
         for worker in workers[int(len(workers) * 0.8):]:
-            worker[1] = explore(worker[1], params_bounds, standard_deviation)[1]
+            worker[1] = explore(worker[1], params_bounds, standard_deviation)
 
     return best_worker
 
