@@ -17,13 +17,13 @@ DATA = './data'
 # only contains the data since the labels are in fact just the data points themselves for the autoencodeur
 ALL_CLASSES = range(10)
 
-BANANA_RESIZED_DATA = './data/banana/resized'
-CAR_RESIZED_DATA = './data/car/resized'
-BANANACAR_RESIZED_DATA = './data/bananacar/resized'
+BANANA_RESIZED_DATA = './utils/data/banana/resized'
+CAR_RESIZED_DATA = './utils/data/car/resized'
+BANANACAR_RESIZED_DATA = './utils/data/bananacar/resized'
 
 BANANA_LABEL = 1
 CAR_LABEL = 2
-BANANACAR_LABEL = 3
+BANANACAR_LABEL = 0
 ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL, BANANACAR_LABEL]
 
 
@@ -99,13 +99,16 @@ def banana_loader(batch_size=256, num_workers=4):
     class_labels = [BANANA_LABEL]*num_samples
 
     tensor_data = torch.Tensor(data)
+    tensor_data = tensor_data.view(num_samples, len(ALL_CUSTOM_LABELS), np.shape(tensor_data)[-1]*np.shape(tensor_data)[-2])
 
     tensor_labels = torch.Tensor(data)
+    tensor_labels = tensor_labels.view(num_samples, len(ALL_CUSTOM_LABELS), np.shape(tensor_labels)[-1]*np.shape(tensor_labels)[-2])
 
     tensor_class_labels = torch.Tensor(class_labels)
     tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
+    tensor_class_labels = tensor_class_labels.view(num_samples, len(ALL_CUSTOM_LABELS), 1)
 
-    tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 1)
+    tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 2)
 
     dataset = TensorDataset(tensor_data, tensor_labels)
 
@@ -139,15 +142,20 @@ def bananacar_loader(batch_size=256, num_workers=4):
     data = list(i[0].numpy().astype(np.float64) for i in dataset)
     num_samples = len(data)
     class_labels = [BANANACAR_LABEL]*num_samples
-
+    img_size = np.shape(data)[-1]*np.shape(data)[-2]
     tensor_data = torch.Tensor(data)
+    tensor_data = tensor_data.view(num_samples, len(ALL_CUSTOM_LABELS), img_size)
 
     tensor_labels = torch.Tensor(data)
+    tensor_labels = tensor_labels.view(num_samples, len(ALL_CUSTOM_LABELS), img_size)
 
     tensor_class_labels = torch.Tensor(class_labels)
     tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
+    tensor_class_labels = tensor_class_labels.view(num_samples, len(ALL_CUSTOM_LABELS), 1)
 
-    tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 1)
+    tensor_labels = torch.cat([tensor_labels, tensor_class_labels], 2)
+    print(tensor_data.size())
+    print(tensor_labels.size())
 
     dataset = TensorDataset(tensor_data, tensor_labels)
 
@@ -290,4 +298,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    dataset_reshaping("bananacar")
+    bananacar_loader()
