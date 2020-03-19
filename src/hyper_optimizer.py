@@ -5,7 +5,7 @@ SEED = 20
 random.seed(SEED)
 
 
-def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
+def optimize_hypers(generation_size=10, epochs=20, standard_deviation=0.1):
     assert generation_size > 0
     assert epochs > 0
 
@@ -167,7 +167,7 @@ def explore(params, param_bounds, standard_deviation=0.1):
         elif isinstance(value, float) or isinstance(value, int):
             lower, upper, type = param_bounds[key]
 
-            new_value = type((standard_deviation+random.choice([-1, 1]))*value)
+            new_value = type(standard_deviation*(random.choice([-1, 1])+value))
             new_value = max(lower, new_value)
             new_value = min(upper, new_value)
 

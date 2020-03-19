@@ -255,9 +255,11 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     print('\nAverage Per-task Performance over number of tasks')
     for i, p in enumerate(AUROCs):
-        print("%d: %f" % (i + 1, p))
+        print("%d: %f" % (i + 1, p[i]))
 
-    return AUROCs
+    micros = [x["micro"] for x in AUROCs]
+
+    return micros
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_train_new_hypers):
