@@ -72,9 +72,11 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
                     workers[i] = (auroc, worker[1])
                     success = True
 
-                except:
+                except Exception as e:
                     workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
                     success = False
+                    print("Worker %d crashed. Error:" % i)
+                    print e
 
         # Sort the workers
         workers = sorted(workers, key=lambda x: x[0])
