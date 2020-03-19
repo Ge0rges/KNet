@@ -54,14 +54,15 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
     # Train our models
     best_worker = None
     for epoch in range(epochs):
-        print("Optimization Epoch: ", epoch, "/", epochs)
+
+        print("Optimization Epoch: %d/%d" % (epoch+1, epochs))
         for i, worker in enumerate(workers):
-            print("Running worker:", i, "/", len(workers))
+            print("Running worker: %d/%d" % (i+1, len(workers)))
             # No need to train top 20% beyond the first epoch.
             if epoch > 0 and i > int(len(workers)*0.8):
                 continue
 
-            aurocs = main_ae(*(worker[1].values()))
+            aurocs = main_ae(worker[1])
             auroc = sum(aurocs)/len(aurocs)
 
             workers[1] = (auroc, worker[1])
