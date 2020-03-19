@@ -33,6 +33,7 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
             "l1_coeff": (1e-20, 1e-7, float),
             "l2_coeff": (1e-20, 1e-7, float),
             "zero_threshold": (0, 1e-5, float),
+            "drift_threshold": (0.005, 0.05, float)
         },
 
         "de_train_new_hypers" : {
@@ -65,18 +66,18 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
 
             success = False
             while not success:
-                try:
-                    aurocs = main_ae(worker[1])
-                    auroc = sum(aurocs)/len(aurocs)
+                #try:
+                aurocs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"])
+                auroc = sum(aurocs)/len(aurocs)
 
-                    workers[i] = (auroc, worker[1])
-                    success = True
+                workers[i] = (auroc, worker[1])
+                success = True
 
-                except Exception as e:
-                    workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
-                    success = False
-                    print("Worker %d crashed. Error:" % i)
-                    print e
+                # except Exception as e:
+                #     workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
+                #     success = False
+                #     print("Worker %d crashed. Error:" % i)
+                #     print e
 
         # Sort the workers
         workers = sorted(workers, key=lambda x: x[0])

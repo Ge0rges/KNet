@@ -60,11 +60,29 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         momentum = main_hypers["momentum"]
 
     if split_train_new_hypers is None:
-        split_train_new_hypers = [learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold]
+        split_train_new_hypers = {
+            "learning_rate": learning_rate,
+            "momentum": momentum,
+            "lr_drop": lr_drop,
+            "epochs_drop": epochs_drop,
+            "max_epochs": max_epochs,
+            "l1_coeff": l1_coeff,
+            "l2_coeff": l2_coeff,
+            "zero_threshold": zero_threshold,
+            "drift_threshold": 0.02
+        }
 
     if de_train_new_hypers is None:
-        de_train_new_hypers = [learning_rate, momentum, lr_drop, max_epochs, epochs_drop, l1_coeff, l2_coeff, zero_threshold]
-
+        de_train_new_hypers = {
+            "learning_rate": learning_rate,
+            "momentum": momentum,
+            "lr_drop": lr_drop,
+            "epochs_drop": epochs_drop,
+            "max_epochs": max_epochs,
+            "l1_coeff": l1_coeff,
+            "l2_coeff": l2_coeff,
+            "zero_threshold": zero_threshold,
+        }
 
     print('==> Preparing dataset')
 
@@ -346,6 +364,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
 
     suma = 0
 
+    drift_threshold = split_train_new_hypers["drift_threshold"]
+
     old_modules = get_modules(old_model)
     new_modules = get_modules(new_model)
     for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
@@ -407,7 +427,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
                 diff = old_neuron[1] - new_neuron[1]
                 drift = diff.norm(2)
 
-                if drift > 0.02:
+                if drift > drift_threshold:
                     suma += 1
                     new_layer_size += 1  # Increment again because added neuron
 
