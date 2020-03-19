@@ -10,39 +10,40 @@ def optimize_hypers(generation_size=10, epochs=50, standard_deviation=0.1):
     assert epochs > 0
 
     params_bounds = {
-        "batch_size" : (1, 500, int),
-        "learning_rate": (10e-10, 1, float),
-        "momentum": (0, 10, float),
-        "weight_decay": (0, 1, float),
+        "learning_rate": (1e-10, 1, float),
+        "momentum": (0, 0.99, float),
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
-        "max_epochs": (1, 500, int),
-        "l1_coeff": (0, 0.0, float),
-        "l2_coeff": (0, 0.5, float),
+        "max_epochs": (1, 100, int),
+        "l1_coeff": (1e-20, 1e-7, float),
+        "l2_coeff": (1e-20, 1e-7, float),
+        "zero_threshold": (0, 1e-5, float),
+
+        "batch_size" : (1, 500, int),
+        "weight_decay": (0, 1, float),
         "loss_threshold": (0, 1, float),
         "expand_by_k": (0, 50, int),
-        "zero_threshold": (0, 10e-5, float),
 
         "split_train_new_hypers": {
-            "learning_rate": (10e-10, 1, float),
-            "momentum": (0, 10, float),
+            "learning_rate": (1e-10, 1, float),
+            "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 10e-5, float),
-            "l2_coeff": (0, 10e-5, float),
-            "zero_threshold": (0, 10e-5, float),
+            "max_epochs": (1, 100, int),
+            "l1_coeff": (1e-20, 1e-7, float),
+            "l2_coeff": (1e-20, 1e-7, float),
+            "zero_threshold": (0, 1e-5, float),
         },
 
         "de_train_new_hypers" : {
             "learning_rate": (1e-10, 1, float),
-            "momentum": (0, 10, float),
+            "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 500, int),
-            "l1_coeff": (0, 10e-5, float),
-            "l2_coeff": (0, 10e-5, float),
-            "zero_threshold": (0, 10e-5, float),
+            "max_epochs": (1, 100, int),
+            "l1_coeff": (1e-20, 1e-7, float),
+            "l2_coeff": (1e-20, 1e-7, float),
+            "zero_threshold": (0, 1e-5, float),
         }
     }
 
