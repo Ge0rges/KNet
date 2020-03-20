@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.metrics import roc_curve, auc, roc_auc_score
 from sklearn.preprocessing import label_binarize
 
-__all__ = ['accuracy', 'calc_avg_AUROC', 'AUROC']
+__all__ = ['accuracy', 'calc_avg_AUROC', 'AUROC', 'calc_avg_AE_AUROC']
 
 
 def accuracy(output, target, topk=(1,)):
@@ -47,7 +47,7 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_class
     for cls in classes:
         scores = sum_outputs[:, all_classes.index(cls)]
         sum_area += AUROC(scores.cpu().numpy(), (sum_targets == cls).cpu().numpy())
-    
+
     return (sum_area / len(classes))
 
 
@@ -94,7 +94,7 @@ def AUROC(scores, targets):
     # case when number of elements added are 0
     if scores.shape[0] == 0:
         return 0.5
-    
+
     # sorting the arrays
     scores, sortind = torch.sort(torch.from_numpy(
         scores), dim=0, descending=True)

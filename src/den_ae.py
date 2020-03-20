@@ -1,21 +1,16 @@
 from __future__ import print_function
-
-import os
-import random
-import copy
-
-import numpy as np
-
-import torch
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-import torch.optim as optim
-
-from utils import *
 from utils.datasets import load_AE_MNIST
 from models import ActionEncoder
 from utils.train import trainAE
 from utils.eval import calc_avg_AE_AUROC
+from utils import l1_penalty, l2_penalty, l1l2_penalty
+
+import random
+import copy
+import torch
+import torch.nn as nn
+import torch.backends.cudnn as cudnn
+import torch.optim as optim
 
 # Non-ML Hyperparams
 ALL_CLASSES = range(10)
@@ -36,7 +31,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 5
+    max_epochs = 10
     weight_decay = 0
     lr_drop = 0.5
     l1_coeff = 1e-10
@@ -85,7 +80,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         }
 
     print('==> Preparing dataset')
-
     trainloader, validloader, testloader = load_AE_MNIST(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
@@ -380,9 +374,6 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
 
         old_biases = []
         new_biases = []
-
-        if dict_key is 'action':
-            print()
 
         # First get all biases.
         for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):

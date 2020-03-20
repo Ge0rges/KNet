@@ -11,7 +11,7 @@ import re
 
 from misc import ClassSampler, GaussianNoise, AESampler
 
-__all__ = ['load_MNIST', 'load_CIFAR']
+__all__ = ['load_MNIST', 'load_CIFAR', 'load_AE_MNIST']
 
 DATA = './data'
 # only contains the data since the labels are in fact just the data points themselves for the autoencodeur

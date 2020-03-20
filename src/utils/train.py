@@ -9,7 +9,7 @@ from progress.bar import Bar
 
 from .misc import AverageMeter
 
-__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty']
+__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty', 'trainAE']
 
 # Manual seed
 SEED = 20
@@ -129,9 +129,6 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
         model.float()
         model.phase = "GENERATE"
         generate_output = model(inputs)
-
-        if batch_idx == 40:
-            print()
 
         model.phase = "ACTION"
         action_output = model(inputs)
