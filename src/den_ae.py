@@ -124,7 +124,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             for epoch in range(max_epochs):
 
                 # decay learning rate
-                if (epoch + 1) % epochs_drop == 0:
+                if not epochs_drop == 0 and (epoch + 1) % epochs_drop == 0:
                     learning_rate *= lr_drop
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
@@ -170,7 +170,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             for epoch in range(max_epochs):
 
                 # decay learning rate
-                if (epoch + 1) % epochs_drop == 0:
+                if not epochs_drop == 0 and (epoch + 1) % epochs_drop == 0:
                     learning_rate *= lr_drop
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
@@ -199,7 +199,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             for epoch in range(max_epochs):
 
                 # decay learning rate
-                if (epoch + 1) % epochs_drop == 0:
+                if not epochs_drop == 0 and (epoch + 1) % epochs_drop == 0:
                     learning_rate *= lr_drop
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
