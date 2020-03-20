@@ -92,11 +92,13 @@ def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
 
         # Bottom 20% get top 20% params.
         for worker in workers[int(len(workers) * 0.2):]:
-            worker[1] = exploit(workers, worker)[1]
+            i = workers.index(worker)
+            workers[i] = (worker[0], exploit(workers, worker)[1])
 
         # Bottom 80% explores
         for worker in workers[int(len(workers) * 0.8):]:
-            worker[1] = explore(worker[1], params_bounds, standard_deviation)
+            i = workers.index(worker)
+            workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
 
     return best_worker
 
