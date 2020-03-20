@@ -587,10 +587,14 @@ class freeze_hook(object):
         grad_clone = grad.clone()
 
         for i in range(grad.shape[0]):
-            for j in range(grad.shape[1]):
 
-                if not self.active_weights[i, j]:
-                    grad_clone[i, j] = 0
+            try:
+                for j in range(grad.shape[1]):
+                    if not self.active_weights[i, j]:
+                        grad_clone[i, j] = 0
+            except:
+                if not self.active_weights:
+                    grad_clone[i] = 0
 
         return grad_clone
 
