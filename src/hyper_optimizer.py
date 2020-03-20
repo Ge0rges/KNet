@@ -89,6 +89,7 @@ def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
         # Sort the workers
         workers = sorted(workers, key=lambda x: x[0])
         best_worker = workers[-1]
+        print("At epoch {} got best worker: {}".format(epoch, best_worker))
 
         # Bottom 20% get top 20% params.
         for i, worker in enumerate(workers[:int(len(workers) * 0.2)]):
