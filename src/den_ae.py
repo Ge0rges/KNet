@@ -258,10 +258,11 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_train_new_hypers):
     sizes, weights, biases, hooks = {}, {}, {}, []
-
     modules = get_modules(model)
     for dict_key, module in modules.items():
         sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
+
+        prev_neurons = None
         for module_name, param in module:
             if 'bias' not in module_name:
                 if len(sizes[dict_key]) == 0:
@@ -271,14 +272,22 @@ def dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_trai
                 sizes[dict_key].append(param.data.shape[0] + expand_by_k)
 
                 # Register hook to freeze param
-                active_weights = [False] * (param.data.shape[0] - expand_by_k)
-                active_weights.extend([True] * expand_by_k)
-                hook = param.register_hook(freeze_hook(active_weights))
+                active_neurons = [False] * (param.data.shape[0] - expand_by_k)
+                active_neurons.extend([True] * expand_by_k)
+
+                if prev_neurons is None:
+                    prev_neurons = [True] * param.data.shap
+
+                hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
                 hooks.append(hook)
+
+                # Pushes current set of neurons to next.
+                prev_neurons = active_neurons
 
             elif 'bias' in module_name:
                 biases[dict_key].append(param.data)
-
+                hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
+                hooks.append(hook)
             else:
                 raise LookupError()
 
@@ -395,6 +404,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
                     new_layers[weight_index].append((new_biases[weight_index].data[j], new_weights, new_param))
                 weight_index += 1
 
+        prev_neurons = None
         # For each layer, rebuild the weight and bias tensors.
         for old_neurons, new_neurons in zip(old_layers, new_layers):
             new_layer_weights = []
@@ -433,6 +443,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
                     new_layer_biases[j] = old_neuron[0]
                     append_to_end_biases.append(0)  # New bias is 0
 
+
             # Append the split weights and biases to end of layer
             new_layer_weights.extend(append_to_end_weights)
             new_layer_biases.extend(append_to_end_biases)
@@ -445,6 +456,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
             # Register hook to freeze param
             active_weights = [False] * (len(new_layer_weights) - len(append_to_end_weights))
             active_weights.extend([True] * len(append_to_end_weights))
+
+            
             hook = new_neurons[0][2].register_hook(freeze_hook(active_weights))  # All neurons belong to same param.
             hooks.append(hook)
 
@@ -570,16 +583,23 @@ def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weig
 
 
 class freeze_hook(object):
-    def __init__(self, active_weights):
-        self.active_weights = active_weights
+    def __init__(self, previous_neurons, active_neurons, bias=False):
+        self.previous_neurons = previous_neurons
+        self.active_neurons = active_neurons
+        self.bias = bias
 
     def __call__(self, grad):
 
         grad_clone = grad.clone()
 
-        for i in range(grad.shape[0]):
-            if not self.active_weights[i]:
+        if self.bias:
+            for i in range(grad.shape[0]):
                 grad_clone[i] = 0
+        else:
+            for i in range(grad.shape[0]):
+                for j in range(grad.shape[1]):
+                    if not self.active_neurons[i] and not self.previous_neurons[j]:
+                        grad_clone[i, j] = 0
 
         return grad_clone
 
