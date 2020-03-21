@@ -221,12 +221,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
             # Note: In ICLR 18 paper the order of these steps are switched, we believe this makes more sense.
             print("==> Splitting Neurons")
-            model = split_neurons(model_copy, model, trainloader, validloader, cls, split_train_new_hypers)
+            model = split_neurons(model_copy, model, trainloader, validloader, split_train_new_hypers)
 
             # Could be train_loss or test_loss
             if train_loss > loss_threshold:
                 print("==> Dynamic Expansion")
-                model = dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_train_new_hypers)
+                model = dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers)
 
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
@@ -256,7 +256,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     return micros
 
 
-def dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_train_new_hypers):
+def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):
     sizes, weights, biases, hooks = {}, {}, {}, []
     modules = get_modules(model)
     for dict_key, module in modules.items():
@@ -295,7 +295,7 @@ def dynamic_expansion(expand_by_k, model, trainloader, validloader, cls, de_trai
             sizes[dict_key][-1] -= expand_by_k
 
     # From here, everything taken from DE. #
-    return train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks, de_train_new_hypers)
+    return train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, de_train_new_hypers)
 
 
 def get_modules(model):
@@ -364,7 +364,7 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
     return hooks, prev_active
 
 
-def split_neurons(old_model, new_model, trainloader, validloader, cls, split_train_new_hypers):
+def split_neurons(old_model, new_model, trainloader, validloader, split_train_new_hypers):
     sizes, weights, biases, hooks = {}, {}, {}, []
 
     suma = 0
@@ -472,10 +472,10 @@ def split_neurons(old_model, new_model, trainloader, validloader, cls, split_tra
         return new_model
 
     # From here, everything taken from DE. #
-    return train_new_neurons(new_model, new_modules, cls, trainloader, validloader, sizes, weights, biases, hooks, split_train_new_hypers)
+    return train_new_neurons(new_model, new_modules, trainloader, validloader, sizes, weights, biases, hooks, split_train_new_hypers)
 
 
-def train_new_neurons(model, modules, cls, trainloader, validloader, sizes, weights, biases, hooks, hypers):
+def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, hypers):
     # Get params
     learning_rate = hypers["learning_rate"]
     max_epochs = hypers["max_epochs"]
