@@ -224,10 +224,11 @@ def explore(params, param_bounds, standard_deviation=0.1):
         elif isinstance(value, float) or isinstance(value, int):
             lower, upper, type = param_bounds[key]
 
-            new_value = type(standard_deviation*random.choice([-1, 1])) if value == 0 else type((standard_deviation+random.choice([-1, 1]))*value)
+            new_value = type(standard_deviation*random.choice([-1, 1])) if value == 0 else \
+                            type((standard_deviation*random.choice([-1, 1])+1)*value)
             new_value = max(lower, new_value)
             new_value = min(upper, new_value)
-
+                                                      
             params[key] = new_value
 
         else:
