@@ -180,6 +180,10 @@ def exploit(workers, worker):
     """
     Worker copies one of the top 20%.
     workers: List of tuples (score, params). Sorted.
+
+    >>> workers = [(0.9, {"param1"}), (0.5, {"param3"}), (0.6, {"param2"}), (0.2, {"param5"}), (0.2, {"param4"})]
+    >>> worker = exploit(workers, worker[4])
+    (0.2, {"param1"})
     """
     selected_worker = worker
     while worker is not selected_worker and not len(workers) == 1:
@@ -220,7 +224,7 @@ def explore(params, param_bounds, standard_deviation=0.1):
         elif isinstance(value, float) or isinstance(value, int):
             lower, upper, type = param_bounds[key]
 
-            new_value = type(standard_deviation*(random.choice([-1, 1])+value))
+            new_value = type(standard_deviation*random.choice([-1, 1])) if value == 0 else type((standard_deviation+random.choice([-1, 1]))*value)
             new_value = max(lower, new_value)
             new_value = min(upper, new_value)
 
