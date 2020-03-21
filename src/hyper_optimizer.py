@@ -181,9 +181,9 @@ def exploit(workers, worker):
     Worker copies one of the top 20%.
     workers: List of tuples (score, params). Sorted.
 
-    >>> workers = [(0.9, {"param1"}), (0.5, {"param3"}), (0.6, {"param2"}), (0.2, {"param5"}), (0.2, {"param4"})]
-    >>> worker = exploit(workers, worker[4])
-    (0.2, {"param1"})
+    >>> workers = [(0.9, {"param0":"m"}), (0.5, {"param2":"m"}), (0.6, {"param1":"m"}), (0.2, {"param4":"m"}), (0.2, {"param3":"m"})]
+    >>> exploit(workers, worker[4])
+    (0.9, {"param0":"m"})
     """
     selected_worker = worker
     while worker is not selected_worker and not len(workers) == 1:
