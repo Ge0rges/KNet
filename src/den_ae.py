@@ -276,7 +276,7 @@ def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new
                 active_neurons.extend([True] * expand_by_k)
 
                 if prev_neurons is None:
-                    prev_neurons = [True] * param.data.shap
+                    prev_neurons = [True] * param.data.shape[0]
 
                 hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
                 hooks.append(hook)
