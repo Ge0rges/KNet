@@ -10,8 +10,8 @@ import itertools
 import random
 import traceback
 
-SEED = 20
-random.seed(SEED)
+# SEED = 20
+# random.seed(SEED)
 
 
 def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):

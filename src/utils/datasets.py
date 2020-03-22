@@ -13,8 +13,6 @@ from misc import ClassSampler, GaussianNoise, AESampler
 __all__ = ['load_MNIST', 'load_CIFAR', 'load_AE_MNIST']
 
 DATA = './data'
-# only contains the data since the labels are in fact just the data points themselves for the autoencodeur
-ALL_CLASSES = range(10)
 
 BANANA_RESIZED_DATA = '../data/Banana_Car/banana/1/resized/1/'
 CAR_RESIZED_DATA = '../data/Banana_Car/car/1/resized/1/'
