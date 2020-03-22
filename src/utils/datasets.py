@@ -46,7 +46,7 @@ def dataset_reshaping(name, directory_path, new_size=(640, 480), colors=3):
 
 
 class MyImageDataset(Dataset):
-    def __init__(self, dir, name, label, transform=None):
+    def __init__(self, dir, name, label):
         self.dir = dir
         self.num_files = 0
         self.name = name
@@ -55,7 +55,6 @@ class MyImageDataset(Dataset):
             for file in filenames:
                 if file.endswith(".jpg"):
                     self.num_files += 1
-        self.transform = transform
 
     def __len__(self):
         return self.num_files
@@ -65,10 +64,13 @@ class MyImageDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
+        if isinstance(idx, slice):
+            idx = list(range(idx.stop)[idx])
+
         try:
+            
             samples = []
             for i in idx:
-
                 img = np.asarray(Image.open(self.dir + self.name + "_{}.jpg".format(i)))
                 tensor_img = torch.Tensor(img)
 
@@ -77,16 +79,16 @@ class MyImageDataset(Dataset):
                     new_size *= j
                 tensor_img = tensor_img.view((new_size))
 
-                sample = (tensor_img, torch.cat(tensor_img, torch.Tensor(self.label)))
+                label = torch.Tensor([self.label])
+                label = torch.cat([tensor_img, label], 0)
 
-                if self.transform:
-                    sample = self.transform(sample)
-
+                sample = (tensor_img, label)
                 samples.append(sample)
 
             return samples
 
         except TypeError:
+
             img = np.asarray(Image.open(self.dir + self.name + "_{}.jpg".format(idx)))
             tensor_img = torch.Tensor(img)
 
@@ -94,12 +96,9 @@ class MyImageDataset(Dataset):
             for j in tensor_img.size():
                 new_size *= j
             tensor_img = tensor_img.view((new_size))
-            label = torch.Tensor(self.label)
+            label = torch.Tensor([self.label])
             label = torch.cat([tensor_img, label], 0)
             sample = (tensor_img, label)
-
-            if self.transform:
-                sample = self.transform(sample)
 
             return sample
 
@@ -256,5 +255,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     # bc_loader(BANANACAR_RESIZED_DATA, BANANACAR_LABEL)
-    test = MyImageDataset(BANANA_RESIZED_DATA, "banana", BANANA_LABEL, transform=transforms.ToTensor())
+    test = MyImageDataset(BANANA_RESIZED_DATA, "banana", BANANA_LABEL)
     print(test[0])
