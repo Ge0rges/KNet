@@ -137,18 +137,17 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
         for file in filenames:
             if file.endswith(".csv"):
                 files.append(dirpath + "/" + file)
-    print(files)
     data = []
+    count = 0
     for f in files:
         x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
         i = 0
         cur = x[0][0]
-        while i < np.shape(x)[0]:
+        while i < np.shape(x)[0] - 1:
             pre_pro = []
             start = cur
-            print(start)
             idx = i
-            while cur - start < 1 and idx < np.shape(x)[0]:
+            while cur - start < 1 and idx < np.shape(x)[0] - 1:
                 pre_pro.append(x[idx])
                 idx += 1
                 cur = x[idx][0]
@@ -156,11 +155,11 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
             pre_pro = np.array(pre_pro)
             pre_pro = np.delete(pre_pro, 0, 1)
             pre_pro = np.delete(pre_pro, -1, 1)
-
+            count += 1
             pro = _fft_psd(x[idx - 1][0] - start, pre_pro)
-            data.extend(pro)
-            i += idx
-    print(np.shape(data))
+            data.append(pro)
+            i += idx - i
+    np.save("../data/EEG_Processed/{}".format(task), data)
 
 
 def _fft_psd(sampling_time, data):
@@ -292,4 +291,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     # bc_loader(CAR_RESIZED_DATA, "car", CAR_LABEL)
-    EEG_preprocessing("task1")
+    # EEG_preprocessing("task1")
+    pass
