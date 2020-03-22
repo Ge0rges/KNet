@@ -5,8 +5,9 @@ from torch.utils.data import DataLoader, ConcatDataset, Dataset, TensorDataset
 from train import one_hot
 import numpy as np
 import os
-import csv
 from PIL import Image
+from sklearn.preprocessing import normalize
+
 
 from misc import ClassSampler, GaussianNoise, AESampler
 
@@ -171,8 +172,8 @@ def EEG_loader(task_num, batch_size=256, num_workers=4):
     data = np.load("./data/EEG_Processed/task{}.npy".format(task_num))
     num_samples = len(data)
     labels = [task_num - 1]*num_samples
-
-    data = torch.Tensor(data).view((num_samples, 256*4))
+    data = normalize(data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    data = torch.Tensor(data)
 
     tensor_labels = torch.Tensor(labels)
     tensor_class_labels = one_hot(tensor_labels, range(9))
