@@ -126,7 +126,7 @@ def bc_loader(dir, name, label, batch_size=256, num_workers=4):
     testsampler = AESampler(labels, start_from=(train_size + valid_size))
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
-    print("Done preparing banana AE dataloader")
+    print("Done preparing {} AE dataloader".format(name))
 
     return (trainloader, validloader, testloader)
 
@@ -152,9 +152,32 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
     np.save("../data/EEG_Processed/{}".format(task), data)
 
 
+def EEG_loader(task_num, batch_size=256, num_workers=4):
+    data = np.load("../data/EEG_Processed/task{}.npy".format(task_num))
+    num_samples = len(data)
+    labels = [task_num]*num_samples
 
-def EEG_loader(task, batch_size=256, num_workers=4):
-    pass
+    data = torch.Tensor(data)
+    tensor_labels = torch.Tensor(labels)
+    dataset = TensorDataset(data, tensor_labels)
+
+    train_size = int(num_samples*0.7)
+    trainsampler = AESampler(labels, start_from=0, amount=train_size)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    check_for_nan(trainloader)
+
+    valid_size = int(num_samples*0.05)
+    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    check_for_nan(validloader)
+
+    testsampler = AESampler(labels, start_from=(train_size + valid_size))
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    check_for_nan(testloader)
+
+    print("Done preparing EEG task{} AE dataloader".format(task_num))
+
+    return (trainloader, validloader, testloader)
 
 
 def _fft_psd(sampling_time, sample_num, data):
@@ -289,3 +312,4 @@ if __name__ == '__main__':
     # for i in range(1, 10):
     #     EEG_preprocessing("task{}".format(i))
     # EEG_preprocessing("task1")
+    print(EEG_loader(1))
