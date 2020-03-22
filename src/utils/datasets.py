@@ -114,18 +114,16 @@ def bc_loader(dir, name, label, batch_size=256, num_workers=4):
     dataset = MyImageDataset(dir, name, label)
 
     num_samples = len(dataset)
+    labels = [label]*num_samples
 
     train_size = int(num_samples*0.7)
-    labels = [label]*train_size
     trainsampler = AESampler(labels, start_from=0, amount=train_size)
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
     valid_size = int(num_samples*0.05)
-    labels = [label]*valid_size
     validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
 
-    labels = [label]*(num_samples - (train_size + valid_size))
     testsampler = AESampler(labels, start_from=(train_size + valid_size))
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
