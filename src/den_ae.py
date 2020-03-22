@@ -1,5 +1,5 @@
 from __future__ import print_function
-from utils.datasets import load_AE_MNIST
+from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader
 from models import ActionEncoder
 from utils.train import trainAE
 from utils.eval import calc_avg_AE_AUROC
@@ -14,7 +14,7 @@ import torch.optim as optim
 import os
 
 # Non-ML Hyperparams
-ALL_CLASSES = range(10)
+ALL_CLASSES = range(9)
 NUM_WORKERS = 0
 CUDA = False
 SEED = 20
@@ -80,8 +80,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             "zero_threshold": zero_threshold,
         }
 
-    print('==> Preparing dataset')
-    trainloader, validloader, testloader = load_AE_MNIST(batch_size=batch_size, num_workers=NUM_WORKERS)
+    # print('==> Preparing dataset')
+    # trainloader, validloader, testloader = load_AE_MNIST(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     model = ActionEncoder()
@@ -110,6 +110,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         print('\nTask: [%d | %d]\n' % (t + 1, len(ALL_CLASSES)))
 
         CLASSES.append(cls)
+        print('==> Preparing dataset')
+        trainloader, validloader, testloader = EEG_loader(cls+1, batch_size=batch_size, num_workers=NUM_WORKERS)
 
         if t == 0:
             print("==> Learning")

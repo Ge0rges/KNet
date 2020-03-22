@@ -152,14 +152,35 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
     np.save("../data/EEG_Processed/{}".format(task), data)
 
 
-def EEG_loader(task_num, batch_size=256, num_workers=4):
-    data = np.load("../data/EEG_Processed/task{}.npy".format(task_num))
-    num_samples = len(data)
-    labels = [task_num]*num_samples
+def _fft_psd(sampling_time, sample_num, data):
+    """
+    Get the the FFT power spectral densities for the given data
+    Args:
+        data (np.array): A single numpy array of data to process.
 
-    data = torch.Tensor(data)
+    Returns:
+        list, list: FFT frequencies, FFT power spectral densities at those frequencies.
+    """
+    ps_densities = np.abs(np.fft.fft(data)) ** 2
+    frequencies = np.fft.fftfreq(sample_num, float(sampling_time)/float(sample_num))
+    idx = np.argsort(frequencies)
+    return frequencies[idx], ps_densities[idx]
+
+
+def EEG_loader(task_num, batch_size=256, num_workers=4):
+    data = np.load("./data/EEG_Processed/task{}.npy".format(task_num))
+    num_samples = len(data)
+    labels = [task_num - 1]*num_samples
+
+    data = torch.Tensor(data).view((num_samples, 256*4))
+
     tensor_labels = torch.Tensor(labels)
+    tensor_class_labels = one_hot(tensor_labels, range(9))
+    tensor_labels = torch.cat([data, tensor_class_labels], 1)
+
     dataset = TensorDataset(data, tensor_labels)
+
+    labels = [i[1] for i in dataset]
 
     train_size = int(num_samples*0.7)
     trainsampler = AESampler(labels, start_from=0, amount=train_size)
@@ -178,21 +199,6 @@ def EEG_loader(task_num, batch_size=256, num_workers=4):
     print("Done preparing EEG task{} AE dataloader".format(task_num))
 
     return (trainloader, validloader, testloader)
-
-
-def _fft_psd(sampling_time, sample_num, data):
-    """
-    Get the the FFT power spectral densities for the given data
-    Args:
-        data (np.array): A single numpy array of data to process.
-
-    Returns:
-        list, list: FFT frequencies, FFT power spectral densities at those frequencies.
-    """
-    ps_densities = np.abs(np.fft.fft(data)) ** 2
-    frequencies = np.fft.fftfreq(sample_num, float(sampling_time)/float(sample_num))
-    idx = np.argsort(frequencies)
-    return frequencies[idx], ps_densities[idx]
 
 
 def load_AE_MNIST(batch_size=256, num_workers=4):
@@ -308,8 +314,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    # bc_loader(CAR_RESIZED_DATA, "car", CAR_LABEL)
-    # for i in range(1, 10):
-    #     EEG_preprocessing("task{}".format(i))
-    # EEG_preprocessing("task1")
-    print(EEG_loader(1))
+    pass

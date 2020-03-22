@@ -5,9 +5,9 @@ import numpy as np
 
 class ActionEncoder(nn.Module):
     def __init__(self, sizes={
-        'encoder': (28 * 28, 128, 20),
-        'decoder': (20, 128, 28 * 28),
-        'action': (20, 20, 10)
+        'encoder': (256*4, 128, 20),
+        'decoder': (20, 128, 256*4),
+        'action': (20, 20, 9)
     }, oldWeights=None, oldBiases=None):
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
