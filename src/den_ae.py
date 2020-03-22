@@ -315,7 +315,7 @@ def get_modules(model):
 def select_neurons(model, task, zero_threshold):
     modules = get_modules(model)
 
-    prev_active = [True] * 10
+    prev_active = [True] * len(ALL_CLASSES)
     prev_active[task] = False
 
     action_hooks, prev_active = gen_hooks(modules['action'], zero_threshold, prev_active)
