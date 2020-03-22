@@ -138,31 +138,26 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
             if file.endswith(".csv"):
                 files.append(dirpath + "/" + file)
     data = []
-    count = 0
+    sample_n = 256
     for f in files:
         x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
-        i = 0
-        cur = x[0][0]
-        while i < np.shape(x)[0] - 1:
-            pre_pro = []
-            start = cur
-            idx = i
-            while cur - start < 1 and idx < np.shape(x)[0] - 1:
-                pre_pro.append(x[idx])
-                idx += 1
-                cur = x[idx][0]
-
-            pre_pro = np.array(pre_pro)
+        for i in range(np.shape(x)[0] - sample_n):
+            pre_pro = x[i : i + sample_n]
             pre_pro = np.delete(pre_pro, 0, 1)
             pre_pro = np.delete(pre_pro, -1, 1)
-            count += 1
-            pro = _fft_psd(x[idx - 1][0] - start, pre_pro)
-            data.append(pro)
-            i += idx - i
+            pro = _fft_psd(1, sample_n, pre_pro)
+            assert np.shape(pro[1]) == (sample_n, 4)
+            data.append(pro[1])
+
     np.save("../data/EEG_Processed/{}".format(task), data)
 
 
-def _fft_psd(sampling_time, data):
+
+def EEG_loader(task, batch_size=256, num_workers=4):
+    pass
+
+
+def _fft_psd(sampling_time, sample_num, data):
     """
     Get the the FFT power spectral densities for the given data
     Args:
@@ -172,7 +167,7 @@ def _fft_psd(sampling_time, data):
         list, list: FFT frequencies, FFT power spectral densities at those frequencies.
     """
     ps_densities = np.abs(np.fft.fft(data)) ** 2
-    frequencies = np.fft.fftfreq(np.shape(data)[0], sampling_time/np.shape(data)[0])
+    frequencies = np.fft.fftfreq(sample_num, float(sampling_time)/float(sample_num))
     idx = np.argsort(frequencies)
     return frequencies[idx], ps_densities[idx]
 
@@ -291,5 +286,6 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     # bc_loader(CAR_RESIZED_DATA, "car", CAR_LABEL)
+    # for i in range(1, 10):
+    #     EEG_preprocessing("task{}".format(i))
     # EEG_preprocessing("task1")
-    pass

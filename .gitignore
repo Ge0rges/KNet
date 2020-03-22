@@ -126,3 +126,5 @@ MNIST/
 # Model Checkpoints
 src/checkpoints/
 *.icloud
+
+src/data/EEG_Processed/
