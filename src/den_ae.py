@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.optim as optim
+import os
 
 # Non-ML Hyperparams
 ALL_CLASSES = range(10)
@@ -237,10 +238,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         print("==> Calculating AUROC")
 
-        # filepath_best = os.path.join(CHECKPOINT, "best.pt")
-        # checkpoint = torch.load(filepath_best)
-        # model.load_state_dict(checkpoint['state_dict'])
-
         auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
 
         print('AUROC: {}'.format(auroc))
@@ -252,6 +249,9 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         print("%d: %f" % (i + 1, p[i]))
 
     micros = [x["micro"] for x in AUROCs]
+
+    filepath = os.path.join("./saved", "last.pt")
+    torch.save({'state_dict': model.state_dict()}, filepath)
 
     return micros
 
