@@ -68,7 +68,7 @@ class MyImageDataset(Dataset):
             idx = list(range(idx.stop)[idx])
 
         try:
-            
+
             samples = []
             for i in idx:
                 img = np.asarray(Image.open(self.dir + self.name + "_{}.jpg".format(i)))
@@ -80,6 +80,7 @@ class MyImageDataset(Dataset):
                 tensor_img = tensor_img.view((new_size))
 
                 label = torch.Tensor([self.label])
+                label = one_hot(label, ALL_CUSTOM_LABELS).view((len(ALL_CUSTOM_LABELS)))
                 label = torch.cat([tensor_img, label], 0)
 
                 sample = (tensor_img, label)
@@ -96,44 +97,36 @@ class MyImageDataset(Dataset):
             for j in tensor_img.size():
                 new_size *= j
             tensor_img = tensor_img.view((new_size))
+
             label = torch.Tensor([self.label])
+            label = one_hot(label, ALL_CUSTOM_LABELS).view((len(ALL_CUSTOM_LABELS)))
             label = torch.cat([tensor_img, label], 0)
+
             sample = (tensor_img, label)
 
             return sample
 
 
-def bc_loader(dir, label, batch_size=256, num_workers=4):
+def bc_loader(dir, name, label, batch_size=256, num_workers=4):
     """Loader to be used only for the car, banana and bananacar datasets"""
     if not os.path.isdir(dir):
         print("not dir")
-    dataset = torchvision.datasets.MyImageDataset(dir,
-                                               transform=torchvision.transforms.ToTensor(),
-    )
+    dataset = MyImageDataset(dir, name, label)
 
     num_samples = len(dataset)
-    class_labels = [label]*num_samples
-    data = torch.zeros((num_samples, 3*640*480))
-
-    for i in range(num_samples):
-        data[i] = dataset[i][0].view((3*640*480))
-
-    tensor_class_labels = torch.Tensor(class_labels)
-    tensor_class_labels = one_hot(tensor_class_labels, ALL_CUSTOM_LABELS)
-
-    tensor_labels = torch.cat([data, tensor_class_labels], 1)
-
-    dataset = TensorDataset(data, tensor_labels)
 
     train_size = int(num_samples*0.7)
-    trainsampler = AESampler(class_labels, start_from=0, amount=train_size)
+    labels = [label]*train_size
+    trainsampler = AESampler(labels, start_from=0, amount=train_size)
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
     valid_size = int(num_samples*0.05)
-    validsampler = AESampler(class_labels, start_from=train_size, amount=valid_size)
+    labels = [label]*valid_size
+    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
 
-    testsampler = AESampler(class_labels, start_from=(train_size + valid_size))
+    labels = [label]*(num_samples - (train_size + valid_size))
+    testsampler = AESampler(labels, start_from=(train_size + valid_size))
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
     print("Done preparing banana AE dataloader")
@@ -254,6 +247,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    # bc_loader(BANANACAR_RESIZED_DATA, BANANACAR_LABEL)
-    test = MyImageDataset(BANANA_RESIZED_DATA, "banana", BANANA_LABEL)
-    print(test[0])
+    bc_loader(CAR_RESIZED_DATA, "car", CAR_LABEL)
