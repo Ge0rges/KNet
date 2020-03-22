@@ -400,8 +400,8 @@ def split_neurons(old_model, new_model, trainloader, validloader, split_train_ne
                 new_layers.append([])
 
                 for j, new_weights in enumerate(new_param.data):
-                    old_layers[weight_index].append((old_biases[weight_index].data[j], old_param.data[j], old_param))
-                    new_layers[weight_index].append((new_biases[weight_index].data[j], new_weights, new_param))
+                    old_layers[weight_index].append((old_biases[weight_index].data[j], old_param.data[j], old_param, old_biases[weight_index]))
+                    new_layers[weight_index].append((new_biases[weight_index].data[j], new_weights, new_param, new_biases[weight_index]))
                 weight_index += 1
 
         prev_neurons = None
@@ -457,9 +457,16 @@ def split_neurons(old_model, new_model, trainloader, validloader, split_train_ne
             active_weights = [False] * (len(new_layer_weights) - len(append_to_end_weights))
             active_weights.extend([True] * len(append_to_end_weights))
 
-            
-            hook = new_neurons[0][2].register_hook(freeze_hook(active_weights))  # All neurons belong to same param.
+            if prev_neurons is None:
+                prev_neurons = [True] * new_neurons[0][2].shape[1]
+
+            hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))  # All neurons belong to same param.
             hooks.append(hook)
+            hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
+            hooks.append(hook)
+
+            # Push current layer to next.
+            prev_neurons = active_weights
 
             if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
                 sizes[dict_key][-1] -= len(append_to_end_weights)
