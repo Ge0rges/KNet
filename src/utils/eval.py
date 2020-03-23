@@ -51,38 +51,85 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_class
     return (sum_area / len(classes))
 
 
-def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
+def calc_avg_AE_AUROC(model, batchloader, all_classes, cls, use_cuda, num_classes = 10):
     """Calculates average of the AUROC for the autoencoder
     """
 
     # TODO: still doesn't work
-    sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
-    sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
 
-    for idx, (input, target) in enumerate(batchloader):
+    binary_targets = []
+    binary_output = []
+
+    for idx, (inp, target) in enumerate(batchloader):
         target = target[:, target.size()[1] - len(all_classes):]
-        target = label_binarize(target, all_classes)
-        input = Variable(input)
+
+        # transform into binary classification:
+        for y_true in target:
+            binary_y = argmax(y_true)
+            if binary_y != cls:
+                binary_y = 0
+            else:
+                binary_y = 1
+            binary_targets.append(binary_y)
+
+        inp = Variable(inp)
         model.phase = "ACTION"
-        output = model(input).data
+        output = model(inp).data
 
-        target = torch.LongTensor(target)
-        sum_targets = torch.cat((sum_targets, target), 0)
-        sum_outputs = torch.cat((sum_outputs, output), 0)
+        for y_score in output:
+            binary_y = argmax(y_score)
+            if binary_y != cls:
+                binary_y = 0
+            else:
+                binary_y = 1
+            binary_output.append(binary_y)
 
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-    for i in range(len(classes)):
-        fpr[i], tpr[i], _ = roc_curve(sum_targets[:, i], sum_outputs[:, i])
-        roc_auc[i] = auc(fpr[i], tpr[i])
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
 
-    fpr["micro"], tpr["micro"], _ = roc_curve(np.ravel(sum_targets.numpy()), np.ravel(sum_outputs.numpy()))
-    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    for i in range(len(binary_targets)):
+        if binary_targets[i] == 1 and binary_output[i] == 1:
+            tp += 1
+        elif binary_targets[i] == 0 and binary_output[i] == 0:
+            tn += 1
+        elif binary_targets[i] == 0 and binary_output[i] == 1:
+            fp += 1
+        elif binary_targets[i] == 1 and binary_output[i] == 0:
+            fn += 1
+        else:
+            print("ERROR WHILE COMPUTING AUROC, BINARY TARGETS/OUTPUTS NOT SETUP PROPERLY")
 
-    return roc_auc
+    print(tp, fp, tn, fn)
+    if tp == 0 and fn == 0:
+        if tp != 0:
+            tpr = 1
+        else:
+            tpr = 0
+    else:
+        tpr = float(float(tp)/(float(tp) + float(fn)))
+    if fp == 0 and tn == 0:
+        if fp != 0:
+            fpr = 1
+        else:
+            fpr = 0
+    else:
+        fpr = float(float(fp)/(float(fp) + float(tn)))
 
-    # return (sum_area / len(classes))
+    cr = float(tp + tn)/float(len(binary_targets))
+
+    return {"False Positive Rate": fpr, "True Positive Rate": tpr, "Classification Rate": cr}
+
+
+def argmax(y):
+    """No argmax function for pytorch in 0.3.1 so implementing my own"""
+    l = len(y)
+    max = 0
+    for i in range(1, l):
+        if y[max] < y[i]:
+            max = i
+    return max
 
 
 def AUROC(scores, targets):

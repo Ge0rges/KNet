@@ -1,5 +1,5 @@
 from __future__ import print_function
-from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader
+from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader
 from models import ActionEncoder
 from utils.train import trainAE
 from utils.eval import calc_avg_AE_AUROC
@@ -81,7 +81,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         }
 
     # print('==> Preparing dataset')
-    # trainloader, validloader, testloader = load_AE_MNIST(batch_size=batch_size, num_workers=NUM_WORKERS)
+    # trainloader, validloader, testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     model = ActionEncoder()
@@ -111,7 +111,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         CLASSES.append(cls)
         print('==> Preparing dataset')
-        trainloader, validloader, testloader = EEG_loader(cls+1, batch_size=batch_size, num_workers=NUM_WORKERS)
+        trainloader, validloader, testloader = EEG_task_loader(cls, batch_size=batch_size, num_workers=NUM_WORKERS)
 
         if t == 0:
             print("==> Learning")
@@ -240,7 +240,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         print("==> Calculating AUROC")
 
-        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
+        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, cls, CUDA)
 
         print('AUROC: {}'.format(auroc))
 
