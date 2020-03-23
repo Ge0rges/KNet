@@ -333,6 +333,8 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
 
     for name, layer in layers:
         if 'bias' in name:
+            h = layer.register_hook(active_grads_hook(prev_active, None, bias=True))
+            hooks.append(h)
             continue
 
         x_size, y_size = layer.size()
@@ -341,7 +343,6 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
         data = layer.data
 
         for x in range(x_size):
-
             # we skip the weight if connected neuron wasn't selected
             if prev_active[x]:
                 continue
@@ -349,7 +350,7 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
             for y in range(y_size):
                 weight = data[x, y]
                 # check if weight is active
-                if weight > zero_threshold:
+                if abs(weight) > zero_threshold:
                     # mark connected neuron as active
                     active[y] = False
 
@@ -615,13 +616,17 @@ class freeze_hook(object):
 
 class active_grads_hook(object):
 
-    def __init__(self, mask1, mask2):
+    def __init__(self, mask1, mask2, bias=True):
         self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
         self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
+        self.bias = bias
 
     def __call__(self, grad):
 
         grad_clone = grad.clone()
+        if self.bias:
+            grad_clone[self.mask1] = 0
+            return grad_clone
         if self.mask1.size:
             grad_clone[self.mask1, :] = 0
         if self.mask2.size:
