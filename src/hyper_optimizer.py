@@ -47,7 +47,7 @@ def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 25, int),
+            "max_epochs": (1, 10, int),
             "l1_coeff": (1e-20, 1e-7, float),
             "l2_coeff": (1e-20, 1e-7, float),
             "zero_threshold": (0, 1e-5, float),
@@ -59,7 +59,7 @@ def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 25, int),
+            "max_epochs": (1, 10, int),
             "l1_coeff": (1e-20, 1e-7, float),
             "l2_coeff": (1e-20, 1e-7, float),
             "zero_threshold": (0, 1e-5, float),
@@ -103,7 +103,7 @@ def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
 
 
 def layer_size_opt(dataset):
-
+    pass
 
 
 def train_worker_star(args):
