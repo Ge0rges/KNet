@@ -115,7 +115,7 @@ def calc_acc(model, batchloader, all_classes, cls):
         inp = Variable(inp)
         model.phase = "ACTION"
         output = model(inp)
-        output = torch.nn.functional.softmax(output, dim=0)
+        # output = torch.nn.functional.softmax(output, dim=0)
         output = output.data.numpy()
 
         for y_score in output:
