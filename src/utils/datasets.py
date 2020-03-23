@@ -166,7 +166,7 @@ def _fft_psd(sampling_time, sample_num, data):
     return frequencies[idx], ps_densities[idx]
 
 
-def EEG_loader(task_num, batch_size=256, num_workers=4):
+def EEG_dataset_getter(task_num):
     data = np.load("./data/EEG_Processed/task{}.npy".format(task_num))
     num_samples = len(data)
     labels = [task_num - 1]*num_samples
@@ -174,11 +174,21 @@ def EEG_loader(task_num, batch_size=256, num_workers=4):
     data = torch.Tensor(data)
 
     tensor_labels = torch.Tensor(labels)
-    tensor_class_labels = one_hot(tensor_labels, range(9))
+    tensor_class_labels = one_hot(tensor_labels, range(1, 10))
     tensor_labels = torch.cat([data, tensor_class_labels], 1)
 
     dataset = TensorDataset(data, tensor_labels)
+    return dataset
 
+
+def EEG_loader(batch_size=256, num_workers=4):
+    datasets = []
+    for i in range(1, 10):
+        datasets.append(EEG_dataset_getter(i))
+
+    dataset = ConcatDataset(datasets)
+
+    num_samples = len(dataset)
     labels = [i[1] for i in dataset]
 
     train_size = int(num_samples*0.7)
@@ -195,7 +205,42 @@ def EEG_loader(task_num, batch_size=256, num_workers=4):
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
     check_for_nan(testloader)
 
-    print("Done preparing EEG task{} AE dataloader".format(task_num))
+    print("Done preparing AE dataloader")
+
+    return (trainloader, validloader, testloader)
+
+
+def EEG_task_loader(task_num, batch_size=256, num_workers=4):
+    data = np.load("./data/EEG_Processed/task{}.npy".format(task_num+1))
+    num_samples = len(data)
+    labels = [task_num]*num_samples
+    data = normalize(data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    data = torch.Tensor(data)
+
+    tensor_labels = torch.Tensor(labels)
+    tensor_class_labels = one_hot(tensor_labels, range(9))
+    tensor_labels = torch.cat([data, tensor_class_labels], 1)
+
+    dataset = TensorDataset(data, tensor_labels)
+
+    num_samples = len(dataset)
+    labels = [i[1] for i in dataset]
+
+    train_size = int(num_samples*0.7)
+    trainsampler = AESampler(labels, start_from=0, amount=train_size)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    check_for_nan(trainloader)
+
+    valid_size = int(num_samples*0.05)
+    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    check_for_nan(validloader)
+
+    testsampler = AESampler(labels, start_from=(train_size + valid_size))
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    check_for_nan(testloader)
+
+    print("Done preparing AE dataloader")
 
     return (trainloader, validloader, testloader)
 
@@ -313,4 +358,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    pass
+    for i in range(1, 10):
+        EEG_preprocessing("task{}".format(i))
