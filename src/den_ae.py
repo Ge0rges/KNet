@@ -247,7 +247,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         AUROCs.append(auroc)
 
         print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, range(10), cls)
+        acc = calc_acc(model, testloader, range(10))
 
         print('ACC: {}'.format(acc))
 
