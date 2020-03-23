@@ -238,6 +238,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #
             #   remove all neurons which have no weights that are non_zero
             #   save network.
+
         # HARDCODED
         print("==> Calculating AUROC")
         auroc = calc_avg_AE_AUROC(model, testloader, range(10), CLASSES, CUDA)
