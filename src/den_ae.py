@@ -238,7 +238,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #
             #   remove all neurons which have no weights that are non_zero
             #   save network.
-
+        # HARDCODED
         print("==> Calculating AUROC")
         auroc = calc_avg_AE_AUROC(model, testloader, range(10), CLASSES, CUDA)
 
@@ -271,7 +271,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
 
-    return AUROCs
+    return [x["0"] for x in AUROCs]
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):
