@@ -250,7 +250,13 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     for i, p in enumerate(AUROCs):
         print("%d: %f" % (i + 1, p[i]))
 
-    micros = [x["micro"] for x in AUROCs]
+    # micros = [x["micro"] for x in AUROCs]
+    trainloader, validloader, testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    micros = []
+    for i in range(9):
+        micro = calc_avg_AE_AUROC(model, testloader, range(10), i, CUDA)
+        print("Final Accuracies for task {}: ".format(i), micro)
+        micros.append(micro["Classification Rate"])
 
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)

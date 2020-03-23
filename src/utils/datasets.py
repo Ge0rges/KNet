@@ -188,23 +188,35 @@ def _fft_psd(sampling_time, sample_num, data):
 
 
 def EEG_dataset_getter(task_num):
-    # TODO: update with addition of random datasets
-    data = np.load("./data/EEG_Processed/task{}.npy".format(task_num))
-    num_samples = len(data)
-    labels = [task_num - 1]*num_samples
-    data = normalize(data.reshape((num_samples, 256*4)), norm='max', axis=0)
-    data = torch.Tensor(data)
+    task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
+    num_samples = len(task_data)
+    task_labels = [task_num]*num_samples
+    task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    task_data = torch.Tensor(task_data)
 
-    tensor_labels = torch.Tensor(labels)
-    tensor_class_labels = one_hot(tensor_labels, range(1, 10))
-    tensor_labels = torch.cat([data, tensor_class_labels], 1)
+    task_tensor_labels = torch.Tensor(task_labels)
+    task_tensor_class_labels = one_hot(task_tensor_labels, range(10))
+    task_tensor_labels = torch.cat([task_data, task_tensor_class_labels], 1)
 
-    dataset = TensorDataset(data, tensor_labels)
+    task_dataset = TensorDataset(task_data, task_tensor_labels)
+
+    random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
+    num_samples = len(random_data)
+    random_labels = [9]*num_samples
+    random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    random_data = torch.Tensor(random_data)
+
+    random_tensor_labels = torch.Tensor(random_labels)
+    random_tensor_class_labels = one_hot(random_tensor_labels, range(10))
+    random_tensor_labels = torch.cat([random_data, random_tensor_class_labels], 1)
+
+    random_dataset = TensorDataset(random_data, random_tensor_labels)
+
+    dataset = ConcatDataset([task_dataset, random_dataset])
     return dataset
 
 
 def EEG_loader(batch_size=256, num_workers=4):
-    # TODO: update with addition of random datasets
     datasets = []
     for i in range(1, 10):
         datasets.append(EEG_dataset_getter(i))
@@ -214,7 +226,7 @@ def EEG_loader(batch_size=256, num_workers=4):
     num_samples = len(dataset)
     labels = [i[1] for i in dataset]
 
-    train_size = int(num_samples*0.7)
+    train_size = int(num_samples*0.5)
     trainsampler = AESampler(labels, start_from=0, amount=train_size)
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
     check_for_nan(trainloader)
@@ -256,7 +268,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
     random_tensor_class_labels = one_hot(random_tensor_labels, range(10))
     random_tensor_labels = torch.cat([random_data, random_tensor_class_labels], 1)
 
-    random_dataset = TensorDataset(task_data, random_tensor_labels)
+    random_dataset = TensorDataset(random_data, random_tensor_labels)
 
     dataset = ConcatDataset([task_dataset, random_dataset])
 
