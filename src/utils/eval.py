@@ -98,7 +98,7 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
     return roc_auc
 
 
-def calc_acc(model, batchloader, all_classes, cls):
+def calc_acc(model, batchloader, all_classes):
 
     binary_targets = []
     binary_output = []
@@ -115,7 +115,7 @@ def calc_acc(model, batchloader, all_classes, cls):
         inp = Variable(inp)
         model.phase = "ACTION"
         output = model(inp)
-        output = torch.nn.functional.softmax(output, dim=0)
+        # output = torch.nn.functional.softmax(output, dim=0)
         output = output.data.numpy()
 
         for y_score in output:

@@ -102,7 +102,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     criterion = nn.BCELoss()
 
-    CLASSES = [8]
+    CLASSES = [9]
     AUROCs = []
     ACCs = []
 
@@ -246,7 +246,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         AUROCs.append(auroc)
 
         print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, range(10), cls)
+        acc = calc_acc(model, testloader, range(10))
 
         print('ACC: {}'.format(acc))
 
@@ -263,7 +263,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
 
-    return [x["micro"] for x in AUROCs]
+    return [x["macro"] for x in AUROCs]
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):
