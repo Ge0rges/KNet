@@ -4,7 +4,7 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes={'encoder': (256 * 4, 256 * 2, 256, 128, 64, 32, 16),
+    def __init__(self, sizes={'encoder': (256 * 4, 256, 128, 64, 32, 16),
                               'action': (16, 20, 10)
                 }, oldWeights=None, oldBiases=None):
 

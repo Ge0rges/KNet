@@ -32,12 +32,12 @@ def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
         "momentum": (0, 0.99, float),
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
-        "max_epochs": (1, 100, int),
+        "max_epochs": (1, 25, int),
         "l1_coeff": (1e-20, 1e-7, float),
         "l2_coeff": (1e-20, 1e-7, float),
         "zero_threshold": (0, 1e-5, float),
 
-        "batch_size": (1, 500, int),
+        "batch_size": (100, 500, int),
         "weight_decay": (0, 1, float),
         "loss_threshold": (0, 1, float),
         "expand_by_k": (0, 50, int),
@@ -47,7 +47,7 @@ def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 100, int),
+            "max_epochs": (1, 10, int),
             "l1_coeff": (1e-20, 1e-7, float),
             "l2_coeff": (1e-20, 1e-7, float),
             "zero_threshold": (0, 1e-5, float),
@@ -59,7 +59,7 @@ def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 100, int),
+            "max_epochs": (1, 10, int),
             "l1_coeff": (1e-20, 1e-7, float),
             "l2_coeff": (1e-20, 1e-7, float),
             "zero_threshold": (0, 1e-5, float),
@@ -101,7 +101,7 @@ def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
 
     return best_worker
 
-
+6
 def train_worker_star(args):
     """
     Calls train_worker(*args).
