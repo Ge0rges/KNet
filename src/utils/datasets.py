@@ -136,19 +136,40 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
         for file in filenames:
             if file.endswith(".csv"):
                 files.append(dirpath + "/" + file)
+    if len(files) != 2:
+        print("THERE MUST BE EXACTLY 2 FILES")
+
+    # Actual task data
     data = []
     sample_n = 256
-    for f in files:
-        x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
-        for i in range(np.shape(x)[0] - sample_n):
-            pre_pro = x[i : i + sample_n]
-            pre_pro = np.delete(pre_pro, 0, 1)
-            pre_pro = np.delete(pre_pro, -1, 1)
-            pro = _fft_psd(1, sample_n, pre_pro)
-            assert np.shape(pro[1]) == (sample_n, 4)
-            data.append(pro[1])
 
-    np.save("../data/EEG_Processed/{}".format(task), data)
+    f = files[0]
+    x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
+    for i in range(np.shape(x)[0] - sample_n):
+        pre_pro = x[i : i + sample_n]
+        pre_pro = np.delete(pre_pro, 0, 1)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        pro = _fft_psd(1, sample_n, pre_pro)
+        assert np.shape(pro[1]) == (sample_n, 4)
+        data.append(pro[1])
+
+    np.save("../data/EEG_Processed/{}_task".format(task), data)
+
+    # other random data
+    data = []
+    sample_n = 256
+
+    f = files[1]
+    x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
+    for i in range(np.shape(x)[0] - sample_n):
+        pre_pro = x[i: i + sample_n]
+        pre_pro = np.delete(pre_pro, 0, 1)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        pro = _fft_psd(1, sample_n, pre_pro)
+        assert np.shape(pro[1]) == (sample_n, 4)
+        data.append(pro[1])
+
+    np.save("../data/EEG_Processed/{}_random".format(task), data)
 
 
 def _fft_psd(sampling_time, sample_num, data):
@@ -167,6 +188,7 @@ def _fft_psd(sampling_time, sample_num, data):
 
 
 def EEG_dataset_getter(task_num):
+    # TODO: update with addition of random datasets
     data = np.load("./data/EEG_Processed/task{}.npy".format(task_num))
     num_samples = len(data)
     labels = [task_num - 1]*num_samples
@@ -182,6 +204,7 @@ def EEG_dataset_getter(task_num):
 
 
 def EEG_loader(batch_size=256, num_workers=4):
+    # TODO: update with addition of random datasets
     datasets = []
     for i in range(1, 10):
         datasets.append(EEG_dataset_getter(i))
@@ -211,17 +234,31 @@ def EEG_loader(batch_size=256, num_workers=4):
 
 
 def EEG_task_loader(task_num, batch_size=256, num_workers=4):
-    data = np.load("./data/EEG_Processed/task{}.npy".format(task_num+1))
-    num_samples = len(data)
-    labels = [task_num]*num_samples
-    data = normalize(data.reshape((num_samples, 256*4)), norm='max', axis=0)
-    data = torch.Tensor(data)
+    task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
+    num_samples = len(task_data)
+    task_labels = [task_num]*num_samples
+    task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    task_data = torch.Tensor(task_data)
 
-    tensor_labels = torch.Tensor(labels)
-    tensor_class_labels = one_hot(tensor_labels, range(9))
-    tensor_labels = torch.cat([data, tensor_class_labels], 1)
+    task_tensor_labels = torch.Tensor(task_labels)
+    task_tensor_class_labels = one_hot(task_tensor_labels, range(10))
+    task_tensor_labels = torch.cat([task_data, task_tensor_class_labels], 1)
 
-    dataset = TensorDataset(data, tensor_labels)
+    task_dataset = TensorDataset(task_data, task_tensor_labels)
+
+    random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
+    num_samples = len(random_data)
+    random_labels = [9]*num_samples
+    random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    random_data = torch.Tensor(random_data)
+
+    random_tensor_labels = torch.Tensor(random_labels)
+    random_tensor_class_labels = one_hot(random_tensor_labels, range(10))
+    random_tensor_labels = torch.cat([random_data, random_tensor_class_labels], 1)
+
+    random_dataset = TensorDataset(task_data, random_tensor_labels)
+
+    dataset = ConcatDataset([task_dataset, random_dataset])
 
     num_samples = len(dataset)
     labels = [i[1] for i in dataset]
@@ -358,5 +395,4 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    for i in range(1, 10):
-        EEG_preprocessing("task{}".format(i))
+    pass

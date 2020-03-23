@@ -240,7 +240,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         print("==> Calculating AUROC")
 
-        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, cls, CUDA)
+        auroc = calc_avg_AE_AUROC(model, testloader, range(10), cls, CUDA)
 
         print('AUROC: {}'.format(auroc))
 
@@ -315,7 +315,7 @@ def get_modules(model):
 def select_neurons(model, task, zero_threshold):
     modules = get_modules(model)
 
-    prev_active = [True] * len(ALL_CLASSES)
+    prev_active = [True] * len(range(10))
     prev_active[task] = False
 
     action_hooks, prev_active = gen_hooks(modules['action'], zero_threshold, prev_active)
