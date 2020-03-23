@@ -71,7 +71,7 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
-    for i in range(len(classes)):
+    for i in classes:
         fpr[i], tpr[i], _ = roc_curve(sum_targets[:, i], sum_outputs[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
@@ -81,11 +81,11 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
     # Compute macro-average ROC curve and ROC area
 
     # First aggregate all false positive rates
-    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(len(classes))]))
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in classes]))
 
     # Then interpolate all ROC curves at this points
     mean_tpr = np.zeros_like(all_fpr)
-    for i in range(len(classes)):
+    for i in classes:
         mean_tpr += np.interp(all_fpr, fpr[i], tpr[i])
 
     # Finally average it and compute AUC
@@ -115,7 +115,7 @@ def calc_acc(model, batchloader, all_classes, cls):
         inp = Variable(inp)
         model.phase = "ACTION"
         output = model(inp)
-        output = torch.nn.functional.softmax(output, dim=0)
+        # output = torch.nn.functional.softmax(output, dim=0)
         output = output.data.numpy()
 
         for y_score in output:
