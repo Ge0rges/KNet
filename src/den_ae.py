@@ -331,9 +331,6 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
 
     layers = reversed(layers)
 
-    if prev_active is None:
-        print()
-
     for name, layer in layers:
         if 'bias' in name:
             h = layer.register_hook(active_grads_hook(prev_active, None, bias=True))
@@ -628,8 +625,10 @@ class active_grads_hook(object):
     def __call__(self, grad):
 
         grad_clone = grad.clone()
+
         if self.bias:
-            grad_clone[self.mask1] = 0
+            if self.mask1.size:
+                grad_clone[self.mask1] = 0
             return grad_clone
         if self.mask1.size:
             grad_clone[self.mask1, :] = 0
