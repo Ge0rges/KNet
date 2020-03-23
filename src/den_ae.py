@@ -102,7 +102,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     criterion = nn.BCELoss()
 
-    CLASSES = []
+    CLASSES = [8]
     AUROCs = []
     ACCs = []
 
