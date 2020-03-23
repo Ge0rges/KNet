@@ -100,7 +100,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.BCELoss()
 
     CLASSES = []
     AUROCs = []
