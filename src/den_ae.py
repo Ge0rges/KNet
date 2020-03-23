@@ -331,6 +331,9 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
 
     layers = reversed(layers)
 
+    if prev_active is None:
+        print()
+
     for name, layer in layers:
         if 'bias' in name:
             h = layer.register_hook(active_grads_hook(prev_active, None, bias=True))
@@ -616,7 +619,7 @@ class freeze_hook(object):
 
 class active_grads_hook(object):
 
-    def __init__(self, mask1, mask2, bias=True):
+    def __init__(self, mask1, mask2, bias=False):
         self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
         if mask2 is not None:
             self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
