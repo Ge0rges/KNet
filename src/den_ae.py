@@ -2,7 +2,7 @@ from __future__ import print_function
 from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader
 from models import ActionEncoder
 from utils.train import trainAE
-from utils.eval import calc_avg_AE_AUROC
+from utils.eval import calc_avg_AE_AUROC, calc_acc
 from utils import l1_penalty, l2_penalty, l1l2_penalty
 
 import random
@@ -32,7 +32,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 20
+    max_epochs = 5
     weight_decay = 0
     lr_drop = 0.5
     l1_coeff = 1e-10
@@ -80,8 +80,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             "zero_threshold": zero_threshold,
         }
 
-    # print('==> Preparing dataset')
-    # trainloader, validloader, testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    print('==> Preparing dataset')
+    testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     model = ActionEncoder()
@@ -104,6 +104,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     CLASSES = []
     AUROCs = []
+    ACCs = []
 
     for t, cls in enumerate(ALL_CLASSES):
 
@@ -111,7 +112,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         CLASSES.append(cls)
         print('==> Preparing dataset')
-        trainloader, validloader, testloader = EEG_task_loader(cls, batch_size=batch_size, num_workers=NUM_WORKERS)
+        trainloader, validloader = EEG_task_loader(cls, batch_size=batch_size, num_workers=NUM_WORKERS)
 
         if t == 0:
             print("==> Learning")
@@ -239,29 +240,38 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #   save network.
 
         print("==> Calculating AUROC")
+        auroc = calc_avg_AE_AUROC(model, testloader, range(10), CLASSES, CUDA)
 
-        auroc = calc_avg_AE_AUROC(model, testloader, range(10), cls, CUDA)
-
-        print('AUROC: {}'.format(auroc))
-
+        print("AUROC: {}".format(auroc))
         AUROCs.append(auroc)
+
+        print("==> Calculating Accuracy")
+        acc = calc_acc(model, testloader, range(10), cls)
+
+        print('ACC: {}'.format(acc))
+
+        ACCs.append(acc)
 
     print('\nAverage Per-task Performance over number of tasks')
     for i, p in enumerate(AUROCs):
-        print("%d: %f" % (i + 1, p))
+        print("%d: %f" % (i + 1, p[1]))
+
+    print('\nAverage Per-task Accuracy over number of tasks')
+    for i, p in enumerate(ACCs):
+        print("%d: %f" % (i + 1, p[1]))
 
     # micros = [x["micro"] for x in AUROCs]
-    trainloader, validloader, testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
-    micros = []
-    for i in range(9):
-        micro = calc_avg_AE_AUROC(model, testloader, range(10), i, CUDA)
-        print("Final Accuracies for task {}: ".format(i), micro)
-        micros.append(micro["Classification Rate"])
+    # trainloader, validloader, testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    # micros = []
+    # for i in range(9):
+    #     micro = calc_acc(model, testloader, range(10), i)
+    #     print("Final Accuracies for task {}: ".format(i), micro)
+    #     micros.append(micro["Classification Rate"])
 
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
 
-    return micros
+    return AUROCs
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):

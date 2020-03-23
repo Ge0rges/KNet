@@ -217,8 +217,9 @@ def EEG_dataset_getter(task_num):
 
 
 def EEG_loader(batch_size=256, num_workers=4):
+    # TODO: make is so that the testloader isn't re-using data that is being used in the train and valid loaders
     datasets = []
-    for i in range(1, 10):
+    for i in range(9):
         datasets.append(EEG_dataset_getter(i))
 
     dataset = ConcatDataset(datasets)
@@ -226,23 +227,23 @@ def EEG_loader(batch_size=256, num_workers=4):
     num_samples = len(dataset)
     labels = [i[1] for i in dataset]
 
-    train_size = int(num_samples*0.5)
-    trainsampler = AESampler(labels, start_from=0, amount=train_size)
-    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
-    check_for_nan(trainloader)
+    # train_size = int(num_samples*0.5)
+    # trainsampler = AESampler(labels, start_from=0, amount=train_size)
+    # trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    # check_for_nan(trainloader)
+    #
+    # valid_size = int(num_samples*0.05)
+    # validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    # validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    # check_for_nan(validloader)
 
-    valid_size = int(num_samples*0.05)
-    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
-    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
-    check_for_nan(validloader)
-
-    testsampler = AESampler(labels, start_from=(train_size + valid_size))
+    testsampler = AESampler(labels, start_from=0)
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
     check_for_nan(testloader)
 
     print("Done preparing AE dataloader")
 
-    return (trainloader, validloader, testloader)
+    return (testloader)
 
 
 def EEG_task_loader(task_num, batch_size=256, num_workers=4):
@@ -281,7 +282,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
     check_for_nan(trainloader)
 
     valid_size = int(num_samples*0.05)
-    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    validsampler = AESampler(labels, start_from=train_size)
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
     check_for_nan(validloader)
 
@@ -291,7 +292,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
 
     print("Done preparing AE dataloader")
 
-    return (trainloader, validloader, testloader)
+    return (trainloader, validloader)
 
 
 def load_AE_MNIST(batch_size=256, num_workers=4):
@@ -407,4 +408,5 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    pass
+    for i in range(1, 10):
+        EEG_preprocessing("task{}".format(i))

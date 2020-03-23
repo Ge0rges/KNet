@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.metrics import roc_curve, auc, roc_auc_score
 from sklearn.preprocessing import label_binarize
 
-__all__ = ['accuracy', 'calc_avg_AUROC', 'AUROC', 'calc_avg_AE_AUROC']
+__all__ = ['accuracy', 'calc_avg_AUROC', 'AUROC']
 
 
 def accuracy(output, target, topk=(1,)):
@@ -51,75 +51,85 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_class
     return (sum_area / len(classes))
 
 
-def calc_avg_AE_AUROC(model, batchloader, all_classes, cls, use_cuda, num_classes = 10):
+def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
     """Calculates average of the AUROC for the autoencoder
     """
+    sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
+    sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
 
-    # TODO: still doesn't work
+    for idx, (input, target) in enumerate(batchloader):
+        target = target[:, target.size()[1] - len(all_classes):]
+        target = label_binarize(target, all_classes)
+        input = Variable(input)
+        model.phase = "ACTION"
+        output = model(input).data
+
+        target = torch.LongTensor(target)
+        sum_targets = torch.cat((sum_targets, target), 0)
+        sum_outputs = torch.cat((sum_outputs, output), 0)
+
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(len(classes)):
+        fpr[i], tpr[i], _ = roc_curve(sum_targets[:, i], sum_outputs[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    fpr["micro"], tpr["micro"], _ = roc_curve(np.ravel(sum_targets.numpy()), np.ravel(sum_outputs.numpy()))
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+
+    # Compute macro-average ROC curve and ROC area
+
+    # First aggregate all false positive rates
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(len(classes))]))
+
+    # Then interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(len(classes)):
+        mean_tpr += np.interp(all_fpr, fpr[i], tpr[i])
+
+    # Finally average it and compute AUC
+    mean_tpr /= len(classes)
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+    return roc_auc
+
+
+def calc_acc(model, batchloader, all_classes, cls):
 
     binary_targets = []
     binary_output = []
 
     for idx, (inp, target) in enumerate(batchloader):
         target = target[:, target.size()[1] - len(all_classes):]
+        target = target.numpy()
 
         # transform into binary classification:
         for y_true in target:
             binary_y = argmax(y_true)
-            if binary_y != cls:
-                binary_y = 0
-            else:
-                binary_y = 1
             binary_targets.append(binary_y)
 
         inp = Variable(inp)
         model.phase = "ACTION"
-        output = model(inp).data
+        output = model(inp)
+        output = torch.nn.functional.softmax(output, dim=0)
+        output = output.data.numpy()
 
         for y_score in output:
             binary_y = argmax(y_score)
-            if binary_y != cls:
-                binary_y = 0
-            else:
-                binary_y = 1
             binary_output.append(binary_y)
 
-    tp = 0
-    fp = 0
-    tn = 0
-    fn = 0
-
+    correctly_classified = 0
     for i in range(len(binary_targets)):
-        if binary_targets[i] == 1 and binary_output[i] == 1:
-            tp += 1
-        elif binary_targets[i] == 0 and binary_output[i] == 0:
-            tn += 1
-        elif binary_targets[i] == 0 and binary_output[i] == 1:
-            fp += 1
-        elif binary_targets[i] == 1 and binary_output[i] == 0:
-            fn += 1
-        else:
-            print("ERROR WHILE COMPUTING AUROC, BINARY TARGETS/OUTPUTS NOT SETUP PROPERLY")
+        if binary_targets[i] == binary_output[i]:
+            correctly_classified += 1
 
-    print("tp: ", tp, "fp: ", fp, "tn: ", tn, "fn: ", fn)
-    if tp == 0 and fn == 0:
-        if tp != 0:
-            tpr = 1
-        else:
-            tpr = 0
-    else:
-        tpr = float(float(tp)/(float(tp) + float(fn)))
-    if fp == 0 and tn == 0:
-        if fp != 0:
-            fpr = 1
-        else:
-            fpr = 0
-    else:
-        fpr = float(float(fp)/(float(fp) + float(tn)))
+    cr = float(correctly_classified)/float(len(binary_targets))
 
-    cr = float(tp + tn)/float(len(binary_targets))
-
-    return {"False Positive Rate": fpr, "True Positive Rate": tpr, "Classification Rate": cr}
+    return {"Classification Rate": cr}
 
 
 def argmax(y):
