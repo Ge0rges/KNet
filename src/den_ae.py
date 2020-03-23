@@ -32,7 +32,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 5
+    max_epochs = 10
     weight_decay = 0
     lr_drop = 0.5
     l1_coeff = 1e-10
@@ -260,18 +260,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     for i, p in enumerate(ACCs):
         print("%d: %f" % (i + 1, p[1]))
 
-    # micros = [x["micro"] for x in AUROCs]
-    # trainloader, validloader, testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
-    # micros = []
-    # for i in range(9):
-    #     micro = calc_acc(model, testloader, range(10), i)
-    #     print("Final Accuracies for task {}: ".format(i), micro)
-    #     micros.append(micro["Classification Rate"])
+    micros = [x["micro"] for x in AUROCs]
 
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
 
-    return AUROCs
+    return micros
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):
