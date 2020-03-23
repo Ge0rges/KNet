@@ -96,11 +96,11 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         if 'bias' in name:
             param.data.zero_()
         elif 'weight' in name:
-            param.data.normal_(0, 0.005)
+            param.data.normal_(-0.05, 0.05)
 
     print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
-    criterion = nn.BCELoss()
+    criterion = nn.CrossEntropyLoss()
 
     CLASSES = []
     AUROCs = []
