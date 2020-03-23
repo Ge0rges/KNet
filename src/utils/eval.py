@@ -101,7 +101,7 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, cls, use_cuda, num_classe
         else:
             print("ERROR WHILE COMPUTING AUROC, BINARY TARGETS/OUTPUTS NOT SETUP PROPERLY")
 
-    print(tp, fp, tn, fn)
+    print("tp: ", tp, "fp: ", fp, "tn: ", tn, "fn: ", fn)
     if tp == 0 and fn == 0:
         if tp != 0:
             tpr = 1

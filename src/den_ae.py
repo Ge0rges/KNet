@@ -32,7 +32,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 10
+    max_epochs = 20
     weight_decay = 0
     lr_drop = 0.5
     l1_coeff = 1e-10
@@ -248,7 +248,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     print('\nAverage Per-task Performance over number of tasks')
     for i, p in enumerate(AUROCs):
-        print("%d: %f" % (i + 1, p[i]))
+        print("%d: %f" % (i + 1, p))
 
     # micros = [x["micro"] for x in AUROCs]
     trainloader, validloader, testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
