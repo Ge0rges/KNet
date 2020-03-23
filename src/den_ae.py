@@ -618,7 +618,8 @@ class active_grads_hook(object):
 
     def __init__(self, mask1, mask2, bias=True):
         self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
-        self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
+        if mask2 is not None:
+            self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
         self.bias = bias
 
     def __call__(self, grad):
