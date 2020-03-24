@@ -73,8 +73,13 @@ def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
 
     # Generate initial params
     workers = []
+
+    print "Doing PCA on the data..."
+    autoencoder_out = layer_size_opt_EEG(threshold=0.9)
+
     for i in range(generation_size):
-        workers.append((0, random_init(params_bounds)))
+        workers.append((0, random_init(params_bounds, autoencoder_out)))
+    print "Done PCA."
 
     # Train our models
     best_worker = None
@@ -144,7 +149,7 @@ def train_worker(i, epoch, worker, workers_len, params_bounds, standard_deviatio
     return worker
 
 
-def random_init(params_bounds):
+def random_init(params_bounds, autoencoder_out):
     """
     Randomly initializes the parameters within their bounds.
     """
@@ -164,10 +169,10 @@ def random_init(params_bounds):
 
     for key, value in iterator:
         if isinstance(value, dict):
-            params[key] = random_init(value)
+            params[key] = random_init(value, autoencoder_out)
 
         elif isinstance(value, list):
-            params[key] = random_init(value)
+            params[key] = random_init(value, autoencoder_out)
 
         elif isinstance(value, tuple):
             lower, upper, type = params_bounds[key]
@@ -179,7 +184,7 @@ def random_init(params_bounds):
             raise NotImplementedError
 
     # Sizes
-    params["sizes"] = construct_network_sizes()
+    params["sizes"] = construct_network_sizes(autoencoder_out)
     return params
 
 
@@ -244,11 +249,10 @@ def explore(params, param_bounds, standard_deviation=0.1):
     return params
 
 
-def construct_network_sizes(encoder_in=256*4, hidden_encoder=1, hidden_action=1, action_out=2):
+def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=1, hidden_action=1, action_out=2):
     sizes = {}
 
     # AutoEncoder
-    autoencoder_out = layer_size_opt_EEG(threshold=0.9)
     middle_layers = []
 
     previous = encoder_in
