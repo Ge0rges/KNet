@@ -34,10 +34,10 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     expand_by_k = 10
     max_epochs = 10
     weight_decay = 0
-    lr_drop = 0.5
+    lr_drop = 0.25
     l1_coeff = 1e-10
     zero_threshold = 1e-4
-    epochs_drop = 10
+    epochs_drop = 5
     l2_coeff = 1e-10
     momentum = 0.0
     actionencoder_sizes = None
@@ -269,7 +269,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
 
-    return [x["macro"] for x in AUROCs]
+    return [x["Classification Rate"] for x in ACCs]
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):

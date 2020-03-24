@@ -127,10 +127,10 @@ def train_worker(i, epoch, worker, workers_len, params_bounds, standard_deviatio
     success = False
     while not success:
         try:
-            aurocs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"])
-            auroc = sum(aurocs) / len(aurocs)
+            perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"])
+            perf = sum(perfs) / len(perfs)
 
-            worker = (auroc, worker[1])
+            worker = (perf, worker[1])
             success = True
 
         except Exception as e:
@@ -297,6 +297,5 @@ def layer_size_opt_EEG(threshold=0.9):
 
 
 if __name__ == "__main__":
-    # best_worker = optimize_hypers()
-    # print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
-    print(layer_size_opt(0.90))
+    best_worker = optimize_hypers()
+    print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
