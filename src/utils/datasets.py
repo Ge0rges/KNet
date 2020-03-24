@@ -573,6 +573,7 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
+    pass
     # for i in range(1, 10):
     #     EEG_preprocessing("task{}".format(i))
     # EEG_Mediation_preprocessing()

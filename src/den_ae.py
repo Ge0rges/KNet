@@ -1,5 +1,5 @@
 from __future__ import print_function
-from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader,EEG_Mediation_loader
+from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader, EEG_Mediation_loader
 from models import ActionEncoder
 from utils.train import trainAE
 from utils.eval import calc_avg_AE_AUROC, calc_acc
@@ -246,13 +246,13 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         # HARDCODED
         print("==> Calculating AUROC")
-        auroc = calc_avg_AE_AUROC(model, testloader, range(2), CLASSES, CUDA)
+        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
 
         print("AUROC: {}".format(auroc))
         AUROCs.append(auroc)
 
         print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, range(2))
+        acc = calc_acc(model, testloader, ALL_CLASSES)
 
         print('ACC: {}'.format(acc))
 
