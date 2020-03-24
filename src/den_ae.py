@@ -1,5 +1,5 @@
 from __future__ import print_function
-from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader,EEG_Mediation_loader
+from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader, EEG_Mediation_loader
 from models import ActionEncoder
 from utils.train import trainAE
 from utils.eval import calc_avg_AE_AUROC, calc_acc
