@@ -246,13 +246,13 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         # HARDCODED
         print("==> Calculating AUROC")
-        auroc = calc_avg_AE_AUROC(model, testloader, range(2), CLASSES, CUDA)
+        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
 
         print("AUROC: {}".format(auroc))
         AUROCs.append(auroc)
 
         print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, range(2))
+        acc = calc_acc(model, testloader, ALL_CLASSES)
 
         print('ACC: {}'.format(acc))
 
