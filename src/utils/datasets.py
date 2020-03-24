@@ -138,7 +138,6 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
                 files.append(dirpath + "/" + file)
     if len(files) != 2:
         print("THERE MUST BE EXACTLY 2 FILES")
-
     # Actual task data
     data = []
     sample_n = 256
@@ -376,10 +375,10 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
 
         dataset = ConcatDataset([task_dataset, random_dataset])
         return dataset
-
+    #
     datasets = []
-    for i in range(1, 9):
-        datasets.append(custom_EEG_dataset_getter(i, 0, 0))
+    # for i in range(1, 9):
+    #     datasets.append(custom_EEG_dataset_getter(i, 0, 0))
     datasets.append(custom_EEG_dataset_getter(0, 1, 0))
 
 
@@ -545,7 +544,7 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    EEG_Mediation_preprocessing()
-
-
-
+    # for i in range(1, 10):
+    #     EEG_preprocessing("task{}".format(i))
+    # EEG_Mediation_preprocessing()
+    # EEG_Mediation_loader()
