@@ -40,6 +40,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     epochs_drop = 10
     l2_coeff = 1e-10
     momentum = 0.0
+    actionencoder_sizes = None
 
     if main_hypers is not None:
         learning_rate = main_hypers["learning_rate"]
@@ -54,6 +55,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         epochs_drop = main_hypers["epochs_drop"]
         l2_coeff = main_hypers["l2_coeff"]
         momentum = main_hypers["momentum"]
+        actionencoder_sizes = main_hypers["sizes"]
 
     if split_train_new_hypers is None:
         split_train_new_hypers = {
@@ -84,7 +86,10 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
-    model = ActionEncoder()
+    if actionencoder_sizes is not None:
+        model = ActionEncoder(sizes=actionencoder_sizes)
+    else:
+        model = ActionEncoder()
 
     if CUDA:
         model = model.cuda()
