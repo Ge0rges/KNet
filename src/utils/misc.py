@@ -78,6 +78,7 @@ class AESampler(Sampler):
                     self.indices.append(i)
                 elif left > 0:
                     self.indices.append(i)
+                    left -= 1
             else:
                 start -= 1
 

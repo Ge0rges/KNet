@@ -282,7 +282,146 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
     check_for_nan(trainloader)
 
     valid_size = int(num_samples*0.05)
-    validsampler = AESampler(labels, start_from=train_size)
+    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    check_for_nan(validloader)
+
+    testsampler = AESampler(labels, start_from=(train_size + valid_size))
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    check_for_nan(testloader)
+    print("Done preparing AE dataloader")
+
+    return (trainloader, validloader)
+
+
+def EEG_Mediation_preprocessing():
+    files = []
+    for (dirpath, dirnames, filenames) in os.walk("../data/EEG_Raw/calm/"):
+        for file in filenames:
+            if file.endswith(".csv"):
+                files.append(dirpath + file)
+    print(files)
+    # if len(files) != 2:
+    #     print("THERE MUST BE EXACTLY 2 FILES")
+
+    # Actual task data
+    data = []
+    sample_n = 256
+
+    f = files[0]
+    x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
+    for i in range(np.shape(x)[0] - sample_n):
+        pre_pro = x[i : i + sample_n]
+        pre_pro = np.delete(pre_pro, 0, 1)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        pro = _fft_psd(1, sample_n, pre_pro)
+        assert np.shape(pro[1]) == (sample_n, 4)
+        data.append(pro[1])
+
+    np.save("../data/EEG_Processed/calm", data)
+
+
+    files = []
+    for (dirpath, dirnames, filenames) in os.walk("../data/EEG_Raw/normal/"):
+        for file in filenames:
+            if file.endswith(".csv"):
+                files.append(dirpath + "/" + file)
+    print(files)
+    # if len(files) != 2:
+    #     print("THERE MUST BE EXACTLY 2 FILES")
+
+    # Actual task data
+    data = []
+    sample_n = 256
+
+    f = files[0]
+    x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
+    for i in range(np.shape(x)[0] - sample_n):
+        pre_pro = x[i : i + sample_n]
+        pre_pro = np.delete(pre_pro, 0, 1)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        pro = _fft_psd(1, sample_n, pre_pro)
+        assert np.shape(pro[1]) == (sample_n, 4)
+        data.append(pro[1])
+
+    np.save("../data/EEG_Processed/normal", data)
+
+
+def EEG_Mediation_loader(batch_size=256, num_workers=4):
+
+    def custom_EEG_dataset_getter(task_num, task_label, random_label):
+        task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
+        num_samples = len(task_data)
+        task_labels = [task_label]*num_samples
+        task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+        task_data = torch.Tensor(task_data)
+
+        task_tensor_labels = torch.Tensor(task_labels)
+        task_tensor_class_labels = one_hot(task_tensor_labels, range(2))
+        task_tensor_labels = torch.cat([task_data, task_tensor_class_labels], 1)
+
+        task_dataset = TensorDataset(task_data, task_tensor_labels)
+
+        random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
+        num_samples = len(random_data)
+        random_labels = [random_label]*num_samples
+        random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+        random_data = torch.Tensor(random_data)
+
+        random_tensor_labels = torch.Tensor(random_labels)
+        random_tensor_class_labels = one_hot(random_tensor_labels, range(2))
+        random_tensor_labels = torch.cat([random_data, random_tensor_class_labels], 1)
+
+        random_dataset = TensorDataset(random_data, random_tensor_labels)
+
+        dataset = ConcatDataset([task_dataset, random_dataset])
+        return dataset
+
+    datasets = []
+    for i in range(9):
+        datasets.append(custom_EEG_dataset_getter(i, 0, 0))
+
+
+    normal_data = np.load("./data/EEG_Processed/normal.npy")
+    num_samples = len(normal_data)
+    normal_labels = [1]*num_samples
+    normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    normal_data = torch.Tensor(normal_data)
+
+    normal_tensor_labels = torch.Tensor(normal_labels)
+    normal_tensor_class_labels = one_hot(normal_tensor_labels, range(2))
+    normal_tensor_labels = torch.cat([normal_data, normal_tensor_class_labels], 1)
+
+    normal_dataset = TensorDataset(normal_data, normal_tensor_labels)
+    datasets.append(normal_dataset)
+
+    calm_data = np.load("./data/EEG_Processed/calm.npy")
+    num_samples = len(calm_data)
+    calm_labels = [1]*num_samples
+    calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    calm_data = torch.Tensor(calm_data)
+
+    calm_tensor_labels = torch.Tensor(calm_labels)
+    calm_tensor_class_labels = one_hot(calm_tensor_labels, range(2))
+    calm_tensor_labels = torch.cat([calm_data, calm_tensor_class_labels], 1)
+
+    calm_dataset = TensorDataset(calm_data, calm_tensor_labels)
+    datasets.append(calm_dataset)
+
+    dataset = ConcatDataset(datasets)
+
+    labels = [i[1] for i in dataset]
+
+    num_samples = len(dataset)
+
+    train_size = int(num_samples*0.7)
+    print(train_size)
+    trainsampler = AESampler(labels, start_from=0, amount=train_size)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    check_for_nan(trainloader)
+
+    valid_size = int(num_samples*0.05)
+    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
     check_for_nan(validloader)
 
@@ -290,9 +429,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
     check_for_nan(testloader)
 
-    print("Done preparing AE dataloader")
-
-    return (trainloader, validloader)
+    return (trainloader, validloader, testloader)
 
 
 def load_AE_MNIST(batch_size=256, num_workers=4):
@@ -408,5 +545,7 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 
 if __name__ == '__main__':
-    for i in range(1, 10):
-        EEG_preprocessing("task{}".format(i))
+    EEG_Mediation_preprocessing()
+
+
+
