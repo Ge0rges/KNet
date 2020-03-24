@@ -19,7 +19,7 @@ from utils.datasets import EEG_dataset_getter
 # random.seed(SEED)
 
 
-def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
+def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1):
     """
     Trains generation_size number of models for epochs number of times.
     At every epoch the bottom 20% workers copy the top 20%
@@ -37,7 +37,7 @@ def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
         "momentum": (0, 0.99, float),
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
-        "max_epochs": (1, 25, int),
+        "max_epochs": (5, 25, int),
         "l1_coeff": (1e-20, 1e-7, float),
         "l2_coeff": (1e-20, 1e-7, float),
         "zero_threshold": (0, 1e-5, float),
@@ -45,14 +45,14 @@ def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
         "batch_size": (100, 500, int),
         "weight_decay": (0, 1, float),
         "loss_threshold": (0, 1, float),
-        "expand_by_k": (0, 50, int),
+        "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {
             "learning_rate": (1e-10, 1, float),
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 10, int),
+            "max_epochs": (3, 10, int),
             "l1_coeff": (1e-20, 1e-7, float),
             "l2_coeff": (1e-20, 1e-7, float),
             "zero_threshold": (0, 1e-5, float),
@@ -64,7 +64,7 @@ def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
-            "max_epochs": (1, 10, int),
+            "max_epochs": (3, 10, int),
             "l1_coeff": (1e-20, 1e-7, float),
             "l2_coeff": (1e-20, 1e-7, float),
             "zero_threshold": (0, 1e-5, float),
