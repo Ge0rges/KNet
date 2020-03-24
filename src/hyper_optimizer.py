@@ -125,6 +125,7 @@ def layer_size_opt(threshold=0.9):
     for i in var:
         if i > threshold:
             n_comp += 1
+            print(i)
             break
         else:
             print(i)
@@ -275,4 +276,4 @@ def explore(params, param_bounds, standard_deviation=0.1):
 if __name__ == "__main__":
     # best_worker = optimize_hypers()
     # print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
-    print(layer_size_opt(0.85))
+    print(layer_size_opt(0.90))
