@@ -32,7 +32,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 10
+    max_epochs = 1
     weight_decay = 0
     lr_drop = 0.5
     l1_coeff = 1e-10
@@ -247,7 +247,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         AUROCs.append(auroc)
 
         print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, range(10), cls)
+        acc = calc_acc(model, testloader, range(10))
 
         print('ACC: {}'.format(acc))
 
@@ -255,11 +255,11 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     print('\nAverage Per-task Performance over number of tasks')
     for i, p in enumerate(AUROCs):
-        print("%d: %f" % (i + 1, p[1]))
+        print("{}: {}".format(i + 1, p[i]))
 
     print('\nAverage Per-task Accuracy over number of tasks')
     for i, p in enumerate(ACCs):
-        print("%d: %f" % (i + 1, p[1]))
+        print("{}: {}".format(i + 1, p))
 
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
