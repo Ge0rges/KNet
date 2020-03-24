@@ -407,25 +407,54 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
 
     calm_dataset = TensorDataset(calm_data, calm_tensor_labels)
     datasets.append(calm_dataset)
+    num_samples = 0
+    for i in datasets:
+        num_samples += len(i)
 
-    dataset = ConcatDataset(datasets)
+    traindata = []
+    trainlabels = []
+    for i in datasets:
+        for j in range(int(0.7*len(i))):
+            traindata.append(i[j][0].numpy().astype(float))
+            trainlabels.append(i[j][1].numpy().astype(float))
+    traindata = torch.Tensor(traindata)
+    trainlabels = torch.Tensor(trainlabels)
+    traindataset = TensorDataset(traindata, trainlabels)
 
-    labels = [i[1] for i in dataset]
+    validdata = []
+    validlabels = []
+    for i in datasets:
+        for j in range(int(0.7 * len(i)), int(0.7*len(i)) + int(0.05*len(i))):
+            validdata.append(i[j][0].numpy().astype(float))
+            validlabels.append(i[j][1].numpy().astype(float))
+    validdata = torch.Tensor(validdata)
+    validlabels = torch.Tensor(validlabels)
+    validdataset = TensorDataset(validdata, validlabels)
 
-    num_samples = len(dataset)
+    testdata = []
+    testlabels = []
+    for i in datasets:
+        for j in range(int(0.7*len(i)) + int(0.05*len(i)), len(i)):
+            testdata.append(i[j][0].numpy().astype(float))
+            testlabels.append(i[j][1].numpy().astype(float))
+    testdata = torch.Tensor(testdata)
+    testlabels = torch.Tensor(testlabels)
+    testdataset = TensorDataset(testdata, testlabels)
 
-    train_size = int(num_samples*0.7)
-    trainsampler = AESampler(labels, start_from=0, amount=train_size)
-    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    train_labels = [i[1] for i in traindataset]
+    valid_labels = [i[1] for i in validdataset]
+    test_labels = [i[1] for i in testdataset]
+
+    trainsampler = AESampler(train_labels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
     check_for_nan(trainloader)
 
-    valid_size = int(num_samples*0.05)
-    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
-    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    validsampler = AESampler(valid_labels, start_from=0)
+    validloader = DataLoader(validdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
     check_for_nan(validloader)
 
-    testsampler = AESampler(labels, start_from=(train_size + valid_size))
-    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    testsampler = AESampler(test_labels, start_from=0)
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
     check_for_nan(testloader)
 
     return (trainloader, validloader, testloader)
@@ -548,3 +577,4 @@ if __name__ == '__main__':
     #     EEG_preprocessing("task{}".format(i))
     # EEG_Mediation_preprocessing()
     # EEG_Mediation_loader()
+    pass
