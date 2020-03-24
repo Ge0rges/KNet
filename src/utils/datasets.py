@@ -378,13 +378,14 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
         return dataset
 
     datasets = []
-    for i in range(9):
+    for i in range(1, 9):
         datasets.append(custom_EEG_dataset_getter(i, 0, 0))
+    datasets.append(custom_EEG_dataset_getter(0, 1, 0))
 
 
     normal_data = np.load("./data/EEG_Processed/normal.npy")
     num_samples = len(normal_data)
-    normal_labels = [1]*num_samples
+    normal_labels = [0]*num_samples
     normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='max', axis=0)
     normal_data = torch.Tensor(normal_data)
 
@@ -415,7 +416,6 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
     num_samples = len(dataset)
 
     train_size = int(num_samples*0.7)
-    print(train_size)
     trainsampler = AESampler(labels, start_from=0, amount=train_size)
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
     check_for_nan(trainloader)

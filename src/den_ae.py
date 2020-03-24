@@ -1,5 +1,5 @@
 from __future__ import print_function
-from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader
+from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader,EEG_Mediation_loader
 from models import ActionEncoder
 from utils.train import trainAE
 from utils.eval import calc_avg_AE_AUROC, calc_acc
@@ -14,7 +14,7 @@ import torch.optim as optim
 import os
 
 # Non-ML Hyperparams
-ALL_CLASSES = range(9)
+ALL_CLASSES = range(2)
 NUM_WORKERS = 0
 CUDA = False
 SEED = 20
@@ -32,7 +32,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 1
+    max_epochs = 10
     weight_decay = 0
     lr_drop = 0.5
     l1_coeff = 1e-10
@@ -83,7 +83,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         }
 
     print('==> Preparing dataset')
-    testloader = EEG_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    trainloader, validloader, testloader = EEG_Mediation_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     if actionencoder_sizes is not None:
@@ -107,7 +107,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     criterion = nn.BCELoss()
 
-    CLASSES = [9]
+    CLASSES = []
     AUROCs = []
     ACCs = []
 
@@ -117,7 +117,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         CLASSES.append(cls)
         print('==> Preparing dataset')
-        trainloader, validloader = EEG_task_loader(cls, batch_size=batch_size, num_workers=NUM_WORKERS)
+        # trainloader, validloader = EEG_task_loader(cls, batch_size=batch_size, num_workers=NUM_WORKERS)
 
         if t == 0:
             print("==> Learning")
@@ -246,13 +246,13 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         # HARDCODED
         print("==> Calculating AUROC")
-        auroc = calc_avg_AE_AUROC(model, testloader, range(10), CLASSES, CUDA)
+        auroc = calc_avg_AE_AUROC(model, testloader, range(2), CLASSES, CUDA)
 
         print("AUROC: {}".format(auroc))
         AUROCs.append(auroc)
 
         print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, range(10))
+        acc = calc_acc(model, testloader, range(2))
 
         print('ACC: {}'.format(acc))
 
@@ -328,8 +328,8 @@ def get_modules(model):
 
 def select_neurons(model, task, zero_threshold):
     modules = get_modules(model)
-
-    prev_active = [True] * len(range(10))
+    # HARDCODED
+    prev_active = [True] * len(range(2))
     prev_active[task] = False
 
     action_hooks, prev_active = gen_hooks(modules['action'], zero_threshold, prev_active)
