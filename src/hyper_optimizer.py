@@ -9,12 +9,17 @@ from torch.multiprocessing import cpu_count
 import itertools
 import random
 import traceback
+import numpy as np
+
+from sklearn.decomposition import PCA
+from torch.utils.data import ConcatDataset
+from utils.datasets import EEG_dataset_getter
 
 # SEED = 20
 # random.seed(SEED)
 
 
-def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
+def optimize_hypers(generation_size=6, epochs=10, standard_deviation=0.1):
     """
     Trains generation_size number of models for epochs number of times.
     At every epoch the bottom 20% workers copy the top 20%
@@ -101,7 +106,38 @@ def optimize_hypers(generation_size=8, epochs=20, standard_deviation=0.1):
 
     return best_worker
 
-6
+
+def layer_size_opt(threshold=0.9):
+    datasets = []
+    for i in range(9):
+        datasets.append(EEG_dataset_getter(i))
+
+    dataset = ConcatDataset(datasets)
+    train_data = []
+    for i in range(len(dataset)):
+        train_data.append(dataset[i][0].numpy())
+
+    model = PCA()
+    model.fit_transform(train_data)
+    # X_pc = model.transform(train_data)
+    var = model.explained_variance_ratio_.cumsum()
+    n_comp = 0
+    for i in var:
+        if i > threshold:
+            n_comp += 1
+            print(i)
+            break
+        else:
+            print(i)
+            n_comp += 1
+
+    return n_comp
+
+    # n_pcs = model.components_.shape[0]
+    #
+    # most_important = [np.abs(model.components_[i]).argmax() for i in range(n_pcs)]
+
+
 def train_worker_star(args):
     """
     Calls train_worker(*args).
@@ -238,5 +274,6 @@ def explore(params, param_bounds, standard_deviation=0.1):
 
 
 if __name__ == "__main__":
-    best_worker = optimize_hypers()
-    print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
+    # best_worker = optimize_hypers()
+    # print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
+    print(layer_size_opt(0.90))

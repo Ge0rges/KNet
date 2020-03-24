@@ -259,7 +259,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     print('\nAverage Per-task Accuracy over number of tasks')
     for i, p in enumerate(ACCs):
-        print("[}: {}".format(i + 1, p))
+        print("{}: {}".format(i + 1, p))
 
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
