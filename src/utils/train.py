@@ -7,7 +7,7 @@ import torch
 from torch.autograd import Variable
 from progress.bar import Bar
 
-from .misc import AverageMeter
+from misc import AverageMeter, one_hot
 
 __all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty', 'trainAE']
 
@@ -17,15 +17,6 @@ SEED = 20
 random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
-
-
-def one_hot(targets, classes):
-    targets = targets.type(torch.LongTensor).view(-1)
-    targets_onehot = torch.zeros(targets.size()[0], len(classes))
-    for i, t in enumerate(targets):
-        if t in classes:
-            targets_onehot[i][classes.index(t)] = 1
-    return targets_onehot
 
 
 def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False, freeze=None):

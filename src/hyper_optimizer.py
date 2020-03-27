@@ -74,12 +74,12 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1):
     # Generate initial params
     workers = []
 
-    print "Doing PCA on the data..."
+    print("Doing PCA on the data...")
     autoencoder_out = layer_size_opt_EEG(threshold=0.9)
 
     for i in range(generation_size):
         workers.append((0, random_init(params_bounds, autoencoder_out)))
-    print "Done PCA."
+    print("Done PCA.")
 
     # Train our models
     best_worker = None
