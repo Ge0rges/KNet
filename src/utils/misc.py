@@ -6,8 +6,29 @@ from torch.utils.data.sampler import Sampler
 
 from PIL import ImageFilter
 
-__all__ = ['mkdir_p', 'AverageMeter', 'ClassSampler', 'GaussianNoise']
+__all__ = ['mkdir_p', 'AverageMeter', 'ClassSampler', 'GaussianNoise', 'fft_psd', 'one_hot']
 
+def one_hot(targets, classes):
+    targets = targets.type(torch.LongTensor).view(-1)
+    targets_onehot = torch.zeros(targets.size()[0], len(classes))
+    for i, t in enumerate(targets):
+        if t in classes:
+            targets_onehot[i][classes.index(t)] = 1
+    return targets_onehot
+
+def fft_psd(sampling_time, sample_num, data):
+    """
+    Get the the FFT power spectral densities for the given data
+    Args:
+        data (np.array): A single numpy array of data to process.
+
+    Returns:
+        list, list: FFT frequencies, FFT power spectral densities at those frequencies.
+    """
+    ps_densities = np.abs(np.fft.fft(data)) ** 2
+    frequencies = np.fft.fftfreq(sample_num, float(sampling_time)/float(sample_num))
+    idx = np.argsort(frequencies)
+    return frequencies[idx], ps_densities[idx]
 
 def mkdir_p(path):
     '''make dir if not exist'''
