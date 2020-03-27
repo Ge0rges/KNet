@@ -404,18 +404,7 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
 
 
 def load_AE_MNIST(batch_size=256, num_workers=4):
-    dataloader = datasets.MNIST
-
-    transform_all = transforms.Compose([
-        transforms.RandomRotation(180),
-        transforms.ToTensor(),
-        GaussianNoise(0, 0.2)
-    ])
-
-    trainset = dataloader(root=DATA, train=True, download=True, transform=transform_all)
-    testset = dataloader(root=DATA, train=False, download=False, transform=transform_all)
-
-    allset = ConcatDataset([trainset, testset])
+    allset = get_mnist_dataset()
 
     data = torch.zeros((len(allset), 28*28))
     for i in range(0, len(allset)):
@@ -457,20 +446,9 @@ def check_for_nan(dataset):
             assert not np.isnan(tensor).any()
 
 
-def load_MNIST(batch_size = 256, num_workers = 4):
+def load_MNIST(batch_size=256, num_workers=4):
 
-    dataloader = datasets.MNIST
-
-    transform_all = transforms.Compose([
-        transforms.RandomRotation(180),
-        transforms.ToTensor(),
-        GaussianNoise(0, 0.2)
-    ])
-
-    trainset = dataloader(root=DATA, train=True, download=True, transform=transform_all)
-    testset = dataloader(root=DATA, train=False, download=False, transform=transform_all)
-
-    allset = ConcatDataset([trainset, testset])
+    allset = get_mnist_dataset()
     labels = list(i[1] for i in allset)
 
     trainsampler = ClassSampler(labels, range(10), amount=1000)
@@ -484,6 +462,19 @@ def load_MNIST(batch_size = 256, num_workers = 4):
 
     return (trainloader, validloader, testloader)
 
+def get_mnist_dataset():
+    dataloader = datasets.MNIST
+
+    transform_all = transforms.Compose([
+        transforms.RandomRotation(180),
+        transforms.ToTensor(),
+        GaussianNoise(0, 0.2)
+    ])
+
+    trainset = dataloader(root=DATA, train=True, download=True, transform=transform_all)
+    testset = dataloader(root=DATA, train=False, download=False, transform=transform_all)
+
+    return ConcatDataset([trainset, testset])
 
 def load_CIFAR(batch_size = 256, num_workers = 4):
 
