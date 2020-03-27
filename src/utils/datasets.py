@@ -167,7 +167,10 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
             assert np.shape(pro[1]) == (sample_n, 4)
             data.append(pro[1])
 
-        np.save("../data/EEG_Processed/{}_task".format(task), data)
+        if i == 0:
+            np.save("../data/EEG_Processed/{}_task".format(task), data)
+        else:
+            np.save("../data/EEG_Processed/{}_random".format(task), data)
 
 
 def EEG_dataset_getter(task_num):
@@ -279,7 +282,7 @@ def EEG_Mediation_preprocessing():
 
     n_win_test = int(np.floor((BUFFER_LENGTH - EPOCH_LENGTH) /
                               SHIFT_LENGTH + 1))
-    band_buffer = np.zeros((n_win_test, 2))
+    band_buffer = np.zeros((n_win_test, 4))
     fs = 256
 
 
@@ -289,8 +292,7 @@ def EEG_Mediation_preprocessing():
         pre_pro = x[i : i + sample_n]
         pre_pro = np.delete(pre_pro, 0, 1)
         pre_pro = np.delete(pre_pro, -1, 1)
-        pre_pro = np.delete(pre_pro, -1, 1)
-        pre_pro = np.delete(pre_pro, -1, 1)
+
         # Compute band powers
         band_powers = utils.compute_band_powers(pre_pro, fs)
         band_buffer, _ = utils.update_buffer(band_buffer,
@@ -298,13 +300,13 @@ def EEG_Mediation_preprocessing():
         # Compute the average band powers for all epochs in buffer
         # This helps to smooth out noise
         smooth_band_powers = np.mean(band_buffer, axis=0)
+
         pro = np.concatenate((smooth_band_powers[Band.Alpha], smooth_band_powers[Band.Beta]), axis=0)
         # pro = _fft_psd(1, sample_n, pre_pro)
         assert np.shape(pro[1]) == (sample_n, 2)
         data.append(pro[1])
 
     np.save("../data/EEG_Processed/calm", data)
-
 
     files = []
     for (dirpath, dirnames, filenames) in os.walk("../data/EEG_Raw/normal/"):
@@ -324,13 +326,12 @@ def EEG_Mediation_preprocessing():
         pre_pro = x[i : i + sample_n]
         pre_pro = np.delete(pre_pro, 0, 1)
         pre_pro = np.delete(pre_pro, -1, 1)
-        pre_pro = np.delete(pre_pro, -1, 1)
-        pre_pro = np.delete(pre_pro, -1, 1)
-        pre_pro = np.delete(pre_pro, -1, 1)
+
         # Compute band powers
         band_powers = utils.compute_band_powers(pre_pro, fs)
         band_buffer, _ = utils.update_buffer(band_buffer,
                                              np.asarray([band_powers]))
+
         # Compute the average band powers for all epochs in buffer
         # This helps to smooth out noise
         smooth_band_powers = np.mean(band_buffer, axis=0)
