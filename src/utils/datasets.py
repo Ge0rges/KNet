@@ -10,6 +10,7 @@ from sklearn.preprocessing import normalize
 
 
 from misc import ClassSampler, GaussianNoise, AESampler
+import src.neurofeedback.utils as utils
 
 __all__ = ['load_MNIST', 'load_CIFAR', 'load_AE_MNIST']
 
@@ -23,6 +24,25 @@ BANANA_LABEL = 0
 CAR_LABEL = 1
 BANANACAR_LABEL = 2
 ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL, BANANACAR_LABEL]
+
+# Length of the EEG data buffer (in seconds)
+# This buffer will hold last n seconds of data and be used for calculations
+BUFFER_LENGTH = 5
+
+# Length of the epochs used to compute the FFT (in seconds)
+EPOCH_LENGTH = 1
+
+# Amount of overlap between two consecutive epochs (in seconds)
+OVERLAP_LENGTH = 0.8
+
+# Amount to 'shift' the start of each next consecutive epoch
+SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
+
+class Band:
+    Delta = 0
+    Theta = 1
+    Alpha = 2
+    Beta = 3
 
 
 def dataset_reshaping(name, directory_path, new_size=(640, 480), colors=3):
@@ -307,14 +327,31 @@ def EEG_Mediation_preprocessing():
     data = []
     sample_n = 256
 
+    n_win_test = int(np.floor((BUFFER_LENGTH - EPOCH_LENGTH) /
+                              SHIFT_LENGTH + 1))
+    band_buffer = np.zeros((n_win_test, 2))
+    fs = 256
+
+
     f = files[0]
     x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
     for i in range(np.shape(x)[0] - sample_n):
         pre_pro = x[i : i + sample_n]
         pre_pro = np.delete(pre_pro, 0, 1)
         pre_pro = np.delete(pre_pro, -1, 1)
-        pro = _fft_psd(1, sample_n, pre_pro)
-        assert np.shape(pro[1]) == (sample_n, 4)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        # Compute band powers
+        band_powers = utils.compute_band_powers(pre_pro, fs)
+        band_buffer, _ = utils.update_buffer(band_buffer,
+                                             np.asarray([band_powers]))
+        # Compute the average band powers for all epochs in buffer
+        # This helps to smooth out noise
+        smooth_band_powers = np.mean(band_buffer, axis=0)
+        print(smooth_band_powers)
+        pro = np.concatenate((smooth_band_powers[Band.Alpha], smooth_band_powers[Band.Beta]), axis=0)
+        # pro = _fft_psd(1, sample_n, pre_pro)
+        assert np.shape(pro[1]) == (sample_n, 2)
         data.append(pro[1])
 
     np.save("../data/EEG_Processed/calm", data)
@@ -333,14 +370,27 @@ def EEG_Mediation_preprocessing():
     data = []
     sample_n = 256
 
+    band_buffer = np.zeros((n_win_test, 2))
+
     f = files[0]
     x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
     for i in range(np.shape(x)[0] - sample_n):
         pre_pro = x[i : i + sample_n]
         pre_pro = np.delete(pre_pro, 0, 1)
         pre_pro = np.delete(pre_pro, -1, 1)
-        pro = _fft_psd(1, sample_n, pre_pro)
-        assert np.shape(pro[1]) == (sample_n, 4)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        pre_pro = np.delete(pre_pro, -1, 1)
+        # Compute band powers
+        band_powers = utils.compute_band_powers(pre_pro, fs)
+        band_buffer, _ = utils.update_buffer(band_buffer,
+                                             np.asarray([band_powers]))
+        # Compute the average band powers for all epochs in buffer
+        # This helps to smooth out noise
+        smooth_band_powers = np.mean(band_buffer, axis=0)
+        pro = np.concatenate((smooth_band_powers[utils.BAND.Alpha], smooth_band_powers[utils.BAND.Beta]), axis=0)
+        # pro = _fft_psd(1, sample_n, pre_pro)
+        assert np.shape(pro[1]) == (sample_n, 2)
         data.append(pro[1])
 
     np.save("../data/EEG_Processed/normal", data)
@@ -576,6 +626,5 @@ if __name__ == '__main__':
     pass
     # for i in range(1, 10):
     #     EEG_preprocessing("task{}".format(i))
-    # EEG_Mediation_preprocessing()
+    EEG_Mediation_preprocessing()
     # EEG_Mediation_loader()
-    pass
