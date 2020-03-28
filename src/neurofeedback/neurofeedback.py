@@ -10,16 +10,11 @@ The neurofeedback protocols described here are inspired by
 Adapted from https://github.com/NeuroTechX/bci-workshop
 """
 
-from pydub import AudioSegment
-from pydub.playback import _play_with_simpleaudio
-import alsaaudio
 import threading
 from desmosConvert import main, params
 global curves
-import time
 
 import numpy as np  # Module that simplifies computations on matrices
-import matplotlib.pyplot as plt  # Module used for plotting
 from pylsl import StreamInlet, resolve_byprop  # Module to receive EEG data
 import utils  # Our own utility functions
 
@@ -99,12 +94,12 @@ if __name__ == "__main__":
     print('Press Ctrl-C in the console to break the while loop.')
 
     """ 4. START MUSIC """
-    audio_data = AudioSegment.from_mp3("parade ft. yama.mp3")
-    play_obj = _play_with_simpleaudio(audio_data)
+    # audio_data = AudioSegment.from_mp3("parade ft. yama.mp3")
+    # play_obj = _play_with_simpleaudio(audio_data)
 
     """ 5. ENGAGE BIOFEEDBACK AUDIO """
-    m = alsaaudio.Mixer()
-    vol = m.getvolume()
+    # m = alsaaudio.Mixer()
+    # vol = m.getvolume()
 
     """ 6. ENGAGE SWIMULATOR """
     swim = threading.Thread(target=main)
@@ -172,11 +167,8 @@ if __name__ == "__main__":
             if vol > 90:
                 vol = 90
             print("VOLUME: ", vol)
-            m.setvolume(vol)
-            params["a"] = (vol - 45.0)/5
-            print(params["a"])
-
-
+            # m.setvolume(vol)
+            # params["a"] = (vol - 45.0)/5
 
     except KeyboardInterrupt:
         print('Closing!')

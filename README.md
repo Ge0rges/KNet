@@ -61,7 +61,13 @@ Candidate Networks:
 *This repository implements Step 1.a and Step 1.b*
 ## Software 
 # How to Run
-Unavailable
+
+### Neurofeedback
+1. Set up Muselsl, follow the instructions on the [muselsl](https://github.com/alexandrebarachant/muse-lsl) repo.
+1. Install pylsl
+### DEN_AE
+1. Install the dependencies below.
+1. Run hyper_optimizer.
 
 # Dependencies
 - Python 2.7
