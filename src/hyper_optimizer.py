@@ -143,8 +143,8 @@ def train_worker(i, epoch, worker, workers_len, params_bounds, standard_deviatio
             success = False
 
             print("Worker %d crashed. Error:" % i)
-            print e
-            print traceback.format_exc()
+            print(e)
+            print(traceback.format_exc())
 
     return worker
 

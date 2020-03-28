@@ -7,7 +7,7 @@ import torch
 from torch.autograd import Variable
 from progress.bar import Bar
 
-from misc import AverageMeter, one_hot
+from src.utils.misc import AverageMeter, one_hot
 
 __all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty', 'trainAE']
 

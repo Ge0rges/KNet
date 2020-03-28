@@ -3,12 +3,12 @@ import torchvision.datasets as datasets
 import torch
 import numpy as np
 import os
+import src.neurofeedback.utils as utils
 
 from PIL import Image
 from torch.utils.data import DataLoader, ConcatDataset, Dataset, TensorDataset
 from sklearn.preprocessing import normalize
-import src.neurofeedback.utils as utils
-from .misc import ClassSampler, GaussianNoise, AESampler, fft_psd, one_hot
+from src.utils.misc import ClassSampler, GaussianNoise, AESampler, fft_psd, one_hot
 
 
 __all__ = ['load_MNIST', 'load_CIFAR', 'load_AE_MNIST']
@@ -145,6 +145,7 @@ def bc_loader(dir, name, label, batch_size=256, num_workers=4):
 
 def EEG_preprocessing(task, batch_size=256, num_workers=4):
     files = []
+    print("../data/EEG_Raw/{}/".format(task))
     for (dirpath, dirnames, filenames) in os.walk("../data/EEG_Raw/{}/".format(task)):
         for file in filenames:
             if file.endswith(".csv"):
@@ -160,7 +161,7 @@ def EEG_preprocessing(task, batch_size=256, num_workers=4):
         f = files[i]
         x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
         for j in range(np.shape(x)[0] - sample_n):
-            pre_pro = x[j : j + sample_n]
+            pre_pro = x[j: j + sample_n]
             pre_pro = np.delete(pre_pro, 0, 1)
             pre_pro = np.delete(pre_pro, -1, 1)
             pro = fft_psd(1, sample_n, pre_pro)
@@ -280,21 +281,19 @@ def EEG_Mediation_preprocessing():
     data = []
     sample_n = 256
 
-    n_win_test = int(np.floor((BUFFER_LENGTH - EPOCH_LENGTH) /
-                              SHIFT_LENGTH + 1))
+    n_win_test = int(np.floor((BUFFER_LENGTH - EPOCH_LENGTH) / SHIFT_LENGTH + 1))
     band_buffer = np.zeros((n_win_test, 4))
     fs = 256
-
 
     f = files[0]
     x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
     for i in range(np.shape(x)[0] - sample_n):
-        pre_pro = x[i : i + sample_n]
+        pre_pro = x[i: i + sample_n]
         pre_pro = np.delete(pre_pro, 0, 1)
         pre_pro = np.delete(pre_pro, -1, 1)
 
         # Compute band powers
-        band_powers = utils.compute_band_powers(pre_pro, fs)
+        band_powers = utils.compute_band_powers(pre_pro, fs*EPOCH_LENGTH)
         band_buffer, _ = utils.update_buffer(band_buffer,
                                              np.asarray([band_powers]))
         # Compute the average band powers for all epochs in buffer
@@ -513,6 +512,7 @@ def load_MNIST(batch_size=256, num_workers=4):
 
     return (trainloader, validloader, testloader)
 
+
 def get_mnist_dataset():
     dataloader = datasets.MNIST
 
@@ -527,7 +527,8 @@ def get_mnist_dataset():
 
     return ConcatDataset([trainset, testset])
 
-def load_CIFAR(batch_size = 256, num_workers = 4):
+
+def load_CIFAR(batch_size=256, num_workers=4):
 
     dataloader = datasets.CIFAR10
 
@@ -554,4 +555,3 @@ def load_CIFAR(batch_size = 256, num_workers = 4):
 
 if __name__ == '__main__':
     EEG_Mediation_preprocessing()
-
