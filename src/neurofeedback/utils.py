@@ -176,6 +176,34 @@ def update_buffer(data_buffer, new_data, notch=False, filter_state=None):
     return new_buffer, filter_state
 
 
+def update_dataset_buffer(data_buffer, new_data, notch=False, filter_state=None):
+    """
+    Concatenates "new_data" into "data_buffer", and returns an array with
+    the same size as "data_buffer"
+    """
+    if new_data.ndim == 1:
+        new_data = new_data.reshape(-1, data_buffer.shape[1])
+
+    if notch:
+        if filter_state is None:
+            filter_state = np.tile(lfilter_zi(NOTCH_B, NOTCH_A),
+                                   (data_buffer.shape[1], 1)).T
+        new_data, filter_state = lfilter(NOTCH_B, NOTCH_A, new_data, axis=0,
+                                         zi=filter_state)
+    ##### BAND-AID #####
+    reshaped_arr = []
+    for i in range(int(np.shape(new_data)[1]/4)):
+        arr = np.array([new_data[0][i], new_data[0][i + 1], new_data[0][i + 2], new_data[0][i + 3]])
+        reshaped_arr.append(arr)
+    new_data = np.array(reshaped_arr)
+    ##### BAND-AID #####
+
+    new_buffer = np.concatenate((data_buffer, new_data), axis=0)
+    new_buffer = new_buffer[new_data.shape[0]:, :]
+
+    return new_buffer, filter_state
+
+
 def get_last_data(data_buffer, newest_samples):
     """
     Obtains from "buffer_array" the "newest samples" (N rows from the

@@ -294,16 +294,16 @@ def EEG_Mediation_preprocessing():
 
         # Compute band powers
         band_powers = utils.compute_band_powers(pre_pro, fs*EPOCH_LENGTH)
-        band_buffer, _ = utils.update_buffer(band_buffer,
+        band_buffer, _ = utils.update_dataset_buffer(band_buffer,
                                              np.asarray([band_powers]))
         # Compute the average band powers for all epochs in buffer
         # This helps to smooth out noise
         smooth_band_powers = np.mean(band_buffer, axis=0)
 
-        pro = np.concatenate((smooth_band_powers[Band.Alpha], smooth_band_powers[Band.Beta]), axis=0)
+        pro = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])), axis=0)
         # pro = _fft_psd(1, sample_n, pre_pro)
-        assert np.shape(pro[1]) == (sample_n, 2)
-        data.append(pro[1])
+        # assert np.shape(pro[1]) == (sample_n, 2)
+        data.append(pro)
 
     np.save("../data/EEG_Processed/calm", data)
 
@@ -317,26 +317,29 @@ def EEG_Mediation_preprocessing():
     data = []
     sample_n = 256
 
-    band_buffer = np.zeros((n_win_test, 2))
+    band_buffer = np.zeros((n_win_test, 4))
 
     f = files[0]
     x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
     for i in range(np.shape(x)[0] - sample_n):
-        pre_pro = x[i : i + sample_n]
+        pre_pro = x[i: i + sample_n]
         pre_pro = np.delete(pre_pro, 0, 1)
         pre_pro = np.delete(pre_pro, -1, 1)
 
         # Compute band powers
-        band_powers = utils.compute_band_powers(pre_pro, fs)
-        band_buffer, _ = utils.update_buffer(band_buffer,
+        band_powers = utils.compute_band_powers(pre_pro, fs*EPOCH_LENGTH)
+        band_buffer, _ = utils.update_dataset_buffer(band_buffer,
                                              np.asarray([band_powers]))
-
         # Compute the average band powers for all epochs in buffer
         # This helps to smooth out noise
         smooth_band_powers = np.mean(band_buffer, axis=0)
-        pro = np.concatenate((smooth_band_powers[utils.BAND.Alpha], smooth_band_powers[utils.BAND.Beta]), axis=0)
+
+        pro = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])), axis=0)
         # pro = _fft_psd(1, sample_n, pre_pro)
-        assert np.shape(pro[1]) == (sample_n, 2)
+        # assert np.shape(pro[1]) == (sample_n, 2)
+        data.append(pro)
+        # pro = _fft_psd(1, sample_n, pre_pro)
+        # assert np.shape(pro[1]) == (sample_n, 2)
         data.append(pro[1])
 
     np.save("../data/EEG_Processed/normal", data)
