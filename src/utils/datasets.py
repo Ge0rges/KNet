@@ -270,7 +270,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
     return (trainloader, validloader)
 
 
-def EEG_Mediation_preprocessing():
+def EEG_Mediation_normal_calm_preprocessing():
     files = []
     for (dirpath, dirnames, filenames) in os.walk("../data/EEG_Raw/calm/"):
         for file in filenames:
@@ -279,6 +279,7 @@ def EEG_Mediation_preprocessing():
 
     # Actual task data
     data = []
+    band_data = []
     sample_n = 256
 
     n_win_test = int(np.floor((BUFFER_LENGTH - EPOCH_LENGTH) / SHIFT_LENGTH + 1))
@@ -300,12 +301,16 @@ def EEG_Mediation_preprocessing():
         # This helps to smooth out noise
         smooth_band_powers = np.mean(band_buffer, axis=0)
 
-        pro = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])), axis=0)
-        # pro = _fft_psd(1, sample_n, pre_pro)
+        band = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])), axis=0)
+        pro = _fft_psd(1, sample_n, pre_pro)
         # assert np.shape(pro[1]) == (sample_n, 2)
-        data.append(pro)
-
+        band_data.append(band)
+        data.append(pro[1])
+    data = np.array(data)
+    band_data = np.array(band_data)
+    np.save("../data/EEG_Processed/calm_band", band_data)
     np.save("../data/EEG_Processed/calm", data)
+
 
     files = []
     for (dirpath, dirnames, filenames) in os.walk("../data/EEG_Raw/normal/"):
@@ -313,11 +318,13 @@ def EEG_Mediation_preprocessing():
             if file.endswith(".csv"):
                 files.append(dirpath + "/" + file)
 
-    # Actual task data
     data = []
+    band_data = []
     sample_n = 256
 
+    n_win_test = int(np.floor((BUFFER_LENGTH - EPOCH_LENGTH) / SHIFT_LENGTH + 1))
     band_buffer = np.zeros((n_win_test, 4))
+    fs = 256
 
     f = files[0]
     x = np.genfromtxt(f, delimiter=',', skip_header=1, dtype=float)
@@ -327,22 +334,119 @@ def EEG_Mediation_preprocessing():
         pre_pro = np.delete(pre_pro, -1, 1)
 
         # Compute band powers
-        band_powers = utils.compute_band_powers(pre_pro, fs*EPOCH_LENGTH)
+        band_powers = utils.compute_band_powers(pre_pro, fs * EPOCH_LENGTH)
         band_buffer, _ = utils.update_dataset_buffer(band_buffer,
-                                             np.asarray([band_powers]))
+                                                     np.asarray([band_powers]))
         # Compute the average band powers for all epochs in buffer
         # This helps to smooth out noise
         smooth_band_powers = np.mean(band_buffer, axis=0)
 
-        pro = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])), axis=0)
-        # pro = _fft_psd(1, sample_n, pre_pro)
+        band = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])),
+                              axis=0)
+        pro = _fft_psd(1, sample_n, pre_pro)
         # assert np.shape(pro[1]) == (sample_n, 2)
-        data.append(pro)
-        # pro = _fft_psd(1, sample_n, pre_pro)
-        # assert np.shape(pro[1]) == (sample_n, 2)
+        band_data.append(band)
         data.append(pro[1])
-
+    data = np.array(data)
+    band_data = np.array(band_data)
+    np.save("../data/EEG_Processed/normal_band", band_data)
     np.save("../data/EEG_Processed/normal", data)
+
+
+def _fft_psd(sampling_time, sample_num, data):
+    """
+    Get the the FFT power spectral densities for the given data
+    Args:
+        data (np.array): A single numpy array of data to process.
+
+    Returns:
+        list, list: FFT frequencies, FFT power spectral densities at those frequencies.
+    """
+    ps_densities = np.abs(np.fft.fft(data)) ** 2
+    frequencies = np.fft.fftfreq(sample_num, float(sampling_time)/float(sample_num))
+    idx = np.argsort(frequencies)
+    return frequencies[idx], ps_densities[idx]
+
+
+def EEG_Mediation_normal_calm_loader(batch_size=256, num_workers=4):
+
+    datasets = []
+
+    normal_data = np.load("./data/EEG_Processed/normal.npy")
+    normal_labels = np.load("./data/EEG_Processed/normal_band.npy")
+    num_samples = len(normal_data)
+    normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    normal_data = torch.Tensor(normal_data)
+
+    normal_tensor_labels = torch.Tensor(normal_labels)
+    normal_tensor_labels = torch.cat([normal_data, normal_tensor_labels], 1)
+
+    normal_dataset = TensorDataset(normal_data, normal_tensor_labels)
+    datasets.append(normal_dataset)
+
+    calm_data = np.load("./data/EEG_Processed/calm.npy")
+    num_samples = len(calm_data)
+    calm_labels = np.load("./data/EEG_Processed/calm_band.npy")
+    calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    calm_data = torch.Tensor(calm_data)
+
+    calm_tensor_labels = torch.Tensor(calm_labels)
+    calm_tensor_labels = torch.cat([calm_data, calm_tensor_labels], 1)
+
+    calm_dataset = TensorDataset(calm_data, calm_tensor_labels)
+    datasets.append(calm_dataset)
+    num_samples = 0
+    for i in datasets:
+        num_samples += len(i)
+
+    traindata = []
+    trainlabels = []
+    for i in datasets:
+        for j in range(int(0.7*len(i))):
+            traindata.append(i[j][0].numpy().astype(float))
+            trainlabels.append(i[j][1].numpy().astype(float))
+    traindata = torch.Tensor(traindata)
+    trainlabels = torch.Tensor(trainlabels)
+    traindataset = TensorDataset(traindata, trainlabels)
+
+    validdata = []
+    validlabels = []
+    for i in datasets:
+        for j in range(int(0.7 * len(i)), int(0.7*len(i)) + int(0.05*len(i))):
+            validdata.append(i[j][0].numpy().astype(float))
+            validlabels.append(i[j][1].numpy().astype(float))
+    validdata = torch.Tensor(validdata)
+    validlabels = torch.Tensor(validlabels)
+    validdataset = TensorDataset(validdata, validlabels)
+
+    testdata = []
+    testlabels = []
+    for i in datasets:
+        for j in range(int(0.7*len(i)) + int(0.05*len(i)), len(i)):
+            testdata.append(i[j][0].numpy().astype(float))
+            testlabels.append(i[j][1].numpy().astype(float))
+    testdata = torch.Tensor(testdata)
+    testlabels = torch.Tensor(testlabels)
+    testdataset = TensorDataset(testdata, testlabels)
+
+    train_labels = [i[1] for i in traindataset]
+    valid_labels = [i[1] for i in validdataset]
+    test_labels = [i[1] for i in testdataset]
+
+    trainsampler = AESampler(train_labels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    check_for_nan(trainloader)
+
+    validsampler = AESampler(valid_labels, start_from=0)
+    validloader = DataLoader(validdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    check_for_nan(validloader)
+
+    testsampler = AESampler(test_labels, start_from=0)
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    check_for_nan(testloader)
+
+    return (trainloader, validloader, testloader)
+
 
 
 def EEG_Mediation_loader(batch_size=256, num_workers=4):
@@ -557,4 +661,5 @@ def load_CIFAR(batch_size=256, num_workers=4):
 
 
 if __name__ == '__main__':
-    EEG_Mediation_preprocessing()
+    train, valid, test = EEG_Mediation_normal_calm_loader()
+    print(len(train), len(valid), len(test))
