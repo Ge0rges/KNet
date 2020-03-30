@@ -98,6 +98,27 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
     return roc_auc
 
 
+def calc_avg_AE_band_error(model, batchloader, use_cuda):
+
+    errors = []
+
+    for idx, (input, target) in enumerate(batchloader):
+        target = target[:, target.size()[1] - 2:]
+        target = target.numpy()
+
+        input = Variable(input)
+        model.phase = "ACTION"
+        output = model(input).data.numpy()
+
+        errors.extend(np.abs((target - output)/target))
+
+    errors = np.array(errors)
+
+    alpha_error = np.average(errors[:, 0])
+    beta_error = np.average(errors[:, 1])
+    return {"alpha_error": alpha_error, "beta_error": beta_error}
+
+
 def calc_acc(model, batchloader, all_classes):
 
     binary_targets = []

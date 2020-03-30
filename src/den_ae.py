@@ -1,8 +1,8 @@
 from __future__ import print_function
-from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader, EEG_Mediation_loader
+from utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader, EEG_Mediation_loader, EEG_Mediation_normal_calm_loader
 from models import ActionEncoder
 from utils.train import trainAE
-from utils.eval import calc_avg_AE_AUROC, calc_acc
+from utils.eval import calc_avg_AE_AUROC, calc_acc, calc_avg_AE_band_error
 from utils import l1_penalty, l2_penalty, l1l2_penalty
 
 import random
@@ -14,7 +14,7 @@ import torch.optim as optim
 import os
 
 # Non-ML Hyperparams
-ALL_CLASSES = range(2)
+ALL_CLASSES = range(1)
 NUM_WORKERS = 0
 CUDA = False
 SEED = 20
@@ -83,7 +83,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         }
 
     print('==> Preparing dataset')
-    trainloader, validloader, testloader = EEG_Mediation_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    trainloader, validloader, testloader = EEG_Mediation_normal_calm_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     if actionencoder_sizes is not None:
@@ -245,26 +245,32 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #   save network.
 
         # HARDCODED
-        print("==> Calculating AUROC")
-        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
+        # print("==> Calculating AUROC")
+        # auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
+        #
+        # print("AUROC: {}".format(auroc))
+        # AUROCs.append(auroc)
 
-        print("AUROC: {}".format(auroc))
-        AUROCs.append(auroc)
+        print("==> Calculating error")
+        error = calc_avg_AE_band_error(model, testloader, CUDA)
 
-        print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, ALL_CLASSES)
+        print("error: {}".format(error))
+        AUROCs.append(error)
 
-        print('ACC: {}'.format(acc))
+        # print("==> Calculating Accuracy")
+        # acc = calc_acc(model, testloader, ALL_CLASSES)
+        #
+        # print('ACC: {}'.format(acc))
+        #
+        # ACCs.append(acc)
 
-        ACCs.append(acc)
-
-    print('\nAverage Per-task Performance over number of tasks')
+    # print('\nAverage Per-task error over number of tasks')
     for i, p in enumerate(AUROCs):
-        print("{}: {}".format(i + 1, p[i]))
-
-    print('\nAverage Per-task Accuracy over number of tasks')
-    for i, p in enumerate(ACCs):
         print("{}: {}".format(i + 1, p))
+
+    # print('\nAverage Per-task Accuracy over number of tasks')
+    # for i, p in enumerate(ACCs):
+    #     print("{}: {}".format(i + 1, p))
 
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
