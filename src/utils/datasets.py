@@ -372,8 +372,8 @@ def EEG_Meditation_normal_calm_loader(batch_size=256, num_workers=4):
 
     datasets = []
 
-    normal_data = np.load("./data/EEG_Processed/normal.npy")
-    normal_labels = np.load("./data/EEG_Processed/normal_band.npy")
+    normal_data = np.load("../data/EEG_Processed/normal.npy")
+    normal_labels = np.load("../data/EEG_Processed/normal_band.npy")
     num_samples = len(normal_data)
     normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='max', axis=0)
     normal_data = torch.Tensor(normal_data)
@@ -384,9 +384,9 @@ def EEG_Meditation_normal_calm_loader(batch_size=256, num_workers=4):
     normal_dataset = TensorDataset(normal_data, normal_tensor_labels)
     datasets.append(normal_dataset)
 
-    calm_data = np.load("./data/EEG_Processed/calm.npy")
+    calm_data = np.load("../data/EEG_Processed/calm.npy")
     num_samples = len(calm_data)
-    calm_labels = np.load("./data/EEG_Processed/calm_band.npy")
+    calm_labels = np.load("../data/EEG_Processed/calm_band.npy")
     calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='max', axis=0)
     calm_data = torch.Tensor(calm_data)
 
@@ -661,5 +661,6 @@ def load_CIFAR(batch_size=256, num_workers=4):
 
 
 if __name__ == '__main__':
-    train, valid, test = EEG_Mediation_normal_calm_loader()
+    EEG_Mediation_normal_calm_preprocessing()
+    train, valid, test = EEG_Meditation_normal_calm_loader()
     print(len(train), len(valid), len(test))
