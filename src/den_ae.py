@@ -83,7 +83,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         }
 
     print('==> Preparing dataset')
-    trainloader, validloader, testloader = EEG_Mediation_normal_calm_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    trainloader, validloader, testloader = EEG_Meditation_normal_calm_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     if actionencoder_sizes is not None:

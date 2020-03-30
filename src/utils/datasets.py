@@ -368,7 +368,7 @@ def _fft_psd(sampling_time, sample_num, data):
     return frequencies[idx], ps_densities[idx]
 
 
-def EEG_Mediation_normal_calm_loader(batch_size=256, num_workers=4):
+def EEG_Meditation_normal_calm_loader(batch_size=256, num_workers=4):
 
     datasets = []
 
