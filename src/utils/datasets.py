@@ -226,7 +226,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
     task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
     num_samples = len(task_data)
     task_labels = [task_num]*num_samples
-    task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     task_data = torch.Tensor(task_data)
 
     task_tensor_labels = torch.Tensor(task_labels)
@@ -238,7 +238,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=4):
     random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
     num_samples = len(random_data)
     random_labels = [9]*num_samples
-    random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     random_data = torch.Tensor(random_data)
 
     random_tensor_labels = torch.Tensor(random_labels)
@@ -375,7 +375,7 @@ def EEG_Meditation_normal_calm_loader(batch_size=256, num_workers=4):
     normal_data = np.load("./data/EEG_Processed/normal.npy")
     normal_labels = np.load("./data/EEG_Processed/normal_band.npy")
     num_samples = len(normal_data)
-    normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     normal_data = torch.Tensor(normal_data)
 
     normal_tensor_labels = torch.Tensor(normal_labels)
@@ -387,7 +387,7 @@ def EEG_Meditation_normal_calm_loader(batch_size=256, num_workers=4):
     calm_data = np.load("./data/EEG_Processed/calm.npy")
     num_samples = len(calm_data)
     calm_labels = np.load("./data/EEG_Processed/calm_band.npy")
-    calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     calm_data = torch.Tensor(calm_data)
 
     calm_tensor_labels = torch.Tensor(calm_labels)
@@ -455,7 +455,7 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
         task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
         num_samples = len(task_data)
         task_labels = [task_label]*num_samples
-        task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+        task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
         task_data = torch.Tensor(task_data)
 
         task_tensor_labels = torch.Tensor(task_labels)
@@ -467,7 +467,7 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
         random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
         num_samples = len(random_data)
         random_labels = [random_label]*num_samples
-        random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+        random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
         random_data = torch.Tensor(random_data)
 
         random_tensor_labels = torch.Tensor(random_labels)
@@ -485,7 +485,7 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
     normal_data = np.load("./data/EEG_Processed/normal.npy")
     num_samples = len(normal_data)
     normal_labels = [0]*num_samples
-    normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     normal_data = torch.Tensor(normal_data)
 
     normal_tensor_labels = torch.Tensor(normal_labels)
@@ -498,7 +498,7 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
     calm_data = np.load("./data/EEG_Processed/calm.npy")
     num_samples = len(calm_data)
     calm_labels = [1]*num_samples
-    calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='max', axis=0)
+    calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     calm_data = torch.Tensor(calm_data)
 
     calm_tensor_labels = torch.Tensor(calm_labels)

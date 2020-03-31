@@ -114,8 +114,8 @@ def calc_avg_AE_band_error(model, batchloader, use_cuda):
 
     errors = np.array(errors)
 
-    alpha_error = np.average(errors[:, 0])
-    beta_error = np.average(errors[:, 1])
+    alpha_error = np.mean(errors[:, 0])
+    beta_error = np.mean(errors[:, 1])
     return {"alpha_error": alpha_error, "beta_error": beta_error}
 
 

@@ -4,7 +4,7 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes={'encoder': [256 * 4, 512, 8],
+    def __init__(self, sizes={'encoder': [256 * 4, 512, 256, 8],
                               'action': [8, 4, 2]
                 }, oldWeights=None, oldBiases=None):
 
@@ -26,7 +26,7 @@ class ActionEncoder(nn.Module):
 
         # Action
         action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        action_layers.append(nn.Sigmoid())
+        # action_layers.append(nn.Sigmoid())
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
