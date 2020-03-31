@@ -124,10 +124,12 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
         model.phase = "ACTION"
         action_output = model(inputs)
 
+        generate_targets = targets[:, :generate_output.size()[1]]
         action_target = targets[:, generate_output.size()[1]:]
 
         # calculate loss
-        generate_loss = torch.nn.MSELoss()(generate_output, targets[:, :generate_output.size()[1]])
+        mse_loss = torch.nn.MSELoss()
+        generate_loss = mse_loss(generate_output, generate_targets)
         action_loss = criterion(action_output, action_target)
 
         if penalty is not None:
@@ -137,7 +139,12 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
         total_loss = action_loss + generate_loss
 
         # record loss
-        losses.update(total_loss.data[0], inputs.size(0))
+        if total_loss.ndim == 0:
+            loss = total_loss.item()
+            losses.update(loss, inputs.size(0))
+
+        else:
+            losses.update(total_loss.data[0], inputs.size(0))
 
         if not test:
             # compute gradient and do SGD step

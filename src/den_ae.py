@@ -14,7 +14,7 @@ import torch.optim as optim
 import os
 
 # Non-ML Hyperparams
-ALL_CLASSES = range(1)
+ALL_CLASSES = range(2)
 NUM_WORKERS = 0
 CUDA = False
 SEED = 20
@@ -32,7 +32,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     batch_size = 256
     loss_threshold = 1e-2
     expand_by_k = 10
-    max_epochs = 10
+    max_epochs = 1
     weight_decay = 0
     lr_drop = 0.25
     l1_coeff = 1e-10
@@ -187,8 +187,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty,
-                      use_cuda=CUDA)
+                trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
                 trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=CUDA)
 
             for param in model.parameters():
