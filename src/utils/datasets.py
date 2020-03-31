@@ -661,5 +661,6 @@ def load_CIFAR(batch_size=256, num_workers=4):
 
 
 if __name__ == '__main__':
-    train, valid, test = EEG_Mediation_normal_calm_loader()
+    EEG_Mediation_normal_calm_preprocessing()
+    train, valid, test = EEG_Meditation_normal_calm_loader()
     print(len(train), len(valid), len(test))
