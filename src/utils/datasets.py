@@ -15,7 +15,11 @@ __all__ = ['load_MNIST', 'load_CIFAR', 'load_AE_MNIST']
 
 DATA = './data'
 
+BANANA_RESIZED_DATA_TRAIN = '../data/Banana_Car/banana/1/resized/train/'
+BANANA_RESIZED_DATA_TEST = '../data/Banana_Car/banana/1/resized/test/'
+BANANA_RESIZED_DATA_VALID = '../data/Banana_Car/banana/1/resized/validation/'
 BANANA_RESIZED_DATA = '../data/Banana_Car/banana/1/resized/1/'
+
 CAR_RESIZED_DATA = '../data/Banana_Car/car/1/resized/1/'
 BANANACAR_RESIZED_DATA = '../data/Banana_Car/bananacar/1/resized/1/'
 
@@ -36,6 +40,7 @@ OVERLAP_LENGTH = 0.8
 
 # Amount to 'shift' the start of each next consecutive epoch
 SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
+
 
 class Band:
     Delta = 0
@@ -139,6 +144,62 @@ def bc_loader(dir, name, label, batch_size=256, num_workers=4):
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
     print("Done preparing {} AE dataloader".format(name))
+
+    return (trainloader, validloader, testloader)
+
+
+def all_bc_loader(dirs, names, labels, batch_size=256, num_workers=4):
+    """Dirs must be of the shape: [[train, valid, test], [train,valid,test]]"""
+    # first we do the train dataloader
+    print("loading training set")
+    datasets = []
+    for i in range(len(dirs)):
+        name = names[i]
+        label = labels[i]
+        assert os.path.isdir(dirs[i][0])
+
+        d = MyImageDataset(dirs[i][0], name, label)
+        datasets.append(d)
+    dataset = ConcatDataset(datasets)
+    labels = [i[1] for i in dataset]
+
+    trainsampler = AESampler(labels, start_from=0)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    check_for_nan(trainloader)
+
+    print("loading validation set")
+    # valid loader
+    datasets = []
+    for i in range(len(dirs)):
+        name = names[i]
+        label = labels[i]
+        assert os.path.isdir(dirs[i][1])
+
+        d = MyImageDataset(dirs[i][1], name, label)
+        datasets.append(d)
+    dataset = ConcatDataset(datasets)
+    labels = [i[1] for i in dataset]
+
+    validsampler = AESampler(labels, start_from=0)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    check_for_nan(validloader)
+
+    print("loading test set")
+    # test loader
+    datasets = []
+    for i in range(len(dirs)):
+        name = names[i]
+        label = labels[i]
+        assert os.path.isdir(dirs[i][2])
+
+        d = MyImageDataset(dirs[i][2], name, label)
+        datasets.append(d)
+    dataset = ConcatDataset(datasets)
+    labels = [i[1] for i in dataset]
+
+    testsampler = AESampler(labels, start_from=0)
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    check_for_nan(testloader)
 
     return (trainloader, validloader, testloader)
 
@@ -395,9 +456,81 @@ def EEG_Meditation_normal_calm_loader(batch_size=256, num_workers=4):
 
     calm_dataset = TensorDataset(calm_data, calm_tensor_labels)
     datasets.append(calm_dataset)
-    num_samples = 0
+
+    traindata = []
+    trainlabels = []
     for i in datasets:
-        num_samples += len(i)
+        for j in range(int(0.7*len(i))):
+            traindata.append(i[j][0].numpy().astype(float))
+            trainlabels.append(i[j][1].numpy().astype(float))
+    traindata = torch.Tensor(traindata)
+    trainlabels = torch.Tensor(trainlabels)
+    traindataset = TensorDataset(traindata, trainlabels)
+
+    validdata = []
+    validlabels = []
+    for i in datasets:
+        for j in range(int(0.7 * len(i)), int(0.7*len(i)) + int(0.05*len(i))):
+            validdata.append(i[j][0].numpy().astype(float))
+            validlabels.append(i[j][1].numpy().astype(float))
+    validdata = torch.Tensor(validdata)
+    validlabels = torch.Tensor(validlabels)
+    validdataset = TensorDataset(validdata, validlabels)
+
+    testdata = []
+    testlabels = []
+    for i in datasets:
+        for j in range(int(0.7*len(i)) + int(0.05*len(i)), len(i)):
+            testdata.append(i[j][0].numpy().astype(float))
+            testlabels.append(i[j][1].numpy().astype(float))
+    testdata = torch.Tensor(testdata)
+    testlabels = torch.Tensor(testlabels)
+    testdataset = TensorDataset(testdata, testlabels)
+
+    train_labels = [i[1] for i in traindataset]
+    valid_labels = [i[1] for i in validdataset]
+    test_labels = [i[1] for i in testdataset]
+
+    trainsampler = AESampler(train_labels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    check_for_nan(trainloader)
+
+    validsampler = AESampler(valid_labels, start_from=0)
+    validloader = DataLoader(validdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    check_for_nan(validloader)
+
+    testsampler = AESampler(test_labels, start_from=0)
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    check_for_nan(testloader)
+
+    return (trainloader, validloader, testloader)
+
+
+def EEG_Meditation_band_loader(batch_size=256, num_workers=4):
+    task_data = np.load("./data/EEG_Processed/calm_band.npy")
+    num_samples = len(task_data)
+    task_labels = [1] * num_samples
+    # task_data = normalize(task_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)
+    task_data = torch.Tensor(task_data)
+
+    task_tensor_labels = torch.Tensor(task_labels)
+    task_tensor_class_labels = one_hot(task_tensor_labels, range(2))
+    task_tensor_labels = torch.cat([task_data, task_tensor_class_labels], 1)
+
+    task_dataset = TensorDataset(task_data, task_tensor_labels)
+
+    normal_data = np.load("./data/EEG_Processed/normal_band.npy")
+    num_samples = len(normal_data)
+    normal_labels = [0] * num_samples
+    # random_data = normalize(normal_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)
+    normal_data = torch.Tensor(normal_data)
+
+    normal_tensor_labels = torch.Tensor(normal_labels)
+    normal_tensor_class_labels = one_hot(normal_tensor_labels, range(2))
+    normal_tensor_labels = torch.cat([normal_data, normal_tensor_class_labels], 1)
+
+    normal_dataset = TensorDataset(normal_data, normal_tensor_labels)
+    datasets = [task_dataset, normal_dataset]
 
     traindata = []
     trainlabels = []
@@ -449,7 +582,8 @@ def EEG_Meditation_normal_calm_loader(batch_size=256, num_workers=4):
 
 
 
-def EEG_Mediation_loader(batch_size=256, num_workers=4):
+
+def EEG_Meditation_loader(batch_size=256, num_workers=4):
 
     def custom_EEG_dataset_getter(task_num, task_label, random_label):
         task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
@@ -507,9 +641,6 @@ def EEG_Mediation_loader(batch_size=256, num_workers=4):
 
     calm_dataset = TensorDataset(calm_data, calm_tensor_labels)
     datasets.append(calm_dataset)
-    num_samples = 0
-    for i in datasets:
-        num_samples += len(i)
 
     traindata = []
     trainlabels = []
@@ -661,4 +792,6 @@ def load_CIFAR(batch_size=256, num_workers=4):
 
 
 if __name__ == '__main__':
-    EEG_Mediation_normal_calm_preprocessing()
+    # EEG_Mediation_normal_calm_preprocessing()
+    # all_bc_loader([[BANANA_RESIZED_DATA_TRAIN, BANANA_RESIZED_DATA_VALID, BANANA_RESIZED_DATA_TEST]], ['banana'], [BANANA_LABEL])
+    # bc_loader(CAR_RESIZED_DATA, 'car', CAR_LABEL)
