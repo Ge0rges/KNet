@@ -13,7 +13,9 @@ import numpy as np
 
 from sklearn.decomposition import PCA
 from torch.utils.data import ConcatDataset
-from utils.datasets import EEG_dataset_getter
+import torchvision
+from torchvision.datasets import ImageFolder
+from utils.datasets import EEG_dataset_getter, MyImageDataset
 
 # SEED = 20
 # random.seed(SEED)
@@ -299,7 +301,30 @@ def layer_size_opt_EEG(threshold=0.9):
     return n_comp
 
 
+def layer_size_opt_dataset(threshold=0.9):
+    dataset = ImageFolder('./data/Banana_Car/banana/1/resized/pca/', transform=torchvision.transforms.ToTensor())
+    train_data = []
+    print(len(dataset))
+    for i in range(len(dataset)):
+        train_data.append(dataset[i][0].numpy().reshape((640*480*3)).astype(float))
+    print("doing pca")
+    model = PCA()
+    model.fit_transform(train_data)
+    var = model.explained_variance_ratio_.cumsum()
+    n_comp = 0
+    v = []
+    for i in var:
+        v.append(i)
+        if i >= threshold:
+            n_comp += 1
+            break
+        else:
+            n_comp += 1
+    print(v)
+    return n_comp
+
 
 if __name__ == "__main__":
-    best_worker = optimize_hypers()
-    print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
+    # best_worker = optimize_hypers()
+    # print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
+    print(layer_size_opt_dataset( threshold=0.9))

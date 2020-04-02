@@ -1,5 +1,5 @@
 from __future__ import print_function
-from src.utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader, EEG_Mediation_loader, EEG_Meditation_normal_calm_loader
+from src.utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader, EEG_Meditation_loader, EEG_Meditation_normal_calm_loader, EEG_Meditation_band_loader
 from src.models import ActionEncoder
 from src.utils.train import trainAE
 from src.utils.eval import calc_avg_AE_AUROC, calc_acc, calc_avg_AE_band_error
@@ -82,11 +82,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             "zero_threshold": zero_threshold,
         }
 
-    print('==> Preparing dataset')
-    trainloader, validloader, testloader = EEG_Meditation_normal_calm_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    # print('==> Preparing dataset')
+    # trainloader, validloader, testloader = EEG_Meditation_band_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
 
     print("==> Creating model")
     if actionencoder_sizes is not None:
+        print("using sizes")
         model = ActionEncoder(sizes=actionencoder_sizes)
     else:
         model = ActionEncoder()
@@ -105,8 +106,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
-    # criterion = nn.BCELoss()
-    criterion = nn.MSELoss()
+    criterion = nn.BCELoss()
+    # criterion = nn.MSELoss()
 
     CLASSES = []
     AUROCs = []
@@ -117,9 +118,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         print('\nTask: [%d | %d]\n' % (t + 1, len(ALL_CLASSES)))
 
         CLASSES.append(cls)
-        print('==> Preparing dataset')
+        # print('==> Preparing dataset')
         # trainloader, validloader = EEG_task_loader(cls, batch_size=batch_size, num_workers=NUM_WORKERS)
-
+        if t == 0:
+            trainloader, validloader, testloader = bc_loader("./data/Banana_Car/banana/1/resized/1/", 'banana', 1)
+        else:
+            trainloader, validloader, testloader = bc_loader("./data/Banana_Car/car/1/resized/1/", 'car', 2)
         if t == 0:
             print("==> Learning")
 
@@ -245,32 +249,32 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #   save network.
 
         # HARDCODED
-        # print("==> Calculating AUROC")
-        # auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
+        print("==> Calculating AUROC")
+        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
+
+        print("AUROC: {}".format(auroc))
+        AUROCs.append(auroc)
+
+        # print("==> Calculating error")
+        # error = calc_avg_AE_band_error(model, testloader, CUDA)
         #
-        # print("AUROC: {}".format(auroc))
-        # AUROCs.append(auroc)
+        # print("error: {}".format(error))
+        # AUROCs.append(error)
 
-        print("==> Calculating error")
-        error = calc_avg_AE_band_error(model, testloader, CUDA)
+        print("==> Calculating Accuracy")
+        acc = calc_acc(model, testloader, ALL_CLASSES)
 
-        print("error: {}".format(error))
-        AUROCs.append(error)
+        print('ACC: {}'.format(acc))
 
-        # print("==> Calculating Accuracy")
-        # acc = calc_acc(model, testloader, ALL_CLASSES)
-        #
-        # print('ACC: {}'.format(acc))
-        #
-        # ACCs.append(acc)
+        ACCs.append(acc)
 
-    # print('\nAverage Per-task error over number of tasks')
+    print('\nAverage Per-task error over number of tasks')
     for i, p in enumerate(AUROCs):
-        print("{}: {}".format(i + 1, p))
+        print("{}: {}".format(i + 1, p[i]))
 
-    # print('\nAverage Per-task Accuracy over number of tasks')
-    # for i, p in enumerate(ACCs):
-    #     print("{}: {}".format(i + 1, p))
+    print('\nAverage Per-task Accuracy over number of tasks')
+    for i, p in enumerate(ACCs):
+        print("{}: {}".format(i + 1, p))
 
     filepath = os.path.join("./saved", "last.pt")
     torch.save({'state_dict': model.state_dict()}, filepath)
