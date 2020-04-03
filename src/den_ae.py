@@ -1,10 +1,3 @@
-from __future__ import print_function
-from src.utils.datasets import load_AE_MNIST, bc_loader, EEG_loader, EEG_task_loader, EEG_Meditation_loader, EEG_Meditation_normal_calm_loader, EEG_Meditation_band_loader
-from src.models import ActionEncoder
-from src.utils.train import trainAE
-from src.utils.eval import calc_avg_AE_AUROC, calc_acc, calc_avg_AE_band_error
-from src.utils import l1_penalty, l2_penalty, l1l2_penalty
-
 import random
 import copy
 import torch
@@ -13,9 +6,12 @@ import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import os
 
+from __future__ import print_function
+from src.models import ActionEncoder
+from src.utils.train import trainAE
+from src.utils import l1_penalty, l1l2_penalty
+
 # Non-ML Hyperparams
-ALL_CLASSES = range(2)
-NUM_WORKERS = 0
 CUDA = False
 SEED = 20
 
@@ -25,7 +21,16 @@ if CUDA:
     torch.cuda.manual_seed_all(SEED)
 
 
-def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None):
+def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None, error_function=None,
+            data_loader=None, num_workers=0, classes_list=None, criterion=None, save_model=None):
+
+    assert data_loader is not None
+    assert classes_list is not None
+    assert criterion is not None
+    assert main_hypers is not None
+    assert split_train_new_hypers is not None
+    assert de_train_new_hypers is not None
+    assert error_function is not None
 
     # Default hypers for training
     learning_rate = 0.2
@@ -82,8 +87,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             "zero_threshold": zero_threshold,
         }
 
-    # print('==> Preparing dataset')
-    # trainloader, validloader, testloader = EEG_Meditation_band_loader(batch_size=batch_size, num_workers=NUM_WORKERS)
+    print('==> Preparing dataset')
+    trainloader, validloader, testloader = data_loader(batch_size=batch_size, num_workers=num_workers)
 
     print("==> Creating model")
     if actionencoder_sizes is not None:
@@ -106,20 +111,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
     print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
-    criterion = nn.BCELoss()
-    # criterion = nn.MSELoss()
+    errors = []
 
-    CLASSES = []
-    AUROCs = []
-    ACCs = []
+    for t, cls in enumerate(classes_list):
 
-    for t, cls in enumerate(ALL_CLASSES):
+        print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
 
-        print('\nTask: [%d | %d]\n' % (t + 1, len(ALL_CLASSES)))
-
-        CLASSES.append(cls)
-        # print('==> Preparing dataset')
-        # trainloader, validloader = EEG_task_loader(cls, batch_size=batch_size, num_workers=NUM_WORKERS)
         if t == 0:
             trainloader, validloader, testloader = bc_loader("./data/Banana_Car/banana/1/resized/1/", 'banana', 1)
         else:
@@ -147,11 +144,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
                 test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=CUDA)
-
-                # save model
-                # is_best = test_loss < best_loss
-                # best_loss = min(test_loss, best_loss)
-                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
 
                 suma = 0
                 for p in model.parameters():
@@ -223,11 +215,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                                    use_cuda=CUDA)
                 test_loss = trainAE(validloader, model, criterion, test=True, use_cuda=CUDA)
 
-                # save model
-                # is_best = test_loss < best_loss
-                # best_loss = min(test_loss, best_loss)
-                # save_checkpoint({'state_dict': model.state_dict()}, CHECKPOINT, is_best)
-
             # remove hooks
             for hook in hooks:
                 hook.remove()
@@ -248,38 +235,14 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #   remove all neurons which have no weights that are non_zero
             #   save network.
 
-        # HARDCODED
-        print("==> Calculating AUROC")
-        auroc = calc_avg_AE_AUROC(model, testloader, ALL_CLASSES, CLASSES, CUDA)
+            err = error_function(model, testloader, classes_list, classes_list[:t+1], CUDA)
+            errors.append(err)
 
-        print("AUROC: {}".format(auroc))
-        AUROCs.append(auroc)
+    if save_model:
+        filepath = os.path.join("./saved", "last.pt")
+        torch.save({'state_dict': model.state_dict()}, filepath)
 
-        # print("==> Calculating error")
-        # error = calc_avg_AE_band_error(model, testloader, CUDA)
-        #
-        # print("error: {}".format(error))
-        # AUROCs.append(error)
-
-        print("==> Calculating Accuracy")
-        acc = calc_acc(model, testloader, ALL_CLASSES)
-
-        print('ACC: {}'.format(acc))
-
-        ACCs.append(acc)
-
-    print('\nAverage Per-task error over number of tasks')
-    for i, p in enumerate(AUROCs):
-        print("{}: {}".format(i + 1, p[i]))
-
-    print('\nAverage Per-task Accuracy over number of tasks')
-    for i, p in enumerate(ACCs):
-        print("{}: {}".format(i + 1, p))
-
-    filepath = os.path.join("./saved", "last.pt")
-    torch.save({'state_dict': model.state_dict()}, filepath)
-
-    return [x["Classification Rate"] for x in ACCs]
+    return errors
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):
@@ -659,7 +622,3 @@ class active_grads_hook(object):
         if self.mask2.size:
             grad_clone[:, self.mask2] = 0
         return grad_clone
-
-
-if __name__ == '__main__':
-    main_ae()

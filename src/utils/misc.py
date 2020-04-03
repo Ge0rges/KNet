@@ -2,8 +2,8 @@ import errno
 import os
 import numpy as np
 import torch
-from torch.utils.data.sampler import Sampler
 
+from torch.utils.data.sampler import Sampler
 from PIL import ImageFilter
 
 __all__ = ['mkdir_p', 'AverageMeter', 'ClassSampler', 'GaussianNoise', 'fft_psd', 'one_hot']
@@ -40,6 +40,7 @@ def mkdir_p(path):
         else:
             raise
 
+
 class AverageMeter(object):
     """Computes and stores the average and current value
        Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262
@@ -58,6 +59,7 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
 
 class ClassSampler(Sampler):
 
@@ -123,3 +125,9 @@ class GaussianNoise(object):
         new_img = img + noise
         new_img = torch.clamp(new_img, 0, 1)
         return new_img
+
+class Band:
+    Delta = 0
+    Theta = 1
+    Alpha = 2
+    Beta = 3

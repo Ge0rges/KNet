@@ -21,7 +21,7 @@ from utils.datasets import EEG_dataset_getter, MyImageDataset
 # random.seed(SEED)
 
 
-def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1):
+def optimize_hypers(dataset=None, generation_size=8, epochs=10, standard_deviation=0.1):
     """
     Trains generation_size number of models for epochs number of times.
     At every epoch the bottom 20% workers copy the top 20%
@@ -31,6 +31,7 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1):
     Recommend setting generation size as a multiple of cpu_count()
     """
 
+    assert dataset is not None
     assert generation_size > 0
     assert epochs > 0
 
@@ -77,7 +78,7 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1):
     workers = []
 
     print("Doing PCA on the data...")
-    autoencoder_out = layer_size_opt_EEG(threshold=0.9)
+    autoencoder_out = pca_dataset(dataset=dataset, threshold=0.9)
 
     for i in range(generation_size):
         workers.append((0, random_init(params_bounds, autoencoder_out)))
@@ -277,7 +278,9 @@ def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=
 
     return sizes
 
-def layer_size_opt_EEG(threshold=0.9):
+def pca_dataset(dataset=None, threshold=0.9):
+    assert dataset is not None
+
     datasets = []
     for i in range(9):
         datasets.append(EEG_dataset_getter(i))
