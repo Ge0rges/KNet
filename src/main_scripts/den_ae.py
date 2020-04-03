@@ -75,10 +75,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
 
         if t == 0:
-            trainloader, validloader, testloader = bc_loader("./data/Banana_Car/banana/1/resized/1/", 'banana', 1)
-        else:
-            trainloader, validloader, testloader = bc_loader("./data/Banana_Car/car/1/resized/1/", 'car', 2)
-        if t == 0:
             print("==> Learning")
 
             optimizer = optim.SGD(model.parameters(),
