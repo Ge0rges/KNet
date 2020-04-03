@@ -87,8 +87,8 @@ def EEG_preprocess_tasks_to_binary():
         data.append(pro[1])
     data = np.array(data)
     band_data = np.array(band_data)
-    np.save("../data/EEG_Processed/calm_band", band_data)
-    np.save("../data/EEG_Processed/calm", data)
+    np.save("../../data/EEG_Processed/calm_band", band_data)
+    np.save("../../data/EEG_Processed/calm", data)
 
 
     files = []
@@ -128,8 +128,8 @@ def EEG_preprocess_tasks_to_binary():
         data.append(pro[1])
     data = np.array(data)
     band_data = np.array(band_data)
-    np.save("../data/EEG_Processed/normal_band", band_data)
-    np.save("../data/EEG_Processed/normal", data)
+    np.save("../../data/EEG_Processed/normal_band", band_data)
+    np.save("../../data/EEG_Processed/normal", data)
 
 ### MISC
 def dataset_reshaping(name, directory_path, new_size=(640, 480)):

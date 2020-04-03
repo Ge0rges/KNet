@@ -128,7 +128,6 @@ MNIST/
 src/checkpoints/
 *.icloud
 
-src/data/EEG_Processed/
-src/data/banana_car/
+data/
 
 *.npy
