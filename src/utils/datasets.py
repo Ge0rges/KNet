@@ -25,8 +25,8 @@ BANANACAR_RESIZED_DATA = '../data/Banana_Car/bananacar/1/resized/1/'
 
 BANANA_LABEL = 1
 CAR_LABEL = 2
-BANANACAR_LABEL = 3
-ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL, BANANACAR_LABEL]
+
+ALL_CUSTOM_LABELS = [BANANA_LABEL, CAR_LABEL]
 
 # Length of the EEG data buffer (in seconds)
 # This buffer will hold last n seconds of data and be used for calculations
@@ -94,19 +94,18 @@ class MyImageDataset(Dataset):
         except TypeError:
             img = np.asarray(Image.open(self.dir + self.name + "_{}.jpg".format(idx)))
             tensor_img = torch.Tensor(img)
-
             new_size = 1
             for j in tensor_img.size():
                 new_size *= j
-            tensor_img = tensor_img.view((new_size))
+                tensor_img = tensor_img.view((new_size))
 
-            label = torch.Tensor([self.label])
-            label = one_hot(label, ALL_CUSTOM_LABELS).view((len(ALL_CUSTOM_LABELS)))
-            label = torch.cat([tensor_img, label], 0)
+                label = torch.Tensor([self.label])
+                label = one_hot(label, ALL_CUSTOM_LABELS).view((len(ALL_CUSTOM_LABELS)))
+                label = torch.cat([tensor_img, label], 0)
 
-            sample = (tensor_img, label)
+                sample = (tensor_img, label)
 
-            return sample
+                return sample
 
 
 def dataset_reshaping(name, directory_path, new_size=(640, 480)):
@@ -120,10 +119,11 @@ def dataset_reshaping(name, directory_path, new_size=(640, 480)):
     for i, f in enumerate(files):
         img = Image.open(f)
         new_img = img.resize(new_size)
+        new_img = new_img.convert(mode="RGB")
         new_img.save(directory_path + "resized/1/{}_{}.jpg".format(name, i))
 
 
-def bc_loader(dir, name, label, batch_size=256, num_workers=4):
+def bc_loader(dir, name, label, batch_size=256, num_workers=0):
     """Loader to be used only for the car, banana and bananacar datasets"""
     assert os.path.isdir(dir)
 
@@ -795,4 +795,4 @@ if __name__ == '__main__':
     # EEG_Mediation_normal_calm_preprocessing()
     # all_bc_loader([[BANANA_RESIZED_DATA_TRAIN, BANANA_RESIZED_DATA_VALID, BANANA_RESIZED_DATA_TEST]], ['banana'], [BANANA_LABEL])
     # bc_loader(CAR_RESIZED_DATA, 'car', CAR_LABEL)
-    pass
+    dataset_reshaping('car', '../data/Banana_Car/car/1/')
