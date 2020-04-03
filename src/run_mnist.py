@@ -49,6 +49,12 @@ def train_model():
         "l2_coeff": 1e-10,
         "zero_threshold": 1e-4,
 
+        ## Global net size
+        "sizes": {
+            "encoder": [28*28, 10],
+            "action": [10, 10]
+        },
+
         # Unique to main
         "batch_size": 256,
         "weight_decay": 0,

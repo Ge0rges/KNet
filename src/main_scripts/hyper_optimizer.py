@@ -148,7 +148,6 @@ def random_init(params_bounds, autoencoder_out):
     Randomly initializes the parameters within their bounds.
     """
     # Safely iterate over dict or list
-    iterator = None
     if isinstance(params_bounds, dict):
         iterator = params_bounds.items()
 

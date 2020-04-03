@@ -28,60 +28,21 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         if use_cuda:
             torch.cuda.manual_seed_all(seed_rand)
 
-    # Default hypers for training
-    learning_rate = 0.2
-    batch_size = 256
-    loss_threshold = 1e-2
-    expand_by_k = 10
-    max_epochs = 1
-    weight_decay = 0
-    lr_drop = 0.25
-    l1_coeff = 1e-10
-    zero_threshold = 1e-4
-    epochs_drop = 5
-    l2_coeff = 1e-10
-    momentum = 0.0
-    actionencoder_sizes = None
+    # Parse hyper-params
+    learning_rate = main_hypers["learning_rate"]
+    batch_size = main_hypers["batch_size"]
+    loss_threshold = main_hypers["loss_threshold"]
+    expand_by_k = main_hypers["expand_by_k"]
+    max_epochs = main_hypers["max_epochs"]
+    weight_decay = main_hypers["weight_decay"]
+    lr_drop = main_hypers["lr_drop"]
+    l1_coeff = main_hypers["l1_coeff"]
+    zero_threshold = main_hypers["zero_threshold"]
+    epochs_drop = main_hypers["epochs_drop"]
+    l2_coeff = main_hypers["l2_coeff"]
+    momentum = main_hypers["momentum"]
+    actionencoder_sizes = main_hypers["sizes"]
 
-    if main_hypers is not None:
-        learning_rate = main_hypers["learning_rate"]
-        batch_size = main_hypers["batch_size"]
-        loss_threshold = main_hypers["loss_threshold"]
-        expand_by_k = main_hypers["expand_by_k"]
-        max_epochs = main_hypers["max_epochs"]
-        weight_decay = main_hypers["weight_decay"]
-        lr_drop = main_hypers["lr_drop"]
-        l1_coeff = main_hypers["l1_coeff"]
-        zero_threshold = main_hypers["zero_threshold"]
-        epochs_drop = main_hypers["epochs_drop"]
-        l2_coeff = main_hypers["l2_coeff"]
-        momentum = main_hypers["momentum"]
-        actionencoder_sizes = main_hypers["sizes"]
-
-    if split_train_new_hypers is None:
-        split_train_new_hypers = {
-            "learning_rate": learning_rate,
-            "momentum": momentum,
-            "lr_drop": lr_drop,
-            "epochs_drop": epochs_drop,
-            "max_epochs": max_epochs,
-            "l1_coeff": l1_coeff,
-            "l2_coeff": l2_coeff,
-            "zero_threshold": zero_threshold,
-            "drift_threshold": 0.02
-        }
-
-    if de_train_new_hypers is None:
-        de_train_new_hypers = {
-            "learning_rate": learning_rate,
-            "momentum": momentum,
-            "lr_drop": lr_drop,
-            "epochs_drop": epochs_drop,
-            "max_epochs": max_epochs,
-            "l1_coeff": l1_coeff,
-            "l2_coeff": l2_coeff,
-            "zero_threshold": zero_threshold,
-        }
 
     print('==> Preparing dataset')
     trainloader, validloader, testloader = data_loader(batch_size=batch_size, num_workers=num_workers)
