@@ -129,5 +129,6 @@ src/checkpoints/
 *.icloud
 
 data/
+src/data/
 
 *.npy
