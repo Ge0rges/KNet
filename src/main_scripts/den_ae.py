@@ -48,12 +48,9 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     trainloader, validloader, testloader = data_loader(batch_size=batch_size, num_workers=num_workers)
 
     print("==> Creating model")
-    if actionencoder_sizes is not None:
-        print("using sizes")
-        model = ActionEncoder(sizes=actionencoder_sizes)
-    else:
-        model = ActionEncoder()
+    model = ActionEncoder(sizes=actionencoder_sizes)
 
+    # Use Cuda
     if use_cuda:
         model = model.cuda()
         model = nn.DataParallel(model)

@@ -62,12 +62,7 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
         total_loss = action_loss + generate_loss
 
         # record loss
-        if total_loss.ndim == 0:
-            loss = total_loss.item()
-            losses.update(loss, inputs.size(0))
-
-        else:
-            losses.update(total_loss.data[0], inputs.size(0))
+        losses.update(total_loss.data[0], inputs.size(0))
 
         if not test:
             # compute gradient and do SGD step
