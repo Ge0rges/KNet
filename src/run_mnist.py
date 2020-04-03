@@ -111,3 +111,8 @@ def prepare_experiment():
     """
     # Nothing to do for MNIST.
     pass
+
+
+if __name__ == "__main__":
+    prepare_experiment()
+    train_model()
