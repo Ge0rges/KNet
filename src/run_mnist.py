@@ -88,7 +88,7 @@ def train_model():
 
     results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
                       de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
-                      data_loader=, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
+                      data_loader=data_loader, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
                       save_model=save_model, seed_rand=seed)
 
     print("Done training with results from error function:" + str(results))
