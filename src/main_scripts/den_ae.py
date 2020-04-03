@@ -6,23 +6,15 @@ import torch.backends.cudnn as cudnn
 import torch.optim as optim
 import os
 
-from __future__ import print_function
 from src.models import ActionEncoder
 from src.utils.train import trainAE
 from src.utils import l1_penalty, l1l2_penalty
 
 # Non-ML Hyperparams
 CUDA = False
-SEED = 20
-
-random.seed(SEED)
-torch.manual_seed(SEED)
-if CUDA:
-    torch.cuda.manual_seed_all(SEED)
-
 
 def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None, error_function=None,
-            data_loader=None, num_workers=0, classes_list=None, criterion=None, save_model=None):
+            data_loader=None, num_workers=0, classes_list=None, criterion=None, save_model=None, seed_rand=None):
 
     assert data_loader is not None
     assert classes_list is not None
@@ -31,6 +23,13 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     assert split_train_new_hypers is not None
     assert de_train_new_hypers is not None
     assert error_function is not None
+
+    # Set the seed
+    if seed_rand is not None:
+        random.seed(seed_rand)
+        torch.manual_seed(seed_rand)
+        if CUDA:
+            torch.cuda.manual_seed_all(seed_rand)
 
     # Default hypers for training
     learning_rate = 0.2
@@ -472,7 +471,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, split_train_ne
     return train_new_neurons(new_model, new_modules, trainloader, validloader, sizes, weights, biases, hooks, split_train_new_hypers)
 
 
-def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, hypers):
+def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, hypers, cuda=False):
     # Get params
     learning_rate = hypers["learning_rate"]
     max_epochs = hypers["max_epochs"]
