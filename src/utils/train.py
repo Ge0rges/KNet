@@ -2,96 +2,19 @@ import time
 import os
 import shutil
 import random
-
 import torch
+
 from torch.autograd import Variable
 from progress.bar import Bar
-
 from src.utils.misc import AverageMeter, one_hot
 
-__all__ = ['train', 'save_checkpoint', 'l1_penalty', 'l2_penalty', 'l1l2_penalty', 'trainAE']
 
-# Manual seed
-SEED = 20
+def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False, use_cuda=False, seed=None):
+    if seed is not None:
+        random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
 
-random.seed(SEED)
-torch.manual_seed(SEED)
-torch.cuda.manual_seed_all(SEED)
-
-
-def train(batchloader, model, criterion, all_classes, classes, optimizer = None, penalty = None, test = False, use_cuda = False, freeze=None):
-    # switch to train or evaluate mode
-    if test:
-        model.eval()
-    else:
-        model.train()
-
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-    losses = AverageMeter()
-    end = time.time()
-
-    if test:
-        bar = Bar('Testing', max=len(batchloader))
-    else:
-        bar = Bar('Training', max=len(batchloader))
-
-    for batch_idx, (inputs, targets) in enumerate(batchloader):
-
-        # measure data loading time
-        data_time.update(time.time() - end)
-
-        # convert labels into one hot vectors
-        targets_onehot = one_hot(targets, classes)
-
-        if use_cuda:
-            inputs = inputs.cuda()
-            targets = targets.cuda()
-            targets_onehot = targets_onehot.cuda()
-
-        inputs = Variable(inputs)
-        targets_onehot = Variable(targets_onehot)
-
-        # compute output
-        outputs = model(inputs)
-
-        # calculate loss
-        loss = 0
-        for i, cls in enumerate(classes):
-            loss = loss + criterion(outputs[:, all_classes.index(cls)], targets_onehot[:, i])
-        if penalty is not None:
-            loss = loss + penalty(model)
-
-        # record loss
-        losses.update(loss.data[0], inputs.size(0))
-
-        if not test:
-            # compute gradient and do SGD step
-            optimizer.zero_grad()
-            loss.backward()
-            if freeze:
-                freeze(model)
-            optimizer.step()
-
-        # measure elapsed time
-        batch_time.update(time.time() - end)
-        end = time.time()
-
-        # plot progress
-        bar.suffix = '({batch}/{size}) Data: {data:.3f}s | Batch: {bt:.3f}s | Total: {total:} | Loss: {loss:.4f}'.format(
-                    batch=batch_idx + 1,
-                    size=len(batchloader),
-                    data=data_time.avg,
-                    bt=batch_time.avg,
-                    total=bar.elapsed_td,
-                    loss=losses.avg)
-        bar.next()
-
-    bar.finish()
-    return losses.avg
-
-
-def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False, use_cuda=False):
     # switch to train or evaluate mode
     if test:
         model.eval()

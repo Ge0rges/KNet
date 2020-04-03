@@ -4,9 +4,8 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes={'encoder': [640*480*3, 3000, 80],
-                              'action': [80, 30, 10, 2]
-                }, oldWeights=None, oldBiases=None):
+    def __init__(self, sizes=None, oldWeights=None, oldBiases=None):
+        assert sizes is not None
 
         # Safer
         sizes["decoder"] = list(reversed(sizes["encoder"]))

@@ -9,9 +9,8 @@ from torch.utils.data import DataLoader, ConcatDataset, Dataset, TensorDataset
 from sklearn.preprocessing import normalize
 from src.utils.misc import GaussianNoise, AESampler, one_hot
 
-__all__ = []
-
-DATA = './data'
+################
+DATA = '../data'
 
 BANANA_RESIZED_DATA_TRAIN = '../data/Banana_Car/banana/1/resized/train/'
 BANANA_RESIZED_DATA_TEST = '../data/Banana_Car/banana/1/resized/test/'

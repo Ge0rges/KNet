@@ -1,27 +1,17 @@
 """
 File contains functions to search for best parameters.
 """
-
-from den_ae import main_ae
-from torch.multiprocessing.pool import Pool
-from torch.multiprocessing import cpu_count
-
 import itertools
 import random
-import traceback
-import numpy as np
 
+from src.main_scripts.den_ae import main_ae
+from torch.multiprocessing.pool import Pool
+from torch.multiprocessing import cpu_count
 from sklearn.decomposition import PCA
-from torch.utils.data import ConcatDataset
-import torchvision
-from torchvision.datasets import ImageFolder
-from utils.datasets import EEG_dataset_getter, MyImageDataset
-
-# SEED = 20
-# random.seed(SEED)
 
 
-def optimize_hypers(dataset=None, generation_size=8, epochs=10, standard_deviation=0.1):
+def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cuda=False, data_loader=None,
+                    num_workers=0, classes_list=None, criterion=None, seed=None, error_function=None):
     """
     Trains generation_size number of models for epochs number of times.
     At every epoch the bottom 20% workers copy the top 20%
@@ -31,9 +21,15 @@ def optimize_hypers(dataset=None, generation_size=8, epochs=10, standard_deviati
     Recommend setting generation size as a multiple of cpu_count()
     """
 
-    assert dataset is not None
+    assert data_loader is not None
+    assert classes_list is not None
+    assert criterion is not None
+    assert error_function is not None
     assert generation_size > 0
     assert epochs > 0
+
+    if seed is not None:
+        random.seed(seed)
 
     params_bounds = {
         "learning_rate": (1e-10, 1, float),
@@ -78,7 +74,7 @@ def optimize_hypers(dataset=None, generation_size=8, epochs=10, standard_deviati
     workers = []
 
     print("Doing PCA on the data...")
-    autoencoder_out = pca_dataset(dataset=dataset, threshold=0.9)
+    autoencoder_out = pca_dataset(data_loader=data_loader, threshold=0.9)
 
     for i in range(generation_size):
         workers.append((0, random_init(params_bounds, autoencoder_out)))
@@ -93,7 +89,10 @@ def optimize_hypers(dataset=None, generation_size=8, epochs=10, standard_deviati
         # Multithreading!
         pool = Pool(min(generation_size, cpu_count()))
         args = itertools.izip(range(len(workers)), itertools.repeat(epoch), workers, itertools.repeat(len(workers)),
-                              itertools.repeat(params_bounds), itertools.repeat(standard_deviation))
+                              itertools.repeat(error_function),  itertools.repeat(use_cuda),
+                              itertools.repeat(data_loader),  itertools.repeat(num_workers),
+                              itertools.repeat(classes_list), itertools.repeat(criterion),  itertools.repeat(seed)
+                            )
         workers = pool.map(train_worker_star, args)
 
         pool.close()
@@ -122,7 +121,8 @@ def train_worker_star(args):
     return train_worker(*args)
 
 
-def train_worker(i, epoch, worker, workers_len, params_bounds, standard_deviation):
+def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_loader, num_workers, classes_list,
+                 criterion, seed):
     """
     Trains one worker.
     """
@@ -132,22 +132,13 @@ def train_worker(i, epoch, worker, workers_len, params_bounds, standard_deviatio
     if epoch > 0 and i > int(workers_len * 0.8):
         return worker
 
-    success = False
-    while not success:
-        try:
-            perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"])
-            perf = sum(perfs) / len(perfs)
+    save_model_name = str(i) + "_model_epoch" + str(epoch) + ".pt"
+    perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
+                    error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
+                    seed)
+    perf = sum(perfs) / len(perfs)
 
-            worker = (perf, worker[1])
-            success = True
-
-        except Exception as e:
-            worker = (worker[0], explore(worker[1], params_bounds, standard_deviation))
-            success = False
-
-            print("Worker %d crashed. Error:" % i)
-            print(e)
-            print(traceback.format_exc())
+    worker = (perf, worker[1])
 
     return worker
 
@@ -278,17 +269,11 @@ def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=
 
     return sizes
 
-def pca_dataset(dataset=None, threshold=0.9):
-    assert dataset is not None
+def pca_dataset(data_loader=None, threshold=0.9):
+    assert data_loader is not None
 
-    datasets = []
-    for i in range(9):
-        datasets.append(EEG_dataset_getter(i))
-
-    dataset = ConcatDataset(datasets)
-    train_data = []
-    for i in range(len(dataset)):
-        train_data.append(dataset[i][0].numpy())
+    train_data = None
+    raise NotImplementedError
 
     model = PCA()
     model.fit_transform(train_data)
@@ -302,32 +287,3 @@ def pca_dataset(dataset=None, threshold=0.9):
             n_comp += 1
 
     return n_comp
-
-
-def layer_size_opt_dataset(threshold=0.9):
-    dataset = ImageFolder('./data/Banana_Car/banana/1/resized/pca/', transform=torchvision.transforms.ToTensor())
-    train_data = []
-    print(len(dataset))
-    for i in range(len(dataset)):
-        train_data.append(dataset[i][0].numpy().reshape((640*480*3)).astype(float))
-    print("doing pca")
-    model = PCA()
-    model.fit_transform(train_data)
-    var = model.explained_variance_ratio_.cumsum()
-    n_comp = 0
-    v = []
-    for i in var:
-        v.append(i)
-        if i >= threshold:
-            n_comp += 1
-            break
-        else:
-            n_comp += 1
-    print(v)
-    return n_comp
-
-
-if __name__ == "__main__":
-    # best_worker = optimize_hypers()
-    # print("Best accuracy:", best_worker[0], "with Params:", best_worker[1])
-    print(layer_size_opt_dataset( threshold=0.9))

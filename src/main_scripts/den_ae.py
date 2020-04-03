@@ -10,10 +10,7 @@ from src.models import ActionEncoder
 from src.utils.train import trainAE
 from src.utils import l1_penalty, l1l2_penalty
 
-# Non-ML Hyperparams
-CUDA = False
-
-def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None, error_function=None,
+def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None, error_function=None, use_cuda=False,
             data_loader=None, num_workers=0, classes_list=None, criterion=None, save_model=None, seed_rand=None):
 
     assert data_loader is not None
@@ -28,7 +25,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     if seed_rand is not None:
         random.seed(seed_rand)
         torch.manual_seed(seed_rand)
-        if CUDA:
+        if use_cuda:
             torch.cuda.manual_seed_all(seed_rand)
 
     # Default hypers for training
@@ -96,7 +93,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     else:
         model = ActionEncoder()
 
-    if CUDA:
+    if use_cuda:
         model = model.cuda()
         model = nn.DataParallel(model)
         cudnn.benchmark = True
@@ -141,8 +138,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
-                test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=CUDA)
+                train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
+                test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
                 suma = 0
                 for p in model.parameters():
@@ -182,8 +179,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=CUDA)
-                trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=CUDA)
+                trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
+                trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
             for param in model.parameters():
                 param.requires_grad = True
@@ -211,8 +208,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer,
-                                   use_cuda=CUDA)
-                test_loss = trainAE(validloader, model, criterion, test=True, use_cuda=CUDA)
+                                     use_cuda=use_cuda)
+                test_loss = trainAE(validloader, model, criterion, test=True, use_cuda=use_cuda)
 
             # remove hooks
             for hook in hooks:
@@ -220,12 +217,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
             # Note: In ICLR 18 paper the order of these steps are switched, we believe this makes more sense.
             print("==> Splitting Neurons")
-            model = split_neurons(model_copy, model, trainloader, validloader, split_train_new_hypers)
+            model = split_neurons(model_copy, model, trainloader, validloader, split_train_new_hypers, use_cuda)
 
             # Could be train_loss or test_loss
             if train_loss > loss_threshold:
                 print("==> Dynamic Expansion")
-                model = dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers)
+                model = dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers, use_cuda)
 
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
@@ -234,17 +231,17 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #   remove all neurons which have no weights that are non_zero
             #   save network.
 
-            err = error_function(model, testloader, classes_list, classes_list[:t+1], CUDA)
+            err = error_function(model, testloader, classes_list[:t+1])
             errors.append(err)
 
-    if save_model:
-        filepath = os.path.join("./saved", "last.pt")
+    if save_model is not None:
+        filepath = os.path.join("./saved_models", save_model)
         torch.save({'state_dict': model.state_dict()}, filepath)
 
     return errors
 
 
-def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers):
+def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers, cuda):
     sizes, weights, biases, hooks = {}, {}, {}, []
     modules = get_modules(model)
     for dict_key, module in modules.items():
@@ -283,7 +280,7 @@ def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new
             sizes[dict_key][-1] -= expand_by_k
 
     # From here, everything taken from DE. #
-    return train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, de_train_new_hypers)
+    return train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, de_train_new_hypers, cuda)
 
 
 def get_modules(model):
@@ -353,7 +350,7 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
     return hooks, prev_active
 
 
-def split_neurons(old_model, new_model, trainloader, validloader, split_train_new_hypers):
+def split_neurons(old_model, new_model, trainloader, validloader, split_train_new_hypers, cuda=False):
     sizes, weights, biases, hooks = {}, {}, {}, []
 
     suma = 0
@@ -468,7 +465,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, split_train_ne
         return new_model
 
     # From here, everything taken from DE. #
-    return train_new_neurons(new_model, new_modules, trainloader, validloader, sizes, weights, biases, hooks, split_train_new_hypers)
+    return train_new_neurons(new_model, new_modules, trainloader, validloader, sizes, weights, biases, hooks, split_train_new_hypers, cuda)
 
 
 def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, hypers, cuda=False):
@@ -508,9 +505,9 @@ def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, 
         penalty = l1l2_penalty(l1_coeff, l2_coeff, model)
         train_loss = trainAE(trainloader, new_model, criterion,
                              penalty=penalty,
-                             optimizer=optimizer, use_cuda=CUDA)
+                             optimizer=optimizer, use_cuda=cuda)
         test_loss = trainAE(validloader, new_model, criterion, penalty=penalty, test=True,
-                            use_cuda=CUDA)
+                            use_cuda=cuda)
 
     # Remove hooks
     for hook in hooks:
