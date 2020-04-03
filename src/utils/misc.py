@@ -2,11 +2,11 @@ import errno
 import os
 import numpy as np
 import torch
+from PIL import Image
+from torch.utils.data import Dataset
+
 from torch.utils.data.sampler import Sampler
 
-from PIL import ImageFilter
-
-__all__ = ['mkdir_p', 'AverageMeter', 'ClassSampler', 'GaussianNoise', 'fft_psd', 'one_hot']
 
 def one_hot(targets, classes):
     targets = targets.type(torch.LongTensor).view(-1)
@@ -15,6 +15,7 @@ def one_hot(targets, classes):
         if t in classes:
             targets_onehot[i][classes.index(t)] = 1
     return targets_onehot
+
 
 def fft_psd(sampling_time, sample_num, data):
     """
@@ -30,6 +31,7 @@ def fft_psd(sampling_time, sample_num, data):
     idx = np.argsort(frequencies)
     return frequencies[idx], ps_densities[idx]
 
+
 def mkdir_p(path):
     '''make dir if not exist'''
     try:
@@ -39,6 +41,67 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+class BananaCarImageDataset(Dataset):
+    def __init__(self, dir, name, label, all_labels):
+        self.dir = dir
+        self.num_files = 0
+        self.name = name
+        self.label = label
+        self.all_labels = all_labels
+        for (dirpath, dirnames, filenames) in os.walk(dir):
+            for file in filenames:
+                if file.endswith(".jpg"):
+                    self.num_files += 1
+
+    def __len__(self):
+        return self.num_files
+
+    def __getitem__(self, idx):
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        if isinstance(idx, slice):
+            idx = list(range(idx.stop)[idx])
+
+        try:
+            samples = []
+            for i in idx:
+                img = np.asarray(Image.open(self.dir + self.name + "_{}.jpg".format(i)))
+                tensor_img = torch.Tensor(img)
+
+                new_size = 1
+                for j in tensor_img.size():
+                    new_size *= j
+                tensor_img = tensor_img.view((new_size))
+
+                label = torch.Tensor([self.label])
+                label = one_hot(label, self.all_labels).view((len(self.all_labels)))
+                label = torch.cat([tensor_img, label], 0)
+
+                sample = (tensor_img, label)
+                samples.append(sample)
+
+            return samples
+
+        except TypeError:
+            img = np.asarray(Image.open(self.dir + self.name + "_{}.jpg".format(idx)))
+            tensor_img = torch.Tensor(img)
+            new_size = 1
+            for j in tensor_img.size():
+                new_size *= j
+                tensor_img = tensor_img.view((new_size))
+
+                label = torch.Tensor([self.label])
+                label = one_hot(label, self.all_labels).view((len(self.all_labels)))
+                label = torch.cat([tensor_img, label], 0)
+
+                sample = (tensor_img, label)
+
+                return sample
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value
@@ -58,6 +121,7 @@ class AverageMeter(object):
         self.sum += val * n
         self.count += n
         self.avg = self.sum / self.count
+
 
 class ClassSampler(Sampler):
 
@@ -123,3 +187,9 @@ class GaussianNoise(object):
         new_img = img + noise
         new_img = torch.clamp(new_img, 0, 1)
         return new_img
+
+class Band:
+    Delta = 0
+    Theta = 1
+    Alpha = 2
+    Beta = 3

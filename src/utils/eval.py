@@ -1,12 +1,9 @@
-from __future__ import print_function, absolute_import
-
 import torch
-from torch.autograd import Variable
 import numpy as np
+
 from sklearn.metrics import roc_curve, auc, roc_auc_score
 from sklearn.preprocessing import label_binarize
-
-__all__ = ['accuracy', 'calc_avg_AUROC', 'AUROC']
+from torch.autograd import Variable
 
 
 def accuracy(output, target, topk=(1,)):
@@ -25,9 +22,10 @@ def accuracy(output, target, topk=(1,)):
     return res
 
 
-def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
+def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda):
     """Calculates average of the AUROC for selected classes in the dataset
     """
+
     sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
     sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
 
@@ -51,9 +49,10 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda, num_class
     return (sum_area / len(classes))
 
 
-def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_classes = 10):
+def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
     """Calculates average of the AUROC for the autoencoder
     """
+
     sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
     sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
 
@@ -98,7 +97,7 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda, num_cl
     return roc_auc
 
 
-def calc_avg_AE_band_error(model, batchloader, use_cuda):
+def calc_avg_AE_band_error(model, batchloader):
 
     errors = []
 
@@ -119,7 +118,7 @@ def calc_avg_AE_band_error(model, batchloader, use_cuda):
     return {"alpha_error": alpha_error, "beta_error": beta_error}
 
 
-def calc_acc(model, batchloader, all_classes):
+def calc_accuracy(model, batchloader, all_classes):
 
     binary_targets = []
     binary_output = []

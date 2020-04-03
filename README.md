@@ -61,29 +61,19 @@ Candidate Networks:
 *This repository implements Step 1.a and Step 1.b*
 ## Software 
 # How to Run
-
-### Neurofeedback
-1. Set up Muselsl, follow the instructions on the [muselsl](https://github.com/alexandrebarachant/muse-lsl) repo.
-1. Install pylsl
-### DEN_AE
 1. Install the dependencies below.
-1. Run hyper_optimizer.
+2. Pick the experiment you'd like to run, find it's corresponding run_experiment.py file.
+3. Run prepare_experiment()
+4. Optionally, run find_hypers() to get a good set of hyperparameters.
+5. Run train_model(). Parameters are defined inside the function.
+
 
 # Dependencies
-- Python 2.7
-- backports.functools-lru-cache 1.4
-- cycler 0.10.0
-- matplotlib 2.1.2
-- numpy 1.14.0
-- Pillow 5.0.0
-- progress 1.3
-- pyparsing 2.2.0
-- python-dateutil 2.6.1
-- pytz 2017.3
-- PyYAML 3.12
-- six 1.11.0
-- subprocess32 3.2.7
-- torch 0.3.1
+- Python 3.7
+- numpy 1.18.2
+- Pillow 6.0.0
+- progress 1.5
+- torch 0.3.1 (Compiled from source)
 - torchvision 0.2.1
 - sklearn 0.0
 
