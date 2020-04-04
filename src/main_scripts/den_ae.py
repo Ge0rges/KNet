@@ -565,7 +565,8 @@ class active_grads_hook(object):
 
         if self.bias:
             if self.mask1.size:
-                grad_clone[self.mask1] = 0
+                for i in self.mask1:
+                    grad_clone[i] = 0
             return grad_clone
         if self.mask1.size:
             grad_clone[self.mask1, :] = 0
