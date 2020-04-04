@@ -268,6 +268,7 @@ def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=
 
     return sizes
 
+
 def pca_dataset(data_loader=None, threshold=0.9):
     assert data_loader is not None
 

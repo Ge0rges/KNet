@@ -2,6 +2,7 @@ import numpy as np
 import os
 
 from src.utils.misc import fft_psd
+from src.utils import neuro_utils as utils
 from PIL import Image
 
 # Length of the EEG data buffer (in seconds)
@@ -16,6 +17,14 @@ OVERLAP_LENGTH = 0.8
 
 # Amount to 'shift' the start of each next consecutive epoch
 SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
+
+
+class Band:
+    Delta = 0
+    Theta = 1
+    Alpha = 2
+    Beta = 3
+
 
 ## EEG
 def EEG_preprocess_task(task, batch_size=256, num_workers=4):
@@ -81,7 +90,7 @@ def EEG_preprocess_tasks_to_binary():
         smooth_band_powers = np.mean(band_buffer, axis=0)
 
         band = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])), axis=0)
-        pro = _fft_psd(1, sample_n, pre_pro)
+        pro = fft_psd(1, sample_n, pre_pro)
         # assert np.shape(pro[1]) == (sample_n, 2)
         band_data.append(band)
         data.append(pro[1])
@@ -122,7 +131,7 @@ def EEG_preprocess_tasks_to_binary():
 
         band = np.concatenate((np.array([smooth_band_powers[Band.Alpha]]), np.array([smooth_band_powers[Band.Beta]])),
                               axis=0)
-        pro = _fft_psd(1, sample_n, pre_pro)
+        pro = fft_psd(1, sample_n, pre_pro)
         # assert np.shape(pro[1]) == (sample_n, 2)
         band_data.append(band)
         data.append(pro[1])
@@ -130,6 +139,7 @@ def EEG_preprocess_tasks_to_binary():
     band_data = np.array(band_data)
     np.save("../../data/EEG_Processed/normal_band", band_data)
     np.save("../../data/EEG_Processed/normal", data)
+
 
 ### MISC
 def dataset_reshaping(name, directory_path, new_size=(640, 480)):

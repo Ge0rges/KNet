@@ -23,26 +23,6 @@ CAR_LABEL = 2
 BANANACAR_LABEL = 3
 ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
 
-# Length of the EEG data buffer (in seconds)
-# This buffer will hold last n seconds of data and be used for calculations
-BUFFER_LENGTH = 5
-
-# Length of the epochs used to compute the FFT (in seconds)
-EPOCH_LENGTH = 1
-
-# Amount of overlap between two consecutive epochs (in seconds)
-OVERLAP_LENGTH = 0.8
-
-# Amount to 'shift' the start of each next consecutive epoch
-SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
-
-
-class Band:
-    Delta = 0
-    Theta = 1
-    Alpha = 2
-    Beta = 3
-
 
 ### Banana Cars
 def bc_loader(dir, name, label, batch_size=256, num_workers=0):
