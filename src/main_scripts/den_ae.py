@@ -140,7 +140,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 param.requires_grad = True
 
             print("==> Selecting Neurons")
-            hooks = select_neurons(model, t, zero_threshold)
+            hooks = select_neurons(model, t, zero_threshold, classes_list)
 
             print("==> Training Selected Neurons")
 
@@ -249,10 +249,10 @@ def get_modules(model):
     return modules
 
 
-def select_neurons(model, task, zero_threshold):
+def select_neurons(model, task, zero_threshold, classes_list):
     modules = get_modules(model)
-    # HARDCODED
-    prev_active = [True] * len(range(2))
+
+    prev_active = [True] * len(classes_list)
     prev_active[task] = False
 
     action_hooks, prev_active = gen_hooks(modules['action'], zero_threshold, prev_active)
