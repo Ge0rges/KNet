@@ -44,10 +44,10 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     actionencoder_sizes = main_hypers["sizes"]
 
 
-    print('==> Preparing dataset')
+    # print('==> Preparing dataset')
     trainloader, validloader, testloader = data_loader(batch_size=batch_size, num_workers=num_workers)
 
-    print("==> Creating model")
+    # print("==> Creating model")
     model = ActionEncoder(sizes=actionencoder_sizes)
 
     # Use Cuda
@@ -63,16 +63,16 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         elif 'weight' in name:
             param.data.normal_(-0.05, 0.05)
 
-    print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
+    # print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
     errors = []
 
     for t, cls in enumerate(classes_list):
 
-        print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
+        # print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
 
         if t == 0:
-            print("==> Learning")
+            # print("==> Learning")
 
             optimizer = optim.SGD(model.parameters(),
                                   lr=learning_rate,
@@ -90,7 +90,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
+                # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
@@ -99,13 +99,13 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 for p in model.parameters():
                     p = p.data.cpu().numpy()
                     suma += (abs(p) < zero_threshold).sum()
-                print("Number of zero weights: %d" % (suma))
+                # print("Number of zero weights: %d" % (suma))
 
         else:
             # copy model
             model_copy = copy.deepcopy(model)
 
-            print("==> Selective Retraining")
+            # print("==> Selective Retraining")
 
             # Solve Eq.3
 
@@ -131,7 +131,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
+                # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
@@ -139,10 +139,10 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             for param in model.parameters():
                 param.requires_grad = True
 
-            print("==> Selecting Neurons")
+            # print("==> Selecting Neurons")
             hooks = select_neurons(model, t, zero_threshold, classes_list)
 
-            print("==> Training Selected Neurons")
+            # print("==> Training Selected Neurons")
 
             optimizer = optim.SGD(
                 model.parameters(),
@@ -159,7 +159,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
+                # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer,
                                      use_cuda=use_cuda)
@@ -170,12 +170,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 hook.remove()
 
             # Note: In ICLR 18 paper the order of these steps are switched, we believe this makes more sense.
-            print("==> Splitting Neurons")
+            # print("==> Splitting Neurons")
             model = split_neurons(model_copy, model, trainloader, validloader, split_train_new_hypers, use_cuda)
 
             # Could be train_loss or test_loss
             if train_loss > loss_threshold:
-                print("==> Dynamic Expansion")
+                # print("==> Dynamic Expansion")
                 model = dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers, use_cuda)
 
             #   add k neurons to all layers.
@@ -299,7 +299,8 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
         selected.append((y_size - sum(active), y_size))
 
     for nr, (sel, neurons) in enumerate(reversed(selected)):
-        print("layer %d: %d / %d" % (nr + 1, sel, neurons))
+        # print("layer %d: %d / %d" % (nr + 1, sel, neurons))
+        pass
 
     return hooks, prev_active
 
@@ -412,7 +413,7 @@ def split_neurons(old_model, new_model, trainloader, validloader, split_train_ne
                 sizes[dict_key][-1] -= len(append_to_end_weights)
 
     # How many split?
-    print("# Number of neurons split: %d" % suma)
+    # print("# Number of neurons split: %d" % suma)
 
     # Be efficient
     if suma == 0:
@@ -454,7 +455,7 @@ def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, 
             for param_group in optimizer.param_groups:
                 param_group['lr'] = learning_rate
 
-        print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
+        # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
         penalty = l1l2_penalty(l1_coeff, l2_coeff, model)
         train_loss = trainAE(trainloader, new_model, criterion,

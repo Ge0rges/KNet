@@ -309,7 +309,7 @@ def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
     validdata = []
     validlabels = []
     for i in datasets:
-        for j in range(int(0.7 * len(i)), int(0.7*len(i)) + int(0.05*len(i))):
+        for j in range(int(0.7 * len(i)), int(0.7*len(i)) + int(0.1*len(i))):
             validdata.append(i[j][0].numpy().astype(float))
             validlabels.append(i[j][1].numpy().astype(float))
     validdata = torch.Tensor(validdata)
@@ -319,7 +319,7 @@ def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
     testdata = []
     testlabels = []
     for i in datasets:
-        for j in range(int(0.7*len(i)) + int(0.05*len(i)), len(i)):
+        for j in range(int(0.7*len(i)) + int(0.1*len(i)), len(i)):
             testdata.append(i[j][0].numpy().astype(float))
             testlabels.append(i[j][1].numpy().astype(float))
     testdata = torch.Tensor(testdata)
