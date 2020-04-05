@@ -213,16 +213,24 @@ def test_hypers(lr_range, momentum_range, lr_drop_range, max_epoch_range, n=[3, 
                             best_params = {}
                             for j in range(1, count):
                                 if results[j]["auroc"] > max:
+                                    max = results[j]["auroc"]
                                     best_params = results[j]
                             print("\n ################################")
                             print("\n CURRENT BEST PARAMETERS:", best_params)
                             print("\n ################################\n")
                             sub_count = 0
+
+
+def getmax(results, count):
     max = 0
     best_params = {}
     for i in range(1, count):
         if results[i]["auroc"] > max:
+            max = results[i]["auroc"]
             best_params = results[i]
+    print("\n ################################")
+    print("\n BEST PARAMETERS:", best_params)
+    print("\n ################################\n")
     return best_params, results
 
 
