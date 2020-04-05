@@ -213,7 +213,7 @@ def explore(params, param_bounds, standard_deviation=0.1):
                                                       
             params[key] = new_value
 
-        else:
+        elif key is not "sizes":
             raise NotImplementedError
 
     return params
