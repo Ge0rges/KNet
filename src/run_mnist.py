@@ -26,17 +26,19 @@ def find_hypers():
     """
     Runs hyper_optimizer to find the best ML params.
     """
+    # Net shape
+    autoencoder_input = 28*28
+    hidden_autoencoder_layers = 1
+    hidden_action_layers = 1
+    actionnet_output = 10
 
     # PBT Params
     generation_size = 8
     number_of_generations = 16
     standard_deviation = 0.1
 
-    # Net shape
-    autoencoder_input = 28*28
-    hidden_autoencoder_layers = 1
-    hidden_action_layers = 1
-    actionnet_output = 10
+    # Seed workers
+    seed_workers = []
 
     # ML Hyper Bounds
     params_bounds = {
@@ -84,7 +86,7 @@ def find_hypers():
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
                                   hidden_action=hidden_action_layers, action_out=actionnet_output,
-                                  params_bounds=params_bounds)
+                                  params_bounds=params_bounds, workers_seed=seed_workers)
     print("Got optimal worker:" + str(best_worker))
 
 
