@@ -5,6 +5,7 @@ import itertools
 import random
 
 from src.main_scripts.den_ae import main_ae
+from src.utils.data_loading import EEG_bands_to_binary_loader
 from torch.multiprocessing.pool import Pool
 from torch.multiprocessing import cpu_count
 import numpy as np
@@ -285,8 +286,9 @@ def pca_dataset(data_loader=None, threshold=0.9):
     train_data = []
     for i, (input, target) in enumerate(data_loader):
         n = input.size()[0]
-        indices = np.choice(list(range(n)), size=(int(n/5)))
-        data = input[indices].numpy()
+        indices = np.random.choice(list(range(n)), size=(int(n/5)))
+        input = input.numpy()
+        data = input[indices]
         train_data.extend(data)
 
     train_data = np.array(train_data)
@@ -294,11 +296,20 @@ def pca_dataset(data_loader=None, threshold=0.9):
     model.fit_transform(train_data)
     var = model.explained_variance_ratio_.cumsum()
     n_comp = 0
+    vars = []
     for i in var:
+        vars.append(i)
         if i >= threshold:
             n_comp += 1
             break
         else:
             n_comp += 1
 
-    return n_comp
+    return n_comp, vars
+
+
+if __name__ == '__main__':
+    train, valid, test = EEG_bands_to_binary_loader()
+    n_comp, vars = pca_dataset(train)
+    print(vars)
+    print(n_comp)
