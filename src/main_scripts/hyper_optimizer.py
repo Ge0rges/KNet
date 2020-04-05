@@ -14,7 +14,7 @@ from sklearn.decomposition import PCA
 
 def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cuda=False, data_loader=None,
                     num_workers=0, classes_list=None, criterion=None, seed=None, error_function=None,
-                    encoder_in=None, hidden_encoder=None, hidden_action=None, action_out=None):
+                    encoder_in=None, hidden_encoder=None, hidden_action=None, action_out=None, params_bounds=None):
     """
     Trains generation_size number of models for epochs number of times.
     At every epoch the bottom 20% workers copy the top 20%
@@ -34,48 +34,10 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     assert error_function is not None
     assert generation_size > 0
     assert epochs > 0
+    assert params_bounds is not None
 
     if seed is not None:
         random.seed(seed)
-
-    params_bounds = {
-        "learning_rate": (1e-10, 1, float),
-        "momentum": (0, 0.99, float),
-        "lr_drop": (0, 1, float),
-        "epochs_drop": (0, 20, int),
-        "max_epochs": (5, 25, int),
-        "l1_coeff": (1e-20, 1e-7, float),
-        "l2_coeff": (1e-20, 1e-7, float),
-        "zero_threshold": (0, 1e-5, float),
-
-        "batch_size": (100, 500, int),
-        "weight_decay": (0, 1, float),
-        "loss_threshold": (0, 1, float),
-        "expand_by_k": (0, 20, int),
-
-        "split_train_new_hypers": {
-            "learning_rate": (1e-10, 1, float),
-            "momentum": (0, 0.99, float),
-            "lr_drop": (0, 1, float),
-            "epochs_drop": (0, 20, int),
-            "max_epochs": (3, 10, int),
-            "l1_coeff": (1e-20, 1e-7, float),
-            "l2_coeff": (1e-20, 1e-7, float),
-            "zero_threshold": (0, 1e-5, float),
-            "drift_threshold": (0.005, 0.05, float)
-        },
-
-        "de_train_new_hypers": {
-            "learning_rate": (1e-10, 1, float),
-            "momentum": (0, 0.99, float),
-            "lr_drop": (0, 1, float),
-            "epochs_drop": (0, 20, int),
-            "max_epochs": (3, 10, int),
-            "l1_coeff": (1e-20, 1e-7, float),
-            "l2_coeff": (1e-20, 1e-7, float),
-            "zero_threshold": (0, 1e-5, float),
-        }
-    }
 
     # Generate initial params
     workers = []
@@ -257,7 +219,7 @@ def explore(params, param_bounds, standard_deviation=0.1):
     return params
 
 
-def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=1, hidden_action=1, action_out=2):
+def construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
     sizes = {}
 
     # AutoEncoder

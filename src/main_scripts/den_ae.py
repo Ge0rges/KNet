@@ -63,7 +63,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         elif 'weight' in name:
             param.data.normal_(-0.05, 0.05)
 
-    # print('    Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
+    # print('Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
     errors = []
 
@@ -95,10 +95,10 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
-                suma = 0
-                for p in model.parameters():
-                    p = p.data.cpu().numpy()
-                    suma += (abs(p) < zero_threshold).sum()
+                # suma = 0
+                # for p in model.parameters():
+                #     p = p.data.cpu().numpy()
+                #     suma += (abs(p) < zero_threshold).sum()
                 # print("Number of zero weights: %d" % (suma))
 
         else:
@@ -121,7 +121,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 weight_decay=weight_decay
             )
 
-            penalty = l1_penalty(coeff=l1_coeff)
+            penalty = l1l2_penalty(model=model, l1_coeff=l1_coeff, l2_coeff=l2_coeff)
 
             for epoch in range(max_epochs):
 
@@ -189,7 +189,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             errors.append(err)
 
     if save_model is not None:
-        filepath = os.path.join("../../saved_models", save_model)
+        filepath = os.path.join("../saved_models", save_model)
         torch.save({'state_dict': model.state_dict()}, filepath)
 
     return errors
@@ -298,9 +298,8 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
 
         selected.append((y_size - sum(active), y_size))
 
-    for nr, (sel, neurons) in enumerate(reversed(selected)):
-        # print("layer %d: %d / %d" % (nr + 1, sel, neurons))
-        pass
+    # for nr, (sel, neurons) in enumerate(reversed(selected)):
+    #     print("layer %d: %d / %d" % (nr + 1, sel, neurons))
 
     return hooks, prev_active
 
@@ -450,7 +449,7 @@ def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, 
     for epoch in range(max_epochs):
 
         # decay learning rate
-        if (epoch + 1) % epochs_drop == 0:
+        if epochs_drop > 0 and (epoch + 1) % epochs_drop == 0:
             learning_rate *= lr_drop
             for param_group in optimizer.param_groups:
                 param_group['lr'] = learning_rate
