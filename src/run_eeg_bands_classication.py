@@ -26,6 +26,12 @@ def find_hypers():
     """
     Runs hyper_optimizer to find the best ML params.
     """
+
+    # PBT Params
+    generation_size = 8
+    number_of_generations = 16
+    standard_deviation = 0.1
+
     # Net shape
     autoencoder_input = 2
     hidden_autoencoder_layers = 1
@@ -72,7 +78,8 @@ def find_hypers():
         }
     }
 
-    best_worker = optimize_hypers(error_function=error_function, generation_size=8, epochs=20, standard_deviation=0.1,
+    best_worker = optimize_hypers(error_function=error_function, generation_size=generation_size,
+                                  epochs=number_of_generations, standard_deviation=standard_deviation,
                                   use_cuda=use_cuda, data_loader=data_loader, num_workers=num_workers,
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
