@@ -156,8 +156,8 @@ def error_function(model, batch_loader, classes_trained):
     Do not modify params. Abstract method for all experiments.
     """
 
-    return calc_avg_AE_AUROC(model, batch_loader, classes_list, classes_trained, use_cuda)
-
+    auroc = calc_avg_AE_AUROC(model, batch_loader, classes_list, classes_trained, use_cuda)
+    return auroc["macro"]
 
 def prepare_experiment():
     """
