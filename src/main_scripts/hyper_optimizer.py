@@ -283,8 +283,23 @@ def pca_dataset(data_loader=None, threshold=0.9):
 
     # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
     # that hopefully will be representative
+    train, valid, test = data_loader()
     train_data = []
-    for i, (input, target) in enumerate(data_loader):
+    for i, (input, target) in enumerate(train):
+        n = input.size()[0]
+        indices = np.random.choice(list(range(n)), size=(int(n/5)))
+        input = input.numpy()
+        data = input[indices]
+        train_data.extend(data)
+
+    for i, (input, target) in enumerate(valid):
+        n = input.size()[0]
+        indices = np.random.choice(list(range(n)), size=(int(n/5)))
+        input = input.numpy()
+        data = input[indices]
+        train_data.extend(data)
+
+    for i, (input, target) in enumerate(test):
         n = input.size()[0]
         indices = np.random.choice(list(range(n)), size=(int(n/5)))
         input = input.numpy()
@@ -309,7 +324,6 @@ def pca_dataset(data_loader=None, threshold=0.9):
 
 
 if __name__ == '__main__':
-    train, valid, test = EEG_bands_to_binary_loader()
-    n_comp, vars = pca_dataset(train)
+    n_comp, vars = pca_dataset(EEG_bands_to_binary_loader)
     print(vars)
     print(n_comp)
