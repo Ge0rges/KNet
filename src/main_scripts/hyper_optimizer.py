@@ -86,17 +86,24 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
 
         print("Optimization Epoch: %d/%d" % (epoch+1, epochs))
 
-        # Multithreading!
-        pool = Pool(min(generation_size, cpu_count()))
-        args = itertools.izip(range(len(workers)), itertools.repeat(epoch), workers, itertools.repeat(len(workers)),
-                              itertools.repeat(error_function),  itertools.repeat(use_cuda),
-                              itertools.repeat(data_loader),  itertools.repeat(num_workers),
-                              itertools.repeat(classes_list), itertools.repeat(criterion),  itertools.repeat(seed)
-                            )
-        workers = pool.map(train_worker_star, args)
+        # # Multithreading!
+        # pool = Pool(min(generation_size, cpu_count()))
+        # args = itertools.zip(range(len(workers)), itertools.repeat(epoch), workers, itertools.repeat(len(workers)),
+        #                       itertools.repeat(error_function),  itertools.repeat(use_cuda),
+        #                       itertools.repeat(data_loader),  itertools.repeat(num_workers),
+        #                       itertools.repeat(classes_list), itertools.repeat(criterion),  itertools.repeat(seed)
+        #                     )
+        # workers = pool.map(train_worker_star, args)
+        #
+        # pool.close()
+        # pool.join()
 
-        pool.close()
-        pool.join()
+        workers_new = []
+        for i in range(len(workers)):
+            result = train_worker(i, epoch, workers[i], len(workers), error_function, use_cuda, data_loader, num_workers,
+                                                         classes_list, criterion, seed)
+            workers_new.append(result)
+        workers = workers_new
 
         # Sort the workers
         workers = sorted(workers, key=lambda x: x[0])
@@ -252,9 +259,9 @@ def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=
     for i in range(hidden_encoder):
         if previous/2 <= autoencoder_out or previous <= 1:
             break
-        middle_layers.append(previous/2)
+        middle_layers.append(int(previous/2))
 
-    sizes["encoder"] = [encoder_in] + middle_layers + [autoencoder_out]
+    sizes["encoder"] = [int(encoder_in)] + middle_layers + [int(autoencoder_out)]
 
     # Action
     middle_layers = []
@@ -262,9 +269,9 @@ def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=
     for i in range(hidden_action):
         if previous / 2 <= action_out or previous <= 1:
             break
-        middle_layers.append(previous / 2)
+        middle_layers.append(int(previous/2))
         
-    sizes["action"] = [autoencoder_out] + middle_layers + [action_out]
+    sizes["action"] = [int(autoencoder_out)] + middle_layers + [int(action_out)]
 
     return sizes
 
