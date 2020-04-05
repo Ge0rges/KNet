@@ -189,7 +189,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             errors.append(err)
 
     if save_model is not None:
-        filepath = os.path.join("../saved_models", save_model)
+        filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
+        filepath = os.path.join(filepath, save_model)
         torch.save({'state_dict': model.state_dict()}, filepath)
 
     return errors

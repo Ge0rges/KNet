@@ -109,15 +109,20 @@ def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_l
     if epoch > 0 and i > int(workers_len * 0.8):
         return worker
 
-    save_model_name = str(i) + "_model_epoch" + str(epoch) + ".pt"
-    perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
-                    error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
-                    seed)
-    perf = sum(perfs) / len(perfs)
+    try:
+        save_model_name = str(i) + "_model_epoch" + str(epoch) + ".pt"
+        perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
+                        error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
+                        seed)
+        perf = sum(perfs) / len(perfs)
 
-    worker = (perf, worker[1])
+        worker = (perf, worker[1])
 
-    return worker
+        return worker
+
+    except Exception as e:
+        print("worker " + str(i) + " crashed:" + str(e))
+        return (0, worker[1])
 
 
 def random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
