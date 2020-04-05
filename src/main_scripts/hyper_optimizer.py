@@ -7,6 +7,7 @@ import random
 from src.main_scripts.den_ae import main_ae
 from torch.multiprocessing.pool import Pool
 from torch.multiprocessing import cpu_count
+import numpy as np
 from sklearn.decomposition import PCA
 
 
@@ -279,9 +280,16 @@ def construct_network_sizes(autoencoder_out=8, encoder_in=256*4, hidden_encoder=
 def pca_dataset(data_loader=None, threshold=0.9):
     assert data_loader is not None
 
-    train_data = None
-    raise NotImplementedError
+    # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
+    # that hopefully will be representative
+    train_data = []
+    for i, (input, target) in enumerate(data_loader):
+        n = input.size()[0]
+        indices = np.choice(list(range(n)), size=(int(n/5)))
+        data = input[indices].numpy()
+        train_data.extend(data)
 
+    train_data = np.array(train_data)
     model = PCA()
     model.fit_transform(train_data)
     var = model.explained_variance_ratio_.cumsum()
