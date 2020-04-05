@@ -6,7 +6,7 @@ import torch
 
 from torch.autograd import Variable
 from progress.bar import Bar
-from src.utils.misc import AverageMeter, one_hot
+from src.utils.misc import AverageMeter
 
 
 def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False, use_cuda=False, seed=None):
