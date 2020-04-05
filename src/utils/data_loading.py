@@ -123,7 +123,7 @@ def eeg_task_to_task_loader(batch_size=256, num_workers=0):
 
 
 def EEG_get_task_dataset(task_num):
-    task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
+    task_data = np.load("../data/EEG_Processed/task{}_task.npy".format(task_num+1))
     num_samples = len(task_data)
     task_labels = [task_num]*num_samples
     task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='max', axis=0)
@@ -135,7 +135,7 @@ def EEG_get_task_dataset(task_num):
 
     task_dataset = TensorDataset(task_data, task_tensor_labels)
 
-    random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
+    random_data = np.load("../data/EEG_Processed/task{}_random.npy".format(task_num+1))
     num_samples = len(random_data)
     random_labels = [9]*num_samples
     random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='max', axis=0)
@@ -152,7 +152,7 @@ def EEG_get_task_dataset(task_num):
 
 
 def EEG_task_loader(task_num, batch_size=256, num_workers=0):
-    task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
+    task_data = np.load("../data/EEG_Processed/task{}_task.npy".format(task_num+1))
     num_samples = len(task_data)
     task_labels = [task_num]*num_samples
     task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
@@ -164,7 +164,7 @@ def EEG_task_loader(task_num, batch_size=256, num_workers=0):
 
     task_dataset = TensorDataset(task_data, task_tensor_labels)
 
-    random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
+    random_data = np.load("../data/EEG_Processed/task{}_random.npy".format(task_num+1))
     num_samples = len(random_data)
     random_labels = [9]*num_samples
     random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
@@ -200,8 +200,8 @@ def EEG_raw_to_bands_loader(batch_size=256, num_workers=0):
 
     datasets = []
 
-    normal_data = np.load("./data/EEG_Processed/normal.npy")
-    normal_labels = np.load("./data/EEG_Processed/normal_band.npy")
+    normal_data = np.load("../data/EEG_Processed/normal.npy")
+    normal_labels = np.load("../data/EEG_Processed/normal_band.npy")
     num_samples = len(normal_data)
     normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     normal_data = torch.Tensor(normal_data)
@@ -212,9 +212,9 @@ def EEG_raw_to_bands_loader(batch_size=256, num_workers=0):
     normal_dataset = TensorDataset(normal_data, normal_tensor_labels)
     datasets.append(normal_dataset)
 
-    calm_data = np.load("./data/EEG_Processed/calm.npy")
+    calm_data = np.load("../data/EEG_Processed/calm.npy")
     num_samples = len(calm_data)
-    calm_labels = np.load("./data/EEG_Processed/calm_band.npy")
+    calm_labels = np.load("../data/EEG_Processed/calm_band.npy")
     calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
     calm_data = torch.Tensor(calm_data)
 
@@ -271,7 +271,7 @@ def EEG_raw_to_bands_loader(batch_size=256, num_workers=0):
 
 
 def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
-    task_data = np.load("./data/EEG_Processed/calm_band.npy")
+    task_data = np.load("../data/EEG_Processed/calm_band.npy")
     num_samples = len(task_data)
     task_labels = [1] * num_samples
     # task_data = normalize(task_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)
@@ -283,7 +283,7 @@ def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
 
     task_dataset = TensorDataset(task_data, task_tensor_labels)
 
-    normal_data = np.load("./data/EEG_Processed/normal_band.npy")
+    normal_data = np.load("../data/EEG_Processed/normal_band.npy")
     num_samples = len(normal_data)
     normal_labels = [0] * num_samples
     # random_data = normalize(normal_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)
@@ -345,7 +345,7 @@ def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
 def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
 
     def custom_EEG_dataset_getter(task_num, task_label, random_label):
-        task_data = np.load("./data/EEG_Processed/task{}_task.npy".format(task_num+1))
+        task_data = np.load("../data/EEG_Processed/task{}_task.npy".format(task_num+1))
         num_samples = len(task_data)
         task_labels = [task_label]*num_samples
         task_data = normalize(task_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
@@ -357,7 +357,7 @@ def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
 
         task_dataset = TensorDataset(task_data, task_tensor_labels)
 
-        random_data = np.load("./data/EEG_Processed/task{}_random.npy".format(task_num+1))
+        random_data = np.load("../data/EEG_Processed/task{}_random.npy".format(task_num+1))
         num_samples = len(random_data)
         random_labels = [random_label]*num_samples
         random_data = normalize(random_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
@@ -375,7 +375,7 @@ def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
     datasets.append(custom_EEG_dataset_getter(0, 1, 0))
 
 
-    normal_data = np.load("./data/EEG_Processed/normal.npy")
+    normal_data = np.load("../data/EEG_Processed/normal.npy")
     num_samples = len(normal_data)
     normal_labels = [0]*num_samples
     normal_data = normalize(normal_data.reshape((num_samples, 256*4)), norm='l2', axis=0)
@@ -388,7 +388,7 @@ def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
     normal_dataset = TensorDataset(normal_data, normal_tensor_labels)
     datasets.append(normal_dataset)
 
-    calm_data = np.load("./data/EEG_Processed/calm.npy")
+    calm_data = np.load("../data/EEG_Processed/calm.npy")
     num_samples = len(calm_data)
     calm_labels = [1]*num_samples
     calm_data = normalize(calm_data.reshape((num_samples, 256*4)), norm='l2', axis=0)

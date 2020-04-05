@@ -15,12 +15,12 @@ from src.utils.data_preprocessing import EEG_preprocess_tasks_to_binary
 import numpy as np
 
 # Global experiment params
-seed = None # Change to seed random functions. None is no Seed.
-use_cuda = False # Change to use CUDA
-criterion = torch.nn.BCELoss() # Change to use different loss function
-classes_list = range(2) # Dataset specific, list of classification classes
-data_loader = EEG_bands_to_binary_loader # The loader to be used for the data.
-num_workers = 6 # Leave this as zero for now.
+seed = None  # Change to seed random functions. None is no Seed.
+use_cuda = False  # Change to use CUDA
+criterion = torch.nn.BCELoss()  # Change to use different loss function
+classes_list = range(2)  # Dataset specific, list of classification classes
+data_loader = EEG_bands_to_binary_loader  # The loader to be used for the data.
+num_workers = 0  # Leave this as zero for now.
 
 
 def find_hypers():
@@ -235,8 +235,4 @@ def getmax(results, count):
 
 
 if __name__ == "__main__":
-    # prepare_experiment()
-    # train_model(None, None, None)
-    best_params, results = test_hypers([0.05, 0.5], [0, 0.25], [0, 0.3], [1, 10])
-    print("\n RESULTS:", results)
-    print("\n BEST PARAMS:", best_params)
+    find_hypers()
