@@ -26,17 +26,50 @@ def find_hypers():
     """
     Runs hyper_optimizer to find the best ML params.
     """
+    # Net shape
+    autoencoder_input = 2
+    hidden_autoencoder_layers = 1
+    hidden_action_layers = 1
+    actionnet_output = 2
 
     # PBT Params
     generation_size = 8
     number_of_generations = 16
     standard_deviation = 0.1
 
-    # Net shape
-    autoencoder_input = 2
-    hidden_autoencoder_layers = 1
-    hidden_action_layers = 1
-    actionnet_output = 2
+    # Seed workers
+    seed_worker1 = (0.7246460006382267, {
+        'learning_rate': 0.7384640327769042, 'momentum': 0.8598320969754832, 'lr_drop': 0.3172240101431633,
+        'epochs_drop': 1, 'max_epochs': 10, 'l1_coeff': 4.165433558425681e-08, 'l2_coeff': 5.8896573962450576e-09,
+        'zero_threshold': 7.029369421570681e-06, 'batch_size': 122, 'weight_decay': 0.5856925737367484,
+        'loss_threshold': 0.7529815160276062, 'expand_by_k': 15,
+        'split_train_new_hypers': {
+            'learning_rate': 0.530872924975473, 'momentum': 0.014401177866599224, 'lr_drop': 0.4071493418952058,
+            'epochs_drop': 17, 'max_epochs': 8, 'l1_coeff': 8.433902091324702e-09, 'l2_coeff': 1.3126443551337794e-08,
+            'zero_threshold': 7.44147066414474e-06, 'drift_threshold': 0.00862938966175561,
+            'sizes': {
+                'encoder': [2, 1],
+                'action': [1, 2]
+            }
+        },
+        'de_train_new_hypers': {
+            'learning_rate': 1,
+            'momentum': 0.5963914353652274,
+            'lr_drop': 0.6826728043526626,
+            'epochs_drop': 7,
+            'max_epochs': 6,
+            'l1_coeff': 2.423418088450744e-09,
+            'l2_coeff': 4.452500546919578e-08,
+            'zero_threshold': 3.3902056652424897e-06,
+            'sizes': {
+                'encoder': [2, 1],
+                'action': [1, 2]
+            }
+        },
+        'sizes': {'encoder': [2, 1], 'action': [1, 2], 'decoder': [1, 2]}
+    })
+
+    seed_workers = [seed_worker1]
 
     # ML Hyper Bounds
     params_bounds = {
@@ -84,7 +117,7 @@ def find_hypers():
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
                                   hidden_action=hidden_action_layers, action_out=actionnet_output,
-                                  params_bounds=params_bounds)
+                                  params_bounds=params_bounds, workers_seed=seed_workers)
 
     print("Got optimal worker:" + str(best_worker))
 
