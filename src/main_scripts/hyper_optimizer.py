@@ -13,7 +13,8 @@ from sklearn.decomposition import PCA
 
 
 def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cuda=False, data_loader=None,
-                    num_workers=0, classes_list=None, criterion=None, seed=None, error_function=None):
+                    num_workers=0, classes_list=None, criterion=None, seed=None, error_function=None,
+                    encoder_in=None, hidden_encoder=None, hidden_action=None, action_out=None):
     """
     Trains generation_size number of models for epochs number of times.
     At every epoch the bottom 20% workers copy the top 20%
@@ -23,6 +24,10 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     Recommend setting generation size as a multiple of cpu_count()
     """
 
+    assert action_out is not None
+    assert hidden_action is not None
+    assert hidden_encoder is not None
+    assert encoder_in is not None
     assert data_loader is not None
     assert classes_list is not None
     assert criterion is not None
@@ -79,7 +84,8 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     autoencoder_out = pca_dataset(data_loader=data_loader, threshold=0.9)
 
     for i in range(generation_size):
-        workers.append((0, random_init(params_bounds, autoencoder_out)))
+        workers.append((0, random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder,
+                                       hidden_action, action_out)))
     print("Done PCA.")
 
     # Train our models
@@ -152,7 +158,7 @@ def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_l
     return worker
 
 
-def random_init(params_bounds, autoencoder_out):
+def random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
     """
     Randomly initializes the parameters within their bounds.
     """
@@ -171,10 +177,10 @@ def random_init(params_bounds, autoencoder_out):
 
     for key, value in iterator:
         if isinstance(value, dict):
-            params[key] = random_init(value, autoencoder_out)
+            params[key] = random_init(value, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out)
 
         elif isinstance(value, list):
-            params[key] = random_init(value, autoencoder_out)
+            params[key] = random_init(value, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out)
 
         elif isinstance(value, tuple):
             lower, upper, type = params_bounds[key]
@@ -186,7 +192,7 @@ def random_init(params_bounds, autoencoder_out):
             raise NotImplementedError
 
     # Sizes
-    params["sizes"] = construct_network_sizes(autoencoder_out)
+    params["sizes"] = construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out)
     return params
 
 
@@ -320,10 +326,5 @@ def pca_dataset(data_loader=None, threshold=0.9):
         else:
             n_comp += 1
 
-    return n_comp, vars
+    return n_comp
 
-
-if __name__ == '__main__':
-    n_comp, vars = pca_dataset(EEG_bands_to_binary_loader)
-    print(vars)
-    print(n_comp)

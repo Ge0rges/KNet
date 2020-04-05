@@ -26,10 +26,17 @@ def find_hypers():
     """
     Runs hyper_optimizer to find the best ML params.
     """
-    best_worker = optimize_hypers(error_function=error_function, generation_size=8, epochs=20,
-                                     standard_deviation=0.1, use_cuda=use_cuda, data_loader=data_loader,
-                                     num_workers=num_workers, classes_list=classes_list, criterion=criterion, seed=seed)
+    # Net shape
+    autoencoder_input = 28*28
+    hidden_autoencoder_layers = 1
+    hidden_action_layers = 1
+    actionnet_output = 10
 
+    best_worker = optimize_hypers(error_function=error_function, generation_size=8, epochs=20,
+                                  standard_deviation=0.1, use_cuda=use_cuda, data_loader=data_loader,
+                                  num_workers=num_workers, classes_list=classes_list, criterion=criterion, seed=seed,
+                                  encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
+                                  hidden_action=hidden_action_layers, action_out=actionnet_output)
     print("Got optimal worker:" + str(best_worker))
 
 

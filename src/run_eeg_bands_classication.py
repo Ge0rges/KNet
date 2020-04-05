@@ -27,9 +27,17 @@ def find_hypers():
     """
     Runs hyper_optimizer to find the best ML params.
     """
+    # Net shape
+    autoencoder_input = 2
+    hidden_autoencoder_layers = 1
+    hidden_action_layers = 1
+    actionnet_output = 2
+
     best_worker = optimize_hypers(error_function=error_function, generation_size=8, epochs=20,
                                      standard_deviation=0.1, use_cuda=use_cuda, data_loader=data_loader,
-                                     num_workers=num_workers, classes_list=classes_list, criterion=criterion, seed=seed)
+                                     num_workers=num_workers, classes_list=classes_list, criterion=criterion, seed=seed,
+                                  encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
+                                  hidden_action=hidden_action_layers, action_out=actionnet_output)
 
     print("Got optimal worker:" + str(best_worker))
 
@@ -54,7 +62,7 @@ def train_model(main_hypers, split_train_new_hypers, de_train_new_hypers):
             ## Global net size
             "sizes": {
                 "encoder": [2, 2],
-                "action": [2, 3, 3, 2]
+                "action": [2, 3, 2]
             },
 
             # Unique to main
@@ -120,118 +128,6 @@ def prepare_experiment():
     Preprocesses the data.
     """
     EEG_preprocess_tasks_to_binary()
-
-
-def test_hypers(lr_range, momentum_range, lr_drop_range, max_epoch_range, n=[3, 3, 3, 3]):
-    lr_iter = np.linspace(lr_range[0], lr_range[-1], n[0])
-    momentum_iter = np.linspace(momentum_range[0], momentum_range[-1], n[1])
-    lr_drop_iter = np.linspace(lr_drop_range[0], lr_drop_range[-1], n[2])
-    max_epoch_iter = np.linspace(max_epoch_range[0], max_epoch_range[-1], n[3])
-    count = 1
-    results = {}
-    sub_count = 0
-    for lr in lr_iter:
-        for momemtum in momentum_iter:
-            for lr_drop in lr_drop_iter:
-                for max_epoch in max_epoch_iter:
-                    max_epoch = int(max_epoch)
-                    for i in ["MAIN", "SPLIT", "DE", "MAIN_SPLIT", "MAIN_DE", "SPLIT_DE", "MAIN_SPLIT_DE"]:
-
-                        print("\nMODEL #", count, "OUT OF", 7*np.prod(n))
-                        params = {"lr": lr, "momentum": momemtum, "lr_drop": lr_drop, "max_epoch": max_epoch}
-                        print("USING PARAMS:", params, "FOR:", i, "\n")
-                        main_hypers = {
-                            # Common
-                            "learning_rate": lr,
-                            "momentum": momemtum,
-                            "lr_drop": lr_drop,
-                            "epochs_drop": 5,
-                            "max_epochs": max_epoch,
-                            "l1_coeff": 1e-10,
-                            "l2_coeff": 1e-10,
-                            "zero_threshold": 1e-4,
-
-                            ## Global net size
-                            "sizes": {
-                                "encoder": [2, 2],
-                                "action": [2, 3, 2]
-                            },
-
-                            # Unique to main
-                            "batch_size": 256,
-                            "weight_decay": 0,
-                            "loss_threshold": 1e-2,
-                            "expand_by_k": 10,
-                        }
-                        split_train_new_hypers = {
-                            # Common
-                            "learning_rate": lr,
-                            "momentum": momemtum,
-                            "lr_drop": lr_drop,
-                            "epochs_drop": 5,
-                            "max_epochs": max_epoch,
-                            "l1_coeff": 1e-10,
-                            "l2_coeff": 1e-10,
-                            "zero_threshold": 1e-4,
-
-                            # Unique to split
-                            "drift_threshold": 0.02
-                        }
-                        de_train_new_hypers = {
-                            # Common
-                            "learning_rate": lr,
-                            "momentum": momemtum,
-                            "lr_drop": lr_drop,
-                            "epochs_drop": 5,
-                            "max_epochs": max_epoch,
-                            "l1_coeff": 1e-10,
-                            "l2_coeff": 1e-10,
-                            "zero_threshold": 1e-4,
-                        }
-                        if i == "MAIN":
-                            r = train_model(main_hypers, None, None)
-                        elif i == "SPLIT":
-                            r = train_model(None, split_train_new_hypers, None)
-                        elif i == "DE":
-                            r = train_model(None, None, de_train_new_hypers)
-                        elif i == "MAIN_SPLIT":
-                            r = train_model(main_hypers, split_train_new_hypers, None)
-                        elif i == "MAIN_DE":
-                            r = train_model(main_hypers, None, de_train_new_hypers)
-                        elif i == "SPLIT_DE":
-                            r = train_model(None, split_train_new_hypers, de_train_new_hypers)
-                        elif i == "MAIN_SPLIT_DE":
-                            r = train_model(main_hypers, split_train_new_hypers, de_train_new_hypers)
-                        else:
-                            print("INVALID KEY!!!!!!!!")
-                            return None, None
-                        results[count] = {"auroc": r[0]["macro"], "i": i, "params": params}
-                        count += 1
-
-                        if sub_count == np.prod(n):
-                            max = 0
-                            best_params = {}
-                            for j in range(1, count):
-                                if results[j]["auroc"] > max:
-                                    max = results[j]["auroc"]
-                                    best_params = results[j]
-                            print("\n ################################")
-                            print("\n CURRENT BEST PARAMETERS:", best_params)
-                            print("\n ################################\n")
-                            sub_count = 0
-
-
-def getmax(results, count):
-    max = 0
-    best_params = {}
-    for i in range(1, count):
-        if results[i]["auroc"] > max:
-            max = results[i]["auroc"]
-            best_params = results[i]
-    print("\n ################################")
-    print("\n BEST PARAMETERS:", best_params)
-    print("\n ################################\n")
-    return best_params, results
 
 
 if __name__ == "__main__":
