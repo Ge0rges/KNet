@@ -10,7 +10,7 @@ import torch
 
 from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import EEG_bands_to_binary_loader
-from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix
+from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
 from src.utils.data_preprocessing import EEG_preprocess_tasks_to_binary
 
 # Global experiment params
@@ -180,6 +180,9 @@ def error_function(model, batch_loader, classes_trained):
 
     print("Per class accuracy:")
     print(100*confusion_matrix.diag()/confusion_matrix.sum(0))
+
+    print("Accuracy:")
+    print(calculate_accuracy(confusion_matrix))
 
     # Must return one global param on performance
     auroc = calc_avg_AE_AUROC(model, batch_loader, classes_list, classes_trained, use_cuda)

@@ -118,10 +118,8 @@ def calc_avg_AE_band_error(model, batchloader):
     return {"alpha_error": alpha_error, "beta_error": beta_error}
 
 
-def calc_accuracy(model, batchloader, all_classes, use_cuda):
-
-    confusion_matrix = build_confusion_matrix(model, batchloader, all_classes, use_cuda)
-
+def calculate_accuracy(confusion_matrix):
+    assert confusion_matrix is not None
     return confusion_matrix.diag().sum()/confusion_matrix.sum()
 
 
