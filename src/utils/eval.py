@@ -153,15 +153,6 @@ def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
     return confusion_matrix
 
-def argmax(y):
-    """No argmax function for pytorch in 0.3.1 so implementing my own"""
-    l = len(y)
-    max = 0
-    for i in range(1, l):
-        if y[max] < y[i]:
-            max = i
-    return max
-
 
 def AUROC(scores, targets):
     """Calculates the Area Under the Curve.
