@@ -4,7 +4,6 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
-
 from torch.utils.data.sampler import Sampler
 
 
@@ -168,7 +167,6 @@ class AESampler(Sampler):
                 start -= 1
 
     def __iter__(self):
-        #return (i for i in range(self.prefix))
         return (self.indices[i] for i in torch.randperm(len(self.indices)))
 
     def __len__(self):

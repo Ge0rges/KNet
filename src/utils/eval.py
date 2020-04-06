@@ -163,8 +163,7 @@ def AUROC(scores, targets):
         return 0.5
 
     # sorting the arrays
-    scores, sortind = torch.sort(torch.from_numpy(
-        scores), dim=0, descending=True)
+    scores, sortind = torch.sort(torch.from_numpy(scores), dim=0, descending=True)
     scores = scores.numpy()
     sortind = sortind.numpy()
 

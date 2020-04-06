@@ -114,8 +114,8 @@ def train_model():
 
         ## Global net size
         "sizes": {
-            "encoder": [2, 2],
-            "action": [2, 3, 2]
+            "encoder": [2, 1],
+            "action": [1, 2]
         },
 
         # Unique to main
@@ -154,7 +154,7 @@ def train_model():
     }
 
     # Misc Params
-    save_model = None # Pass a file name to save this model as. None does not save.
+    save_model = None  # Pass a file name to save this model as. None does not save.
 
     results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
                       de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
@@ -179,14 +179,22 @@ def error_function(model, batch_loader, classes_trained):
     print(confusion_matrix)
 
     print("Per class accuracy:")
-    print(100*confusion_matrix.diag()/confusion_matrix.sum(0))
+    print(confusion_matrix.diag()/confusion_matrix.sum(0))
 
+    accuracy = calculate_accuracy(confusion_matrix)
     print("Accuracy:")
-    print(calculate_accuracy(confusion_matrix))
+    print(accuracy)
 
     # Must return one global param on performance
     auroc = calc_avg_AE_AUROC(model, batch_loader, classes_list, classes_trained, use_cuda)
-    return auroc["macro"]
+    print("Auroc:")
+    print(auroc)
+
+    score = (auroc["macro"] + accuracy)/2
+    print("Score: ")
+    print(score)
+
+    return score
 
 
 def prepare_experiment():
