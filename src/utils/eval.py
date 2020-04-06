@@ -135,7 +135,6 @@ def calc_accuracy(model, batchloader, all_classes):
         inp = Variable(inp)
         model.phase = "ACTION"
         output = model(inp)
-        # output = torch.nn.functional.softmax(output, dim=0)
         output = output.data.numpy()
 
         for y_score in output:
@@ -149,8 +148,34 @@ def calc_accuracy(model, batchloader, all_classes):
 
     cr = float(correctly_classified)/float(len(binary_targets))
 
-    return {"Classification Rate": cr}
+    return cr
 
+def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
+
+    confusion_matrix = torch.zeros(len(all_classes), len(all_classes))
+
+    if use_cuda:
+        confusion_matrix = confusion_matrix.cuda()
+
+    for i, (inputs, classes) in enumerate(dataloader):
+        if use_cuda:
+            inputs = inputs.cuda()
+            classes = classes.cuda()
+
+        # Classes contains the targets for gen phase as well
+        classes = classes[:, classes.size()[1] - len(all_classes):]
+
+        inputs = Variable(inputs)
+
+        model.phase = "ACTION"
+        outputs = model(inputs)
+
+        x, preds = torch.max(outputs, 1)
+
+        for t, p in zip(classes.view(-1), preds.view(-1)):
+            confusion_matrix[t, p] += 1
+
+    return confusion_matrix
 
 def argmax(y):
     """No argmax function for pytorch in 0.3.1 so implementing my own"""

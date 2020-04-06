@@ -15,12 +15,10 @@ class ActionEncoder(nn.Module):
 
         # Encoder
         encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        # encoder_layers.append(nn.Sigmoid())
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
         decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        # decoder_layers.append(nn.Sigmoid())
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
@@ -58,7 +56,6 @@ class ActionEncoder(nn.Module):
         ]
 
         for i in range(1, len(sizes) - 1):
-            # layers.append(nn.ReLU(True))
             layers.append(nn.Sigmoid())
             layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
 
