@@ -118,37 +118,12 @@ def calc_avg_AE_band_error(model, batchloader):
     return {"alpha_error": alpha_error, "beta_error": beta_error}
 
 
-def calc_accuracy(model, batchloader, all_classes):
+def calc_accuracy(model, batchloader, all_classes, use_cuda):
 
-    binary_targets = []
-    binary_output = []
+    confusion_matrix = build_confusion_matrix(model, batchloader, all_classes, use_cuda)
 
-    for idx, (inp, target) in enumerate(batchloader):
-        target = target[:, target.size()[1] - len(all_classes):]
-        target = target.numpy()
+    return confusion_matrix.diag().sum()/confusion_matrix.sum()
 
-        # transform into binary classification:
-        for y_true in target:
-            binary_y = argmax(y_true)
-            binary_targets.append(binary_y)
-
-        inp = Variable(inp)
-        model.phase = "ACTION"
-        output = model(inp)
-        output = output.data.numpy()
-
-        for y_score in output:
-            binary_y = argmax(y_score)
-            binary_output.append(binary_y)
-
-    correctly_classified = 0
-    for i in range(len(binary_targets)):
-        if binary_targets[i] == binary_output[i]:
-            correctly_classified += 1
-
-    cr = float(correctly_classified)/float(len(binary_targets))
-
-    return cr
 
 def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
@@ -164,16 +139,17 @@ def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
         # Classes contains the targets for gen phase as well
         classes = classes[:, classes.size()[1] - len(all_classes):]
+        _, classes_b = torch.max(classes, 1)
 
         inputs = Variable(inputs)
 
         model.phase = "ACTION"
         outputs = model(inputs)
 
-        x, preds = torch.max(outputs, 1)
+        _, preds = torch.max(outputs.data, 1)
 
-        for t, p in zip(classes.view(-1), preds.view(-1)):
-            confusion_matrix[t, p] += 1
+        for t, p in zip(classes_b.view(-1), preds.view(-1)):
+            confusion_matrix[p, t] += 1
 
     return confusion_matrix
 

@@ -179,7 +179,7 @@ def error_function(model, batch_loader, classes_trained):
     print(confusion_matrix)
 
     print("Per class accuracy:")
-    print(100*confusion_matrix.diag()/confusion_matrix.sum(1))
+    print(100*confusion_matrix.diag()/confusion_matrix.sum(0))
 
     # Must return one global param on performance
     auroc = calc_avg_AE_AUROC(model, batch_loader, classes_list, classes_trained, use_cuda)
