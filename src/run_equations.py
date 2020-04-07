@@ -18,7 +18,7 @@ seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(1)  # Dataset specific, list of classification classes
-data_loader = simple_math_equations_loader  # The loader to be used for the data.
+data_loader = simple_math_equations_loader()  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 
@@ -151,7 +151,7 @@ def train_model():
 
     results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
                       de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
-                      data_loader=data_loader, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
+                      data_loader=[data_loader], num_workers=num_workers, classes_list=classes_list, criterion=criterion,
                       save_model=save_model, seed_rand=seed)
 
     print("Done training with results from error function:" + str(results))
@@ -178,4 +178,5 @@ def prepare_experiment():
 
 if __name__ == "__main__":
     prepare_experiment()
-    find_hypers()
+    # find_hypers()
+    train_model()
