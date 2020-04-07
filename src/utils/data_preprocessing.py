@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from src.utils.misc import fft_psd
+from src.utils.misc import fft_psd, Band
 from src.utils import neuro_utils as utils
 from PIL import Image
 
@@ -17,14 +17,6 @@ OVERLAP_LENGTH = 0.8
 
 # Amount to 'shift' the start of each next consecutive epoch
 SHIFT_LENGTH = EPOCH_LENGTH - OVERLAP_LENGTH
-
-
-class Band:
-    Delta = 0
-    Theta = 1
-    Alpha = 2
-    Beta = 3
-
 
 ## EEG
 def EEG_preprocess_task(task, batch_size=256, num_workers=4):
