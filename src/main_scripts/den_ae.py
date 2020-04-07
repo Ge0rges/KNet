@@ -103,7 +103,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 #     p = p.data.cpu().numpy()
                 #     suma += (abs(p) < zero_threshold).sum()
                 # print("Number of zero weights: %d" % (suma))
-
+            err = error_function(model, testloader, classes_list[:t + 1])
+            errors.append(err)
         else:
             # copy model
             model_copy = copy.deepcopy(model)

@@ -451,17 +451,29 @@ def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
 
 def simple_math_equations_loader(batch_size=256, num_workers=0):
     def equation(x):
-        x = np.sum(x, 1)
-        output = []
-        for entry in x:
-            if entry > 5:
-                output.append([1])
+        eq1 = np.sum(x, 1)
+        eq2 = np.max(x, 1)
+
+        labels = []
+        for en1, en2 in zip(eq1, eq2):
+            l1, l2 = 0, 0
+            if en1 > 5:
+                l1 = 1
             else:
-                output.append([0])
-        return np.asarray(output)
+                l1 = 0
+            if en2 > 0.75:
+                l2 = 1
+            else:
+                l2 = 0
+
+            labels.append([l1, l2])
+
+        return np.asarray(labels)
 
     def get_data_set(num_samples):
-        task_data = np.random.rand(num_samples, 10)
+        task_data = np.random.rand(num_samples, 5)
+        pad = np.full([num_samples, 5], 0.5)
+        task_data = np.concatenate([task_data, pad], 1)
         task_labels = equation(task_data)
 
         task_tensor_data = torch.Tensor(task_data)

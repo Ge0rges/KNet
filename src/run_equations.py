@@ -17,7 +17,7 @@ from src.utils.eval import calc_avg_AE_AUROC
 seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
-classes_list = range(1)  # Dataset specific, list of classification classes
+classes_list = range(2)  # Dataset specific, list of classification classes
 data_loader = simple_math_equations_loader()  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
@@ -109,7 +109,7 @@ def train_model():
         ## Global net size
         "sizes": {
             "encoder": [10, 10],
-            "action": [10, 1]
+            "action": [10, 2]
         },
 
         # Unique to main
@@ -178,5 +178,5 @@ def prepare_experiment():
 
 if __name__ == "__main__":
     prepare_experiment()
-    # find_hypers()
-    train_model()
+    find_hypers()
+    # train_model()
