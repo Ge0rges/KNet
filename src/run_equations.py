@@ -30,7 +30,7 @@ def find_hypers():
     autoencoder_input = 10
     hidden_autoencoder_layers = 2
     hidden_action_layers = 2
-    actionnet_output = 1
+    actionnet_output = 2
 
     # PBT Params
     generation_size = 8
@@ -95,63 +95,30 @@ def train_model():
     Trains a CIANet model on the following params.
     """
     # ML Hypers
-    main_hypers = {
-        # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 1,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
+    main_hypers = {'learning_rate': 0.4025783587760153, 'momentum': 0.7382951058371613, 'lr_drop': 0.18806624433009356,
+               'epochs_drop': 0, 'max_epochs': 24, 'l1_coeff': 2.9765538262283965e-08,
+               'l2_coeff': 3.167022697095151e-08, 'zero_threshold': 6.602347377186237e-06, 'batch_size': 329,
+               'weight_decay': 0.34991295058825966, 'loss_threshold': 0.4849395339819411, 'expand_by_k': 1,
+                   'sizes' : {'encoder': [10, 5], 'action': [5, 2, 2, 1], 'decoder': [5, 10]}}
+    split_train_new_hypers = {'learning_rate': 0.342377783532879, 'momentum': 0.7603140193361054,
+                              'lr_drop': 0.786906032737128, 'epochs_drop': 16, 'max_epochs': 3,
+                              'l1_coeff': 5.16140189773329e-08, 'l2_coeff': 7.927273938277364e-08,
+                              'zero_threshold': 7.663501673689354e-06,
+                              'drift_threshold': 0.010738526244622092,
+                              'sizes': {'encoder': [10, 5], 'action': [5, 2, 2, 1]}},
+    de_train_new_hypers= {'learning_rate': 0.4642555293963474, 'momentum': 0.38298737729960264,
+                           'lr_drop': 0.941087258032139, 'epochs_drop': 16, 'max_epochs': 8,
+                           'l1_coeff': 3.659698326397483e-08, 'l2_coeff': 3.084589790581798e-08,
+                           'zero_threshold': 2.1404714986370876e-06,
+                           'sizes': {'encoder': [10, 5], 'action': [5, 2, 2, 1]}}
 
-        ## Global net size
-        "sizes": {
-            "encoder": [10, 10],
-            "action": [10, 2]
-        },
-
-        # Unique to main
-        "batch_size": 256,
-        "weight_decay": 0,
-        "loss_threshold": 1e-2,
-        "expand_by_k": 10,
-    }
-
-    split_train_new_hypers = {
-        # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 1,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
-
-        # Unique to split
-        "drift_threshold": 0.02
-    }
-
-    de_train_new_hypers = {
-        # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 1,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
-    }
 
     # Misc Params
     save_model = None # Pass a file name to save this model as. None does not save.
 
     results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
                       de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
-                      data_loader=[data_loader], num_workers=num_workers, classes_list=classes_list, criterion=criterion,
+                      data_loader=data_loader, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
                       save_model=save_model, seed_rand=seed)
 
     print("Done training with results from error function:" + str(results))
