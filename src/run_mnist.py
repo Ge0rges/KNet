@@ -147,7 +147,7 @@ def train_model():
     }
 
     # Misc Params
-    save_model = None # Pass a file name to save this model as. None does not save.
+    save_model = None  # Pass a file name to save this model as. None does not save.
 
     results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
                       de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
