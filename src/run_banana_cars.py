@@ -17,8 +17,11 @@ seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(2)  # Dataset specific, list of classification classes
-data_loader = [bc_loader("../src/data/Banana_Car/banana/1/resized/1/", "banana", 0, batch_size=256, num_workers=0), bc_loader("../src/data/Banana_Car/car/1/resized/1/", "car", 1, batch_size=256, num_workers=0)]  # The loader to be used for the data. Change the data path if necessary
 num_workers = 0  # Leave this as zero for now.
+
+# The loader to be used for the data. Change the data path if necessary
+data_loader = [bc_loader("../data/banana_car/banana/1/resized/1/", "banana", 0, batch_size=256, num_workers=0),
+               bc_loader("../data/banana_car/car/1/resized/1/", "car", 1, batch_size=256, num_workers=0)]
 
 
 def find_hypers():
@@ -200,11 +203,11 @@ def prepare_experiment():
     """
     Preprocesses the data.
     """
-    banana_path = ""  # the path to your banana dataset folder
+    banana_path = "../data/banana_car/banana/"  # the path to your banana dataset folder, include ending /
     dataset_reshaping("banana", banana_path)
-    car_path = ""  # the path to your car dataset folder
+    car_path = "../data/banana_car/car/"  # the path to your car dataset folder, include ending /
     dataset_reshaping("car", car_path)
-    bananacar_path = ""  # the path to your bananacar dataset folder
+    bananacar_path = "../data/banana_car/bananacar/"  # the path to your bananacar dataset folder, include ending /
     dataset_reshaping("bananacar", bananacar_path)
 
 
