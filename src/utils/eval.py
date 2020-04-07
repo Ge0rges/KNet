@@ -118,48 +118,38 @@ def calc_avg_AE_band_error(model, batchloader):
     return {"alpha_error": alpha_error, "beta_error": beta_error}
 
 
-def calc_accuracy(model, batchloader, all_classes):
+def calculate_accuracy(confusion_matrix):
+    assert confusion_matrix is not None
+    return confusion_matrix.diag().sum()/confusion_matrix.sum()
 
-    binary_targets = []
-    binary_output = []
 
-    for idx, (inp, target) in enumerate(batchloader):
-        target = target[:, target.size()[1] - len(all_classes):]
-        target = target.numpy()
+def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
-        # transform into binary classification:
-        for y_true in target:
-            binary_y = argmax(y_true)
-            binary_targets.append(binary_y)
+    confusion_matrix = torch.zeros(len(all_classes), len(all_classes))
 
-        inp = Variable(inp)
+    if use_cuda:
+        confusion_matrix = confusion_matrix.cuda()
+
+    for i, (inputs, classes) in enumerate(dataloader):
+        if use_cuda:
+            inputs = inputs.cuda()
+            classes = classes.cuda()
+
+        # Classes contains the targets for gen phase as well
+        classes = classes[:, classes.size()[1] - len(all_classes):]
+        _, classes_b = torch.max(classes, 1)
+
+        inputs = Variable(inputs)
+
         model.phase = "ACTION"
-        output = model(inp)
-        # output = torch.nn.functional.softmax(output, dim=0)
-        output = output.data.numpy()
+        outputs = model(inputs)
 
-        for y_score in output:
-            binary_y = argmax(y_score)
-            binary_output.append(binary_y)
+        _, preds = torch.max(outputs.data, 1)
 
-    correctly_classified = 0
-    for i in range(len(binary_targets)):
-        if binary_targets[i] == binary_output[i]:
-            correctly_classified += 1
+        for t, p in zip(classes_b.view(-1), preds.view(-1)):
+            confusion_matrix[p, t] += 1
 
-    cr = float(correctly_classified)/float(len(binary_targets))
-
-    return {"Classification Rate": cr}
-
-
-def argmax(y):
-    """No argmax function for pytorch in 0.3.1 so implementing my own"""
-    l = len(y)
-    max = 0
-    for i in range(1, l):
-        if y[max] < y[i]:
-            max = i
-    return max
+    return confusion_matrix
 
 
 def AUROC(scores, targets):
@@ -173,8 +163,7 @@ def AUROC(scores, targets):
         return 0.5
 
     # sorting the arrays
-    scores, sortind = torch.sort(torch.from_numpy(
-        scores), dim=0, descending=True)
+    scores, sortind = torch.sort(torch.from_numpy(scores), dim=0, descending=True)
     scores = scores.numpy()
     sortind = sortind.numpy()
 

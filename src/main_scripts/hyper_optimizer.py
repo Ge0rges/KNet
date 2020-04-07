@@ -36,6 +36,7 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     assert generation_size > 0
     assert epochs > 0
     assert params_bounds is not None
+    assert workers_seed is None or len(workers_seed) <= generation_size
 
     if seed is not None:
         random.seed(seed)
@@ -44,7 +45,10 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     workers = []
 
     print("Doing PCA on the data...")
-    autoencoder_out = pca_dataset(data_loader=data_loader, threshold=0.9)
+    autoencoder_out = []
+    for dl in data_loader:
+        autoencoder_out.append(pca_dataset(data_loader=dl, threshold=0.9))
+    autoencoder_out = np.mean(autoencoder_out)
 
     print("Initializing workers...")
     workers.extend(workers_seed)
@@ -235,7 +239,7 @@ def construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_
 
     previous = encoder_in
     for i in range(hidden_encoder):
-        if previous/2 <= autoencoder_out or previous <= 1:
+        if previous/2 <= autoencoder_out or previous <= 1 or int(previous/2) <= 0:
             break
         middle_layers.append(int(previous/2))
 
@@ -245,7 +249,7 @@ def construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_
     middle_layers = []
     previous = autoencoder_out
     for i in range(hidden_action):
-        if previous / 2 <= action_out or previous <= 1:
+        if previous/2 <= action_out or previous <= 1 or int(previous/2) <= 0:
             break
         middle_layers.append(int(previous/2))
         
@@ -259,7 +263,7 @@ def pca_dataset(data_loader=None, threshold=0.9):
 
     # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
     # that hopefully will be representative
-    train, valid, test = data_loader()
+    train, valid, test = data_loader
     train_data = []
     for i, (input, target) in enumerate(train):
         n = input.size()[0]

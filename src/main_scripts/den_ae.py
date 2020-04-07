@@ -45,7 +45,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
 
     # print('==> Preparing dataset')
-    trainloader, validloader, testloader = data_loader(batch_size=batch_size, num_workers=num_workers)
+    trainloader, validloader, testloader = data_loader[0]
 
     # print("==> Creating model")
     model = ActionEncoder(sizes=actionencoder_sizes)
@@ -70,6 +70,9 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     for t, cls in enumerate(classes_list):
 
         # print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
+
+        if len(data_loader) >= len(classes_list) and t > 0:
+            trainloader, validloader, testloader = data_loader[t]
 
         if t == 0:
             # print("==> Learning")
