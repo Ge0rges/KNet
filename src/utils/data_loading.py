@@ -447,6 +447,46 @@ def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
     return (trainloader, validloader, testloader)
 
 
+def simple_math_equations_loader(batch_size=256, num_workers=0):
+    def equation(x):
+        x = np.sum(x, 1)
+        output = []
+        for entry in x:
+            if entry > 5:
+                output.append([1])
+            else:
+                output.append([0])
+        return np.asarray(output)
+
+    def get_data_set(num_samples):
+        task_data = np.random.rand(num_samples, 10)
+        task_labels = equation(task_data)
+
+        task_tensor_data = torch.Tensor(task_data)
+        task_tensor_labels = torch.Tensor(task_labels)
+        task_tensor_labels = torch.cat([task_tensor_data, task_tensor_labels], 1)
+
+        return TensorDataset(task_tensor_data, task_tensor_labels)
+
+    traindataset = get_data_set(100000)
+    validdataset = get_data_set(20000)
+    testdataset = get_data_set(10000)
+
+    train_labels = [i[1] for i in traindataset]
+    valid_labels = [i[1] for i in validdataset]
+    test_labels = [i[1] for i in testdataset]
+
+    trainsampler = AESampler(train_labels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    validsampler = AESampler(valid_labels, start_from=0)
+    validloader = DataLoader(validdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(test_labels, start_from=0)
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    return (trainloader, validloader, testloader)
+
 ##### MNIST
 def mnist_loader(batch_size=256, num_workers=0):
     allset = get_mnist_dataset()

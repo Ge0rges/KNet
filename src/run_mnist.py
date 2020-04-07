@@ -28,8 +28,8 @@ def find_hypers():
     """
     # Net shape
     autoencoder_input = 28*28
-    hidden_autoencoder_layers = 1
-    hidden_action_layers = 1
+    hidden_autoencoder_layers = 3
+    hidden_action_layers = 2
     actionnet_output = 10
 
     # PBT Params
@@ -178,4 +178,4 @@ def prepare_experiment():
 
 if __name__ == "__main__":
     prepare_experiment()
-    train_model()
+    find_hypers()
