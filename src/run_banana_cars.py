@@ -24,8 +24,8 @@ num_workers = 0  # Leave this as zero for now.
 filepath1 = os.path.join(os.path.dirname(__file__), "../data/banana_car/banana/resized/1/")
 filepath2 = os.path.join(os.path.dirname(__file__), "../data/banana_car/car/resized/1/")
 
-data_loader = [bc_loader(filepath1, "banana", 0, batch_size=256, num_workers=0),
-               bc_loader(filepath2, "car", 1, batch_size=256, num_workers=0)]
+data_loader = [(bc_loader, {"dir": filepath1, "name": "banana", "label": 0, "batch_size": 256, "num_workers": num_workers}),
+               (bc_loader, {"dir": filepath2, "name": "car", "label": 1, "batch_size": 256, "num_workers": num_workers})]
 
 
 def find_hypers():
