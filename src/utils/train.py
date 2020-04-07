@@ -59,7 +59,7 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
             generate_loss = generate_loss + penalty(model)
             action_loss = action_loss + penalty(model)
 
-        total_loss = action_loss + generate_loss
+        total_loss = action_loss
 
         # record loss
         losses.update(total_loss.data[0], inputs.size(0))
