@@ -45,7 +45,7 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     workers = []
 
     print("Doing PCA on the data...")
-    autoencoder_out = int(core_invariant_size)
+    autoencoder_out = int(core_invariant_size) if core_invariant_size is not None else None
     if autoencoder_out is None or autoencoder_out <= 0:
         autoencoder_out = []
         for dl in data_loader:
@@ -118,20 +118,20 @@ def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_l
     if epoch > 0 and i > int(workers_len * 0.8):
         return worker
 
-    # try:
-    save_model_name = None  # Change to save: str(i) + "_model_epoch" + str(epoch) + ".pt"
-    perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
-                    error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
-                    seed)
-    perf = sum(perfs) / len(perfs)
+    try:
+        save_model_name = None  # Change to save: str(i) + "_model_epoch" + str(epoch) + ".pt"
+        perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
+                        error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
+                        seed)
+        perf = sum(perfs) / len(perfs)
 
-    worker = (perf, worker[1])
+        worker = (perf, worker[1])
 
-    return worker
+        return worker
 
-    # except Exception as e:
-    #     print("worker " + str(i) + " crashed:" + str(e))
-    #     return (0, worker[1])
+    except Exception as e:
+        print("worker " + str(i) + " crashed:" + str(e))
+        return (0, worker[1])
 
 
 def random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
@@ -236,25 +236,32 @@ def explore(params, param_bounds, standard_deviation=0.1):
 def construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
     sizes = {}
 
+    def power_law(input, output, number_of_layers, layer_number):
+        exp = np.log(input) - np.log(output)
+        exp = np.divide(exp, np.log(number_of_layers))
+        result = input/np.power(layer_number, exp)
+
+        return result
+
     # AutoEncoder
     middle_layers = []
 
-    previous = encoder_in
-    for i in range(hidden_encoder):
-        if previous/2 <= autoencoder_out or previous <= 1 or int(previous/2) <= 0:
+    for i in range(2, hidden_encoder+2):
+        current = int(power_law(encoder_in, autoencoder_out, hidden_encoder+2, i))
+        if current <= autoencoder_out or current <= 1:
             break
-        middle_layers.append(int(previous/2))
+        middle_layers.append(current)
 
     sizes["encoder"] = [int(encoder_in)] + middle_layers + [int(autoencoder_out)]
 
     # Action
     middle_layers = []
-    previous = autoencoder_out
-    for i in range(hidden_action):
-        if previous/2 <= action_out or previous <= 1 or int(previous/2) <= 0:
+    for i in range(2, hidden_action+2):
+        current = int(power_law(autoencoder_out, action_out, hidden_action+2, i))
+        if current <= autoencoder_out or current <= 1:
             break
-        middle_layers.append(int(previous/2))
-        
+        middle_layers.append(current)
+
     sizes["action"] = [int(autoencoder_out)] + middle_layers + [int(action_out)]
 
     return sizes

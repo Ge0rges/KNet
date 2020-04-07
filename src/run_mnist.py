@@ -28,10 +28,10 @@ def find_hypers():
     """
     # Net shape
     autoencoder_input = 28*28
-    hidden_autoencoder_layers = 3
-    hidden_action_layers = 2
+    hidden_autoencoder_layers = 1
+    hidden_action_layers = 1
     actionnet_output = 10
-    core_invariant_size = None
+    core_invariant_size = None  # None is PCA
 
     # PBT Params
     generation_size = 8
