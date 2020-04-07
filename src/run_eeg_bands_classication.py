@@ -18,8 +18,8 @@ seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(2)  # Dataset specific, list of classification classes
+data_loader = [EEG_bands_to_binary_loader()]  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
-data_loader = [(EEG_bands_to_binary_loader, {"batch_size": 256, "num_workers": num_workers})]  # The loader to be used for the data.
 
 
 def find_hypers():

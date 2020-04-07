@@ -10,7 +10,6 @@ from src.models import ActionEncoder
 from src.utils.train import trainAE
 from src.utils import l1_penalty, l1l2_penalty
 
-
 def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None, error_function=None, use_cuda=False,
             data_loader=None, num_workers=0, classes_list=None, criterion=None, save_model=None, seed_rand=None):
 
@@ -46,7 +45,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
 
     # print('==> Preparing dataset')
-    trainloader, validloader, testloader = data_loader[0][0](data_loader[0][1])
+    trainloader, validloader, testloader = data_loader[0]
 
     # print("==> Creating model")
     model = ActionEncoder(sizes=actionencoder_sizes)
@@ -73,7 +72,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         # print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
 
         if len(data_loader) >= len(classes_list) and t > 0:
-            trainloader, validloader, testloader = data_loader[t][0](data_loader[t][1])
+            trainloader, validloader, testloader = data_loader[t]
 
         if t == 0:
             # print("==> Learning")

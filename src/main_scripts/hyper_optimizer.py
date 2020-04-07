@@ -263,7 +263,7 @@ def pca_dataset(data_loader=None, threshold=0.9):
 
     # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
     # that hopefully will be representative
-    train, valid, test = data_loader[0](data_loader[1])
+    train, valid, test = data_loader
     train_data = []
     for i, (input, target) in enumerate(train):
         n = input.size()[0]

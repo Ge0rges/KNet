@@ -14,17 +14,8 @@ BANANA_LABEL = 0
 CAR_LABEL = 1
 ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
 
-
-def bc_loader(args=None):
+def bc_loader(dir, name, label, batch_size=256, num_workers=0):
     """Loader to be used only for the car, banana and bananacar datasets"""
-    if args is None:
-        args = {"dir": None, "name": None, "label": None, "batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
-    dir = args["dir"]
-    name = args["name"]
-    label = args["label"]
-
     assert os.path.isdir(dir)
 
     dataset = BananaCarImageDataset(dir, name, label, ALL_BANANA_CAR_LABELS)
@@ -51,18 +42,10 @@ def bc_loader(args=None):
     return (trainloader, validloader, testloader)
 
 
-def all_bc_loader(args=None):
-    if args is None:
-        args = {"dirs": None, "names": None, "labels": None, "batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
-    dirs = args["dirs"]
-    names = args["names"]
-    labels = args["labels"]
-
+def all_bc_loader(dirs, names, labels, batch_size=256, num_workers=0):
+    """Dirs must be of the shape: [[train, valid, test], [train,valid,test]]"""
     # first we do the train dataloader
     print("loading training set")
-
     datasets = []
     for i in range(len(dirs)):
         name = names[i]
@@ -113,11 +96,7 @@ def all_bc_loader(args=None):
 
 
 ###### EEG
-def eeg_task_to_task_loader(args=None):
-    if args is None:
-        args = {"batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
+def eeg_task_to_task_loader(batch_size=256, num_workers=0):
     # TODO: make is so that the testloader isn't re-using data that is being used in the train and valid loaders
     datasets = []
     for i in range(9):
@@ -164,13 +143,7 @@ def EEG_get_task_dataset(task_num):
     return dataset
 
 
-def EEG_task_loader(args=None):
-    if args is None:
-        args = {"task_num": 0, "batch_size": 256, "num_workers": 0}
-    task_num = args["task_num"]
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
-
+def EEG_task_loader(task_num, batch_size=256, num_workers=0):
     task_data = np.load("../data/EEG_Processed/task{}_task.npy".format(task_num+1))
     num_samples = len(task_data)
     task_labels = [task_num]*num_samples
@@ -215,11 +188,8 @@ def EEG_task_loader(args=None):
     return (trainloader, validloader)
 
 
-def EEG_raw_to_bands_loader(args=None):
-    if args is None:
-        args = {"batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
+def EEG_raw_to_bands_loader(batch_size=256, num_workers=0):
+
     datasets = []
 
     normal_data = np.load("../data/EEG_Processed/normal.npy")
@@ -292,11 +262,7 @@ def EEG_raw_to_bands_loader(args=None):
     return (trainloader, validloader, testloader)
 
 
-def EEG_bands_to_binary_loader(args=None):
-    if args is None:
-        args = {"batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
+def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
     task_data = np.load("../data/EEG_Processed/calm_band.npy")
     num_samples = len(task_data)
     task_labels = [1] * num_samples
@@ -368,11 +334,7 @@ def EEG_bands_to_binary_loader(args=None):
     return (trainloader, validloader, testloader)
 
 
-def EEG_raw_to_binary_loader(args=None):
-    if args is None:
-        args = {"batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
+def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
 
     def custom_EEG_dataset_getter(task_num, task_label, random_label):
         task_data = np.load("../data/EEG_Processed/task{}_task.npy".format(task_num+1))
@@ -477,12 +439,7 @@ def EEG_raw_to_binary_loader(args=None):
     return (trainloader, validloader, testloader)
 
 #### Math equations
-def simple_math_equations_loader(args=None):
-    if args is None:
-        args = {"batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
-
+def simple_math_equations_loader(batch_size=256, num_workers=0):
     def equation(x):
         eq1 = np.sum(x, 1)
         eq2 = np.max(x, 1)
@@ -535,12 +492,7 @@ def simple_math_equations_loader(args=None):
     return (trainloader, validloader, testloader)
 
 ##### MNIST
-def mnist_loader(args=None):
-    if args is None:
-        args = {"batch_size": 256, "num_workers": 0}
-    batch_size = args["batch_size"]
-    num_workers = args["num_workers"]
-
+def mnist_loader(batch_size=256, num_workers=0):
     allset = get_mnist_dataset()
 
     data = torch.zeros((len(allset), 28*28))
