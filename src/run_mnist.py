@@ -165,6 +165,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
 
     return model, results
 
+
 def error_function(model, batch_loader, classes_trained):
     """
     Calculates a metric to judge model. Must return a float.
@@ -175,6 +176,7 @@ def error_function(model, batch_loader, classes_trained):
 
     auroc = calc_avg_AE_AUROC(model, batch_loader, classes_list, classes_trained, use_cuda)
     return auroc["macro"]
+
 
 def prepare_experiment():
     """
