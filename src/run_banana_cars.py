@@ -23,9 +23,12 @@ num_workers = 0  # Leave this as zero for now.
 # The loader to be used for the data. Change the data path if necessary
 filepath1 = os.path.join(os.path.dirname(__file__), "../data/banana_car/banana/resized/1/")
 filepath2 = os.path.join(os.path.dirname(__file__), "../data/banana_car/car/resized/1/")
+filepath3 = os.path.join(os.path.dirname(__file__), "../data/banana_car/bananacar/resized/1/")
+
 
 data_loader = [bc_loader(filepath1, "banana", 0, batch_size=256, num_workers=0),
-               bc_loader(filepath2, "car", 1, batch_size=256, num_workers=0)]
+               bc_loader(filepath2, "car", 1, batch_size=256, num_workers=0),
+               bc_loader(filepath3, "bananacar", None, batch_size=256, num_workers=0)]
 
 
 def find_hypers():
@@ -163,6 +166,7 @@ def train_model():
                       save_model=save_model, seed_rand=seed)
 
     print("Done training with results from error function:" + str(results))
+
     return results
 
 

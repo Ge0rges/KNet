@@ -14,10 +14,14 @@ BANANA_LABEL = 0
 CAR_LABEL = 1
 ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
 
+
 def bc_loader(dir, name, label, batch_size=256, num_workers=0):
     """Loader to be used only for the car, banana and bananacar datasets"""
     assert os.path.isdir(dir)
-
+    if name == "bananacar":
+        proportions = [0, 0, 1]
+    else:
+        proportions = [0.7, 0.5, 0.25]
     dataset = BananaCarImageDataset(dir, name, label, ALL_BANANA_CAR_LABELS)
 
     num_samples = len(dataset)
@@ -26,11 +30,11 @@ def bc_loader(dir, name, label, batch_size=256, num_workers=0):
     else:
         labels = [label]*num_samples
 
-    train_size = int(num_samples*0.7)
+    train_size = int(num_samples*proportions[0])
     trainsampler = AESampler(labels, start_from=0, amount=train_size)
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
-    valid_size = int(num_samples*0.05)
+    valid_size = int(num_samples*proportions[1])
     validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
 
@@ -509,14 +513,15 @@ def mnist_loader(batch_size=256, num_workers=0):
     dataset = TensorDataset(data, tensor_labels)
 
     labels = [i[1] for i in dataset]
+    l = len(labels)
 
-    trainsampler = AESampler(labels, start_from=0, amount=1000)
+    trainsampler = AESampler(labels, start_from=0, amount=int(l*0.7))
     trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
-    validsampler = AESampler(labels, start_from=1000, amount=200)
+    validsampler = AESampler(labels, start_from=int(l*0.7), amount=int(l*0.05))
     validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
 
-    testsampler = AESampler(labels, start_from=1200, amount=5000)
+    testsampler = AESampler(labels, start_from=int(l*0.7) + int(l*0.05))
     testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
     print("Done preparing AE dataloader")
