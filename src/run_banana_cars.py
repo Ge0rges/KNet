@@ -34,9 +34,10 @@ def find_hypers():
     """
     # Net shape
     autoencoder_input = 640*480*3
-    hidden_autoencoder_layers = 2
-    hidden_action_layers = 2
+    hidden_autoencoder_layers = 1
+    hidden_action_layers = 1
     actionnet_output = 2
+    core_invariant_size = 300
 
     # PBT Params
     generation_size = 8
@@ -92,7 +93,8 @@ def find_hypers():
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
                                   hidden_action=hidden_action_layers, action_out=actionnet_output,
-                                  params_bounds=params_bounds, workers_seed=seed_workers)
+                                  core_invariant_size=core_invariant_size, params_bounds=params_bounds,
+                                  workers_seed=seed_workers)
 
     print("Got optimal worker:" + str(best_worker))
 
@@ -115,8 +117,8 @@ def train_model():
 
         ## Global net size
         "sizes": {
-            "encoder": [640*480*3, 1000, 500, 80],
-            "action": [80, 30, 2]
+            "encoder": [640*480*3, 3000, 300],
+            "action": [300, 30, 2]
         },
 
         # Unique to main
@@ -211,4 +213,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    find_hypers()
+    train_model()

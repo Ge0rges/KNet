@@ -14,8 +14,8 @@ from sklearn.decomposition import PCA
 
 def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cuda=False, data_loader=None,
                     num_workers=0, classes_list=None, criterion=None, seed=None, error_function=None,
-                    encoder_in=None, hidden_encoder=None, hidden_action=None, action_out=None, params_bounds=None,
-                    workers_seed=None):
+                    encoder_in=None, hidden_encoder=None, hidden_action=None, action_out=None, core_invariant_size=None,
+                    params_bounds=None, workers_seed=None):
     """
     Trains generation_size number of models for epochs number of times.
     At every epoch the bottom 20% workers copy the top 20%
@@ -45,10 +45,12 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     workers = []
 
     print("Doing PCA on the data...")
-    autoencoder_out = []
-    for dl in data_loader:
-        autoencoder_out.append(pca_dataset(data_loader=dl, threshold=0.9))
-    autoencoder_out = np.mean(autoencoder_out)
+    autoencoder_out = int(core_invariant_size)
+    if autoencoder_out is None or autoencoder_out <= 0:
+        autoencoder_out = []
+        for dl in data_loader:
+            autoencoder_out.append(pca_dataset(data_loader=dl, threshold=0.9))
+        autoencoder_out = int(max(autoencoder_out))
 
     print("Initializing workers...")
     workers.extend(workers_seed)
@@ -116,20 +118,20 @@ def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_l
     if epoch > 0 and i > int(workers_len * 0.8):
         return worker
 
-    try:
-        save_model_name = None  # Change to save: str(i) + "_model_epoch" + str(epoch) + ".pt"
-        perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
-                        error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
-                        seed)
-        perf = sum(perfs) / len(perfs)
+    # try:
+    save_model_name = None  # Change to save: str(i) + "_model_epoch" + str(epoch) + ".pt"
+    perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
+                    error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
+                    seed)
+    perf = sum(perfs) / len(perfs)
 
-        worker = (perf, worker[1])
+    worker = (perf, worker[1])
 
-        return worker
+    return worker
 
-    except Exception as e:
-        print("worker " + str(i) + " crashed:" + str(e))
-        return (0, worker[1])
+    # except Exception as e:
+    #     print("worker " + str(i) + " crashed:" + str(e))
+    #     return (0, worker[1])
 
 
 def random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
@@ -266,20 +268,6 @@ def pca_dataset(data_loader=None, threshold=0.9):
     train, valid, test = data_loader
     train_data = []
     for i, (input, target) in enumerate(train):
-        n = input.size()[0]
-        indices = np.random.choice(list(range(n)), size=(int(n/5)))
-        input = input.numpy()
-        data = input[indices]
-        train_data.extend(data)
-
-    for i, (input, target) in enumerate(valid):
-        n = input.size()[0]
-        indices = np.random.choice(list(range(n)), size=(int(n/5)))
-        input = input.numpy()
-        data = input[indices]
-        train_data.extend(data)
-
-    for i, (input, target) in enumerate(test):
         n = input.size()[0]
         indices = np.random.choice(list(range(n)), size=(int(n/5)))
         input = input.numpy()
