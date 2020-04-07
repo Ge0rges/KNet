@@ -6,6 +6,7 @@ Instructions:
     - To train one model run "train_model"
 """
 import torch
+import os
 
 from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import bc_loader
@@ -20,8 +21,11 @@ classes_list = range(2)  # Dataset specific, list of classification classes
 num_workers = 0  # Leave this as zero for now.
 
 # The loader to be used for the data. Change the data path if necessary
-data_loader = [bc_loader("../data/banana_car/banana/1/resized/1/", "banana", 0, batch_size=256, num_workers=0),
-               bc_loader("../data/banana_car/car/1/resized/1/", "car", 1, batch_size=256, num_workers=0)]
+filepath1 = os.path.join(os.path.dirname(__file__), "../data/banana_car/banana/resized/1/")
+filepath2 = os.path.join(os.path.dirname(__file__), "../data/banana_car/car/resized/1/")
+
+data_loader = [bc_loader(filepath1, "banana", 0, batch_size=256, num_workers=0),
+               bc_loader(filepath2, "car", 1, batch_size=256, num_workers=0)]
 
 
 def find_hypers():
