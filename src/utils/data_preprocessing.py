@@ -146,4 +146,4 @@ def dataset_reshaping(name, directory_path, new_size=(480, 360)):
         img = Image.open(f)
         new_img = img.resize(new_size)
         new_img = new_img.convert(mode="RGB")
-        new_img.save(directory_path + "resized/1/{}_{}.jpg".format(name, i))
+        new_img.save(directory_path + "resized/{}_{}.jpg".format(name, i))

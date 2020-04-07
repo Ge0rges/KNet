@@ -21,14 +21,11 @@ classes_list = range(2)  # Dataset specific, list of classification classes
 num_workers = 0  # Leave this as zero for now.
 
 # The loader to be used for the data. Change the data path if necessary
-filepath1 = os.path.join(os.path.dirname(__file__), "../data/banana_car/banana/resized/1/")
-filepath2 = os.path.join(os.path.dirname(__file__), "../data/banana_car/car/resized/1/")
-filepath3 = os.path.join(os.path.dirname(__file__), "../data/banana_car/bananacar/resized/1/")
+filepath1 = os.path.join(os.path.dirname(__file__), "../data/banana_car/banana/resized/")
+filepath2 = os.path.join(os.path.dirname(__file__), "../data/banana_car/car/resized/")
 
-
-data_loader = [bc_loader(filepath1, "banana", 0, batch_size=256, num_workers=0),
-               bc_loader(filepath2, "car", 1, batch_size=256, num_workers=0),
-               bc_loader(filepath3, "bananacar", None, batch_size=256, num_workers=0)]
+data_loaders = [bc_loader(filepath1, "banana", 0, batch_size=256, num_workers=0),
+                bc_loader(filepath2, "car", 1, batch_size=256, num_workers=0)]
 
 
 def find_hypers():
@@ -92,85 +89,88 @@ def find_hypers():
 
     best_worker = optimize_hypers(error_function=error_function, generation_size=generation_size,
                                   epochs=number_of_generations, standard_deviation=standard_deviation,
-                                  use_cuda=use_cuda, data_loader=data_loader, num_workers=num_workers,
+                                  use_cuda=use_cuda, data_loader=data_loaders, num_workers=num_workers,
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
                                   hidden_action=hidden_action_layers, action_out=actionnet_output,
                                   core_invariant_size=core_invariant_size, params_bounds=params_bounds,
                                   workers_seed=seed_workers)
 
-    print("Got optimal worker:" + str(best_worker))
+    print("Got optimal worker accuracy " + str(best_worker[0]) + " params:" + str(best_worker[1]))
+
+    return best_worker
 
 
-def train_model():
+def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None):
     """
     Trains a CIANet model on the following params.
     """
     # ML Hypers
-    main_hypers = {
-        # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 5,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
+    if main_hypers is None:
+        main_hypers = {
+            # Common
+            "learning_rate": 0.2,
+            "momentum": 0.0,
+            "lr_drop": 0.25,
+            "epochs_drop": 5,
+            "max_epochs": 5,
+            "l1_coeff": 1e-10,
+            "l2_coeff": 1e-10,
+            "zero_threshold": 1e-4,
 
-        ## Global net size
-        "sizes": {
-            "encoder": [480*360*3, 3000, 300],
-            "action": [300, 30, 2]
-        },
+            ## Global net size
+            "sizes": {
+                "encoder": [480*360*3, 3000, 300],
+                "action": [300, 30, 2]
+            },
 
-        # Unique to main
-        "batch_size": 256,
-        "weight_decay": 0,
-        "loss_threshold": 1e-2,
-        "expand_by_k": 10,
-    }
+            # Unique to main
+            "batch_size": 256,
+            "weight_decay": 0,
+            "loss_threshold": 1e-2,
+            "expand_by_k": 10,
+        }
 
-    split_train_new_hypers = {
-        # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 5,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
+    if split_train_new_hypers is None:
+        split_train_new_hypers = {
+            # Common
+            "learning_rate": 0.2,
+            "momentum": 0.0,
+            "lr_drop": 0.25,
+            "epochs_drop": 5,
+            "max_epochs": 5,
+            "l1_coeff": 1e-10,
+            "l2_coeff": 1e-10,
+            "zero_threshold": 1e-4,
 
-        # Unique to split
-        "drift_threshold": 0.02
-    }
+            # Unique to split
+            "drift_threshold": 0.02
+        }
 
-
-    de_train_new_hypers = {
-        # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 5,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
-    }
+    if de_train_new_hypers is None:
+        de_train_new_hypers = {
+            # Common
+            "learning_rate": 0.2,
+            "momentum": 0.0,
+            "lr_drop": 0.25,
+            "epochs_drop": 5,
+            "max_epochs": 5,
+            "l1_coeff": 1e-10,
+            "l2_coeff": 1e-10,
+            "zero_threshold": 1e-4,
+        }
 
     # Misc Params
     save_model = None  # Pass a file name to save this model as. None does not save.
 
-    results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
+    results, model = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
                       de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
-                      data_loader=data_loader, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
+                      data_loader=data_loaders, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
                       save_model=save_model, seed_rand=seed)
 
     print("Done training with results from error function:" + str(results))
 
-    return results
-
+    return model
 
 def error_function(model, batch_loader, classes_trained):
     """
@@ -203,6 +203,25 @@ def error_function(model, batch_loader, classes_trained):
 
     return score
 
+def test_abstraction(model):
+    """
+    Tests to see whether the network having learned bananas and cars, can recognize a banana car.
+    """
+
+
+    filepath3 = os.path.join(os.path.dirname(__file__), "../data/banana_car/bananacar/resized/")
+    bananacar_loader = bc_loader(filepath3, "bananacar", None, batch_size=256, num_workers=0)
+
+    trainloader, validloader, testloader = bananacar_loader
+
+    for batch_idx, (inputs, targets) in enumerate(testloader):
+        if use_cuda:
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+
+        outputs = model(inputs)
+        print(outputs)
+
 
 def prepare_experiment():
     """
@@ -217,4 +236,5 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    train_model()
+    best_accuracy, best_params, best_model = find_hypers()
+    test_abstraction(best_model)

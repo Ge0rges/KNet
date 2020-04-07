@@ -92,76 +92,79 @@ def find_hypers():
 
     print("Got optimal worker:" + str(best_worker))
 
+    return best_worker
 
-def train_model():
+
+def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None):
     """
     Trains a CIANet model on the following params.
     """
     # ML Hypers
-    main_hypers = {
-        # Common
-        'learning_rate': 0.4490416862227188,
-        'momentum': 0.025741197429137695,
-        'lr_drop': 0.6245910158282362,
-        'epochs_drop': 1,
-        'max_epochs': 10,
-        'l1_coeff': 5.7920640008705895e-08,
-        'l2_coeff': 4.5146303701506056e-08,
-        'zero_threshold': 5.258323745879798e-06,
+    if main_hypers is None:
+        main_hypers = {
+            # Common
+            'learning_rate': 0.4490416862227188,
+            'momentum': 0.025741197429137695,
+            'lr_drop': 0.6245910158282362,
+            'epochs_drop': 1,
+            'max_epochs': 10,
+            'l1_coeff': 5.7920640008705895e-08,
+            'l2_coeff': 4.5146303701506056e-08,
+            'zero_threshold': 5.258323745879798e-06,
 
-        ## Global net size
-        "sizes": {
-            "encoder": [2, 1],
-            "action": [1, 2]
-        },
+            ## Global net size
+            "sizes": {
+                "encoder": [2, 1],
+                "action": [1, 2]
+            },
 
-        # Unique to main
-        'batch_size': 500,
-        'weight_decay': 0.22590651579084853,
-        'loss_threshold': 0.3770745278503695,
-        'expand_by_k': 8,
-    }
+            # Unique to main
+            'batch_size': 500,
+            'weight_decay': 0.22590651579084853,
+            'loss_threshold': 0.3770745278503695,
+            'expand_by_k': 8,
+        }
 
+    if split_train_new_hypers is None:
+        split_train_new_hypers = {
+            # Common
+            'learning_rate': 0.22888422782802215,
+            'momentum': 0.48035138581116665,
+            'lr_drop': 0.09186895739623514,
+            'epochs_drop': 9,
+            'max_epochs': 3,
+            'l1_coeff': 3.329438489585988e-08,
+            'l2_coeff': 7.224999999999999e-08,
+            'zero_threshold': 8.5e-06,
 
-    split_train_new_hypers = {
-        # Common
-        'learning_rate': 0.22888422782802215,
-        'momentum': 0.48035138581116665,
-        'lr_drop': 0.09186895739623514,
-        'epochs_drop': 9,
-        'max_epochs': 3,
-        'l1_coeff': 3.329438489585988e-08,
-        'l2_coeff': 7.224999999999999e-08,
-        'zero_threshold': 8.5e-06,
+            # Unique to split
+            "drift_threshold": 0.02394479325728904
+        }
 
-        # Unique to split
-        "drift_threshold": 0.02394479325728904
-    }
-
-
-    de_train_new_hypers = {
-        # Common
-        'learning_rate': 0.22888422782802215,
-        'momentum': 0.48035138581116665,
-        'lr_drop': 0.09186895739623514,
-        'epochs_drop': 9,
-        'max_epochs': 3,
-        'l1_coeff': 3.329438489585988e-08,
-        'l2_coeff': 7.224999999999999e-08,
-        'zero_threshold': 8.5e-06,
-    }
-
+    if de_train_new_hypers is None:
+        de_train_new_hypers = {
+            # Common
+            'learning_rate': 0.22888422782802215,
+            'momentum': 0.48035138581116665,
+            'lr_drop': 0.09186895739623514,
+            'epochs_drop': 9,
+            'max_epochs': 3,
+            'l1_coeff': 3.329438489585988e-08,
+            'l2_coeff': 7.224999999999999e-08,
+            'zero_threshold': 8.5e-06,
+        }
 
     # Misc Params
     save_model = None  # Pass a file name to save this model as. None does not save.
 
-    results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
+    results, model = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
                       de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
                       data_loader=data_loader, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
                       save_model=save_model, seed_rand=seed)
 
     print("Done training with results from error function:" + str(results))
-    return results
+
+    return results, model
 
 
 def error_function(model, batch_loader, classes_trained):

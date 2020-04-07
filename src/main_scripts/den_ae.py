@@ -189,16 +189,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         filepath = os.path.join(filepath, save_model)
         torch.save({'state_dict': model.state_dict()}, filepath)
 
-    # In case we want to run some more tests
-    extra_test_errors = []
-    if len(data_loader) > len(classes_list):
-        for i in range(len(data_loader) - len(classes_list)):
-            trainloader, validloader, testloader = data_loader[len(classes_list) + i]
-            err = error_function(model, testloader, classes_list)
-            extra_test_errors.append(err)
-    errors = errors + extra_test_errors
-
-    return errors
+    return (model, errors)
 
 
 def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers, cuda):
