@@ -208,7 +208,6 @@ def test_abstraction(model):
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
 
-
     filepath3 = os.path.join(os.path.dirname(__file__), "../data/banana_car/bananacar/resized/")
     bananacar_loader = bc_loader(filepath3, "bananacar", None, batch_size=256, num_workers=0)
 
