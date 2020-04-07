@@ -1,13 +1,13 @@
 """
 File contains functions to search for best parameters.
 """
-import itertools
+# import itertools
 import random
 
 from src.main_scripts.den_ae import main_ae
-from src.utils.data_loading import EEG_bands_to_binary_loader
-from torch.multiprocessing.pool import Pool
-from torch.multiprocessing import cpu_count
+# from src.utils.data_loading import EEG_bands_to_binary_loader
+# from torch.multiprocessing.pool import Pool
+# from torch.multiprocessing import cpu_count
 import numpy as np
 from sklearn.decomposition import PCA
 
