@@ -42,6 +42,7 @@ def find_hypers():
     seed_worker2 = (0.7246542999473127, {'learning_rate': 0.5404443342533098, 'momentum': 0.022898874617269166, 'lr_drop': 0.5556241661988092, 'epochs_drop': 2, 'max_epochs': 7, 'l1_coeff': 9.431408916540752e-08, 'l2_coeff': 5.433585521469062e-08, 'zero_threshold': 4.6777037659333246e-06, 'batch_size': 376, 'weight_decay': 0.2718898941367216, 'loss_threshold': 0.2479326228982458, 'expand_by_k': 8, 'split_train_new_hypers': {'learning_rate': 0.20361101107796925, 'momentum': 0.5781271380305903, 'lr_drop': 0.11056892721075391, 'epochs_drop': 12, 'max_epochs': 4, 'l1_coeff': 2.1891598517866282e-08, 'l2_coeff': 9e-08, 'zero_threshold': 9.801000000000002e-06, 'drift_threshold': 0.021300827983799883, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'de_train_new_hypers': {'learning_rate': 0.9, 'momentum': 0.8732691000000002, 'lr_drop': 0.07269849825015848, 'epochs_drop': 16, 'max_epochs': 6, 'l1_coeff': 3.294716324326585e-08, 'l2_coeff': 4.192039333662363e-08, 'zero_threshold': 4.708662664103033e-06, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'sizes': {'encoder': [2, 1], 'action': [1, 2], 'decoder': [1, 2]}})
     seed_worker3 = (0.7246714974223379, {'learning_rate': 0.43221048335119716,'momentum': 0.4130845269017391, 'lr_drop': 0.2991681528667821, 'epochs_drop': 10, 'max_epochs': 6, 'l1_coeff': 6.17552390006323e-08, 'l2_coeff': 9.505488739409965e-09, 'zero_threshold': 1e-05, 'batch_size': 112, 'weight_decay': 0.9, 'loss_threshold': 0.4595191294967011, 'expand_by_k': 6, 'split_train_new_hypers': {'learning_rate': 0.1764005904724052, 'momentum': 0.8019000000000001, 'lr_drop': 0.2690553959888499, 'epochs_drop': 6, 'max_epochs': 3, 'l1_coeff': 5.424443009997431e-08, 'l2_coeff': 8.2947105100903e-09, 'zero_threshold': 5.30550863349907e-07, 'drift_threshold': 0.027388279856092025, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'de_train_new_hypers': {'learning_rate': 0.25882372099305484, 'momentum': 0.46095404273277957, 'lr_drop': 0.27147046871931135, 'epochs_drop': 7, 'max_epochs': 3, 'l1_coeff': 1.361617364124071e-08, 'l2_coeff': 3.4749566496501905e-08, 'zero_threshold': 6.2030774501031425e-06, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'sizes': {'encoder': [2, 1], 'action': [1, 2], 'decoder': [1, 2]}})
     seed_worker4 = (0.7246232948654313, {'learning_rate': 0.335021481960109, 'momentum': 0.2447200267206516, 'lr_drop': 1, 'epochs_drop': 12, 'max_epochs': 11, 'l1_coeff': 6.555513268949992e-08, 'l2_coeff': 3.1114930854699994e-08, 'zero_threshold': 1.294197001725149e-06, 'batch_size': 488, 'weight_decay': 1, 'loss_threshold': 0.17969023854185553, 'expand_by_k': 5, 'split_train_new_hypers': {'learning_rate': 0.04248705959175594, 'momentum': 0.42005847673087343, 'lr_drop': 0.24991203340771462, 'epochs_drop': 0, 'max_epochs': 5, 'l1_coeff': 4.757081659426345e-08, 'l2_coeff': 4.11758974363732e-08, 'zero_threshold': 2.5468802740799175e-06, 'drift_threshold': 0.04828436770036001, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'de_train_new_hypers': {'learning_rate': 0.19770469779668398, 'momentum': 0.3492200437714917, 'lr_drop': 0.6003071874999998, 'epochs_drop': 13, 'max_epochs': 3, 'l1_coeff': 5.466252256957571e-08, 'l2_coeff': 7.975969234861216e-08, 'zero_threshold': 3.942938911535103e-06, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'sizes': {'encoder': [2, 1], 'action': [1, 2], 'decoder': [1, 2]}})
+    seed_worker5 = (0.6662220519556119, {'learning_rate': 0.4490416862227188, 'momentum': 0.025741197429137695, 'lr_drop': 0.6245910158282362, 'epochs_drop': 1, 'max_epochs': 5, 'l1_coeff': 5.7920640008705895e-08, 'l2_coeff': 4.5146303701506056e-08, 'zero_threshold': 5.258323745879798e-06, 'batch_size': 500, 'weight_decay': 0.22590651579084853, 'loss_threshold': 0.3770745278503695, 'expand_by_k': 8, 'split_train_new_hypers': {'learning_rate': 0.22888422782802215, 'momentum': 0.48035138581116665, 'lr_drop': 0.09186895739623514, 'epochs_drop': 9, 'max_epochs': 3, 'l1_coeff': 3.329438489585988e-08, 'l2_coeff': 7.224999999999999e-08, 'zero_threshold': 8.5e-06, 'drift_threshold': 0.02394479325728904, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'de_train_new_hypers': {'learning_rate': 0.7477874999999999, 'momentum': 0.8415, 'lr_drop': 0.08172219934545939, 'epochs_drop': 11, 'max_epochs': 5, 'l1_coeff': 3.7036729880836225e-08, 'l2_coeff': 4.712376215953203e-08, 'zero_threshold': 3.912310091036607e-06, 'sizes': {'encoder': [2, 1], 'action': [1, 2]}}, 'sizes': {'encoder': [2, 1], 'action': [1, 2], 'decoder': [1, 2]}})
 
     seed_workers = [seed_worker1, seed_worker2, seed_worker3, seed_worker4]
 
@@ -103,14 +104,14 @@ def train_model():
     # ML Hypers
     main_hypers = {
         # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 5,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
+        'learning_rate': 0.4490416862227188,
+        'momentum': 0.025741197429137695,
+        'lr_drop': 0.6245910158282362,
+        'epochs_drop': 1,
+        'max_epochs': 10,
+        'l1_coeff': 5.7920640008705895e-08,
+        'l2_coeff': 4.5146303701506056e-08,
+        'zero_threshold': 5.258323745879798e-06,
 
         ## Global net size
         "sizes": {
@@ -119,39 +120,41 @@ def train_model():
         },
 
         # Unique to main
-        "batch_size": 256,
-        "weight_decay": 0,
-        "loss_threshold": 1e-2,
-        "expand_by_k": 10,
+        'batch_size': 500,
+        'weight_decay': 0.22590651579084853,
+        'loss_threshold': 0.3770745278503695,
+        'expand_by_k': 8,
     }
+
 
     split_train_new_hypers = {
         # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 5,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
+        'learning_rate': 0.22888422782802215,
+        'momentum': 0.48035138581116665,
+        'lr_drop': 0.09186895739623514,
+        'epochs_drop': 9,
+        'max_epochs': 3,
+        'l1_coeff': 3.329438489585988e-08,
+        'l2_coeff': 7.224999999999999e-08,
+        'zero_threshold': 8.5e-06,
 
         # Unique to split
-        "drift_threshold": 0.02
+        "drift_threshold": 0.02394479325728904
     }
 
 
     de_train_new_hypers = {
         # Common
-        "learning_rate": 0.2,
-        "momentum": 0.0,
-        "lr_drop": 0.25,
-        "epochs_drop": 5,
-        "max_epochs": 5,
-        "l1_coeff": 1e-10,
-        "l2_coeff": 1e-10,
-        "zero_threshold": 1e-4,
+        'learning_rate': 0.22888422782802215,
+        'momentum': 0.48035138581116665,
+        'lr_drop': 0.09186895739623514,
+        'epochs_drop': 9,
+        'max_epochs': 3,
+        'l1_coeff': 3.329438489585988e-08,
+        'l2_coeff': 7.224999999999999e-08,
+        'zero_threshold': 8.5e-06,
     }
+
 
     # Misc Params
     save_model = None  # Pass a file name to save this model as. None does not save.
