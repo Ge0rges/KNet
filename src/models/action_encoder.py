@@ -56,7 +56,7 @@ class ActionEncoder(nn.Module):
         ]
 
         for i in range(1, len(sizes) - 1):
-            layers.append(nn.Sigmoid())
+            layers.append(nn.ReLU())
             layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
 
         return layers
