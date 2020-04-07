@@ -438,25 +438,36 @@ def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
 
     return (trainloader, validloader, testloader)
 
+
 #### Math equations
 def simple_math_equations_loader(batch_size=256, num_workers=0):
     def equation(x):
         eq1 = np.sum(x, 1)
-        eq2 = np.max(x, 1)
+        eq2 = np.sum(x, 1)
+        eq3 = np.average(x, 1)
+        eq4 = np.sum(x[:, :3], 1) - np.sum(x[:, 3:5], 1)
 
         labels = []
-        for en1, en2 in zip(eq1, eq2):
-            l1, l2 = 0, 0
+        for en1, en2, en3, en4 in zip(eq1, eq2, eq3, eq4):
+            l1, l2, l3, l4 = 0, 0, 0, 0
             if en1 > 5:
                 l1 = 1
             else:
                 l1 = 0
-            if en2 > 0.75:
+            if en2 < 5:
                 l2 = 1
             else:
                 l2 = 0
+            if en3 > 0.5:
+                l3 = 1
+            else:
+                l3 = 0
+            if en4 < 0:
+                l4 = 1
+            else:
+                l4 = 0
 
-            labels.append([l1, l2])
+            labels.append([l1, l2, l3, l4])
 
         return np.asarray(labels)
 
