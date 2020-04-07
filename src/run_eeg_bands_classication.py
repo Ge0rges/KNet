@@ -31,7 +31,7 @@ def find_hypers():
     hidden_autoencoder_layers = 1
     hidden_action_layers = 1
     actionnet_output = 2
-    core_invariant_size = None
+    core_invariant_size = None  # None is PCA
 
     # PBT Params
     generation_size = 8

@@ -33,7 +33,7 @@ def find_hypers():
     Runs hyper_optimizer to find the best ML params.
     """
     # Net shape
-    autoencoder_input = 640*480*3
+    autoencoder_input = 480*360*3
     hidden_autoencoder_layers = 1
     hidden_action_layers = 1
     actionnet_output = 2
@@ -117,7 +117,7 @@ def train_model():
 
         ## Global net size
         "sizes": {
-            "encoder": [640*480*3, 3000, 300],
+            "encoder": [480*360*3, 3000, 300],
             "action": [300, 30, 2]
         },
 
@@ -205,7 +205,7 @@ def prepare_experiment():
     Preprocesses the data.
     """
     banana_path = "../data/banana_car/banana/"  # the path to your banana dataset folder, include ending /
-    dataset_reshaping("banana", banana_path)
+    dataset_reshaping("banana", banana_path, new_size=(480, 360))
     car_path = "../data/banana_car/car/"  # the path to your car dataset folder, include ending /
     dataset_reshaping("car", car_path)
     bananacar_path = "../data/banana_car/bananacar/"  # the path to your bananacar dataset folder, include ending /
