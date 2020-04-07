@@ -86,7 +86,8 @@ def find_hypers():
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
                                   hidden_action=hidden_action_layers, action_out=actionnet_output,
-                                  params_bounds=params_bounds, workers_seed=seed_workers)
+                                  core_invariant_size=core_invariant_size, params_bounds=params_bounds,
+                                  workers_seed=seed_workers)
     print("Got optimal worker:" + str(best_worker))
 
 
