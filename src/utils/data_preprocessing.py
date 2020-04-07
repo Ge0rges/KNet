@@ -142,7 +142,7 @@ def EEG_preprocess_tasks_to_binary():
 
 
 ### MISC
-def dataset_reshaping(name, directory_path, new_size=(640, 480)):
+def dataset_reshaping(name, directory_path, new_size=(480, 360)):
     files = []
 
     for (dirpath, dirnames, filenames) in os.walk(directory_path):
