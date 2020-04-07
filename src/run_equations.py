@@ -10,7 +10,7 @@ To train a model, run train_model().
 import torch
 
 from src.main_scripts import main_ae, optimize_hypers
-from src.utils.data_loading import simple_math_equations_loader
+from src.utils.data_loading import simple_math_equations_loader()
 from src.utils.eval import calc_avg_AE_AUROC
 
 # Global experiment params
