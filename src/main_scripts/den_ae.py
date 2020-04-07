@@ -44,10 +44,10 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     actionencoder_sizes = main_hypers["sizes"]
 
 
-    # print('==> Preparing dataset')
+    print('==> Preparing dataset')
     trainloader, validloader, testloader = data_loader[0]
 
-    # print("==> Creating model")
+    print("==> Creating model")
     model = ActionEncoder(sizes=actionencoder_sizes)
 
     # Use Cuda
@@ -63,19 +63,19 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         elif 'weight' in name:
             param.data.normal_(-0.05, 0.05)
 
-    # print('Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
+    print('Total params: %.2fK' % (sum(p.numel() for p in model.parameters()) / 1000))
 
     errors = []
 
     for t, cls in enumerate(classes_list):
 
-        # print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
+        print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
 
         if len(data_loader) >= len(classes_list) and t > 0:
             trainloader, validloader, testloader = data_loader[t]
 
         if t == 0:
-            # print("==> Learning")
+            print("==> Learning")
 
             optimizer = optim.SGD(model.parameters(),
                                   lr=learning_rate,
@@ -93,23 +93,18 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
+                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
-                test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
+                # test_loss = trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
-                # suma = 0
-                # for p in model.parameters():
-                #     p = p.data.cpu().numpy()
-                #     suma += (abs(p) < zero_threshold).sum()
-                # print("Number of zero weights: %d" % (suma))
             err = error_function(model, testloader, classes_list[:t + 1])
             errors.append(err)
         else:
             # copy model
             model_copy = copy.deepcopy(model)
 
-            # print("==> Selective Retraining")
+            print("==> Selective Retraining")
 
             # freeze all layers except the last one (last 2 parameters)
             params = list(model.parameters())
@@ -133,7 +128,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
+                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 # trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
@@ -141,10 +136,10 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             for param in model.parameters():
                 param.requires_grad = True
 
-            # print("==> Selecting Neurons")
+            print("==> Selecting Neurons")
             hooks = select_neurons(model, t, zero_threshold, classes_list)
 
-            # print("==> Training Selected Neurons")
+            print("==> Training Selected Neurons")
 
             optimizer = optim.SGD(
                 model.parameters(),
@@ -161,7 +156,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                     for param_group in optimizer.param_groups:
                         param_group['lr'] = learning_rate
 
-                # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
+                print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, use_cuda=use_cuda)
                 # trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
@@ -187,6 +182,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
             err = error_function(model, testloader, classes_list[:t+1])
             errors.append(err)
+            print(errors)
 
     if save_model is not None:
         filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")

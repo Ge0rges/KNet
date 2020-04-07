@@ -36,10 +36,11 @@ def find_hypers():
     Runs hyper_optimizer to find the best ML params.
     """
     # Net shape
-    autoencoder_input = 640*480*3
-    hidden_autoencoder_layers = 2
-    hidden_action_layers = 2
+    autoencoder_input = 480*360*3
+    hidden_autoencoder_layers = 1
+    hidden_action_layers = 1
     actionnet_output = 2
+    core_invariant_size = 300
 
     # PBT Params
     generation_size = 8
@@ -95,7 +96,8 @@ def find_hypers():
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
                                   hidden_action=hidden_action_layers, action_out=actionnet_output,
-                                  params_bounds=params_bounds, workers_seed=seed_workers)
+                                  core_invariant_size=core_invariant_size, params_bounds=params_bounds,
+                                  workers_seed=seed_workers)
 
     print("Got optimal worker:" + str(best_worker))
 
@@ -118,8 +120,8 @@ def train_model():
 
         ## Global net size
         "sizes": {
-            "encoder": [640*480*3, 1000, 500, 80],
-            "action": [80, 30, 2]
+            "encoder": [480*360*3, 3000, 300],
+            "action": [300, 30, 2]
         },
 
         # Unique to main
@@ -207,7 +209,7 @@ def prepare_experiment():
     Preprocesses the data.
     """
     banana_path = "../data/banana_car/banana/"  # the path to your banana dataset folder, include ending /
-    dataset_reshaping("banana", banana_path)
+    dataset_reshaping("banana", banana_path, new_size=(480, 360))
     car_path = "../data/banana_car/car/"  # the path to your car dataset folder, include ending /
     dataset_reshaping("car", car_path)
     bananacar_path = "../data/banana_car/bananacar/"  # the path to your bananacar dataset folder, include ending /
@@ -215,4 +217,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    find_hypers()
+    train_model()
