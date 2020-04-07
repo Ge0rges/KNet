@@ -75,9 +75,12 @@ class BananaCarImageDataset(Dataset):
                 for j in tensor_img.size():
                     new_size *= j
                 tensor_img = tensor_img.view((new_size))
+                if self.name == "bananacar":
+                    label = torch.Tensor([0.5, 0.5])
 
-                label = torch.Tensor([self.label])
-                label = one_hot(label, self.all_labels).view((len(self.all_labels)))
+                else:
+                    label = torch.Tensor([self.label])
+                    label = one_hot(label, self.all_labels).view((len(self.all_labels)))
                 label = torch.cat([tensor_img, label], 0)
 
                 sample = (tensor_img, label)
@@ -91,15 +94,19 @@ class BananaCarImageDataset(Dataset):
             new_size = 1
             for j in tensor_img.size():
                 new_size *= j
-                tensor_img = tensor_img.view((new_size))
+            tensor_img = tensor_img.view((new_size))
 
+            if self.name == "bananacar":
+                label = torch.Tensor([0.5, 0.5])
+
+            else:
                 label = torch.Tensor([self.label])
                 label = one_hot(label, self.all_labels).view((len(self.all_labels)))
-                label = torch.cat([tensor_img, label], 0)
+            label = torch.cat([tensor_img, label], 0)
 
-                sample = (tensor_img, label)
+            sample = (tensor_img, label)
 
-                return sample
+            return sample
 
 
 class AverageMeter(object):

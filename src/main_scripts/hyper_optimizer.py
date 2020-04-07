@@ -45,7 +45,10 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     workers = []
 
     print("Doing PCA on the data...")
-    autoencoder_out = pca_dataset(data_loader=data_loader, threshold=0.9)
+    autoencoder_out = []
+    for dl in data_loader:
+        autoencoder_out.append(pca_dataset(data_loader=dl, threshold=0.9))
+    autoencoder_out = np.mean(autoencoder_out)
 
     print("Initializing workers...")
     workers.extend(workers_seed)
@@ -260,7 +263,7 @@ def pca_dataset(data_loader=None, threshold=0.9):
 
     # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
     # that hopefully will be representative
-    train, valid, test = data_loader()
+    train, valid, test = data_loader
     train_data = []
     for i, (input, target) in enumerate(train):
         n = input.size()[0]

@@ -18,9 +18,8 @@ BANANA_RESIZED_DATA = '../data/Banana_Car/banana/1/resized/1/'
 CAR_RESIZED_DATA = '../data/Banana_Car/car/1/resized/1/'
 BANANACAR_RESIZED_DATA = '../data/Banana_Car/bananacar/1/resized/1/'
 
-BANANA_LABEL = 1
-CAR_LABEL = 2
-BANANACAR_LABEL = 3
+BANANA_LABEL = 0
+CAR_LABEL = 1
 ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
 
 
@@ -32,7 +31,10 @@ def bc_loader(dir, name, label, batch_size=256, num_workers=0):
     dataset = BananaCarImageDataset(dir, name, label, ALL_BANANA_CAR_LABELS)
 
     num_samples = len(dataset)
-    labels = [label]*num_samples
+    if name == "bananacar":
+        labels = [[0.5, 0.5]]*num_samples
+    else:
+        labels = [label]*num_samples
 
     train_size = int(num_samples*0.7)
     trainsampler = AESampler(labels, start_from=0, amount=train_size)
@@ -271,7 +273,7 @@ def EEG_raw_to_bands_loader(batch_size=256, num_workers=0):
 
 
 def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
-    task_data = np.load("../data/EEG_Processed/calm_band.npy")
+    task_data = np.load("./data/EEG_Processed/calm_band.npy")
     num_samples = len(task_data)
     task_labels = [1] * num_samples
     # task_data = normalize(task_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)
@@ -283,7 +285,7 @@ def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
 
     task_dataset = TensorDataset(task_data, task_tensor_labels)
 
-    normal_data = np.load("../data/EEG_Processed/normal_band.npy")
+    normal_data = np.load("./data/EEG_Processed/normal_band.npy")
     num_samples = len(normal_data)
     normal_labels = [0] * num_samples
     # random_data = normalize(normal_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)
