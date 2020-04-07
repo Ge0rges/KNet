@@ -111,8 +111,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
             # print("==> Selective Retraining")
 
-            # Solve Eq.3
-
             # freeze all layers except the last one (last 2 parameters)
             params = list(model.parameters())
             for param in params[:-2]:
@@ -138,7 +136,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
                 trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
-                trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
+                # trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
             for param in model.parameters():
                 param.requires_grad = True
@@ -164,10 +162,8 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                         param_group['lr'] = learning_rate
 
                 # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
-
-                train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer,
-                                     use_cuda=use_cuda)
-                test_loss = trainAE(validloader, model, criterion, test=True, use_cuda=use_cuda)
+                train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, use_cuda=use_cuda)
+                # trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
             # remove hooks
             for hook in hooks:
@@ -462,11 +458,7 @@ def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, 
         # print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
         penalty = l1l2_penalty(l1_coeff, l2_coeff, model)
-        train_loss = trainAE(trainloader, new_model, criterion,
-                             penalty=penalty,
-                             optimizer=optimizer, use_cuda=cuda)
-        test_loss = trainAE(validloader, new_model, criterion, penalty=penalty, test=True,
-                            use_cuda=cuda)
+        trainAE(trainloader, new_model, criterion, penalty=penalty,  optimizer=optimizer, use_cuda=cuda)
 
     # Remove hooks
     for hook in hooks:
