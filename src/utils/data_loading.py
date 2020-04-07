@@ -8,22 +8,12 @@ from torch.utils.data import DataLoader, ConcatDataset, TensorDataset
 from sklearn.preprocessing import normalize
 from src.utils.misc import GaussianNoise, AESampler, one_hot, BananaCarImageDataset
 
-DATA = '../data'
 
-BANANA_RESIZED_DATA_TRAIN = '../data/Banana_Car/banana/1/resized/train/'
-BANANA_RESIZED_DATA_TEST = '../data/Banana_Car/banana/1/resized/test/'
-BANANA_RESIZED_DATA_VALID = '../data/Banana_Car/banana/1/resized/validation/'
-BANANA_RESIZED_DATA = '../data/Banana_Car/banana/1/resized/1/'
-
-CAR_RESIZED_DATA = '../data/Banana_Car/car/1/resized/1/'
-BANANACAR_RESIZED_DATA = '../data/Banana_Car/bananacar/1/resized/1/'
-
+### Banana Cars
 BANANA_LABEL = 0
 CAR_LABEL = 1
 ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
 
-
-### Banana Cars
 def bc_loader(dir, name, label, batch_size=256, num_workers=0):
     """Loader to be used only for the car, banana and bananacar datasets"""
     assert os.path.isdir(dir)
@@ -448,7 +438,7 @@ def EEG_raw_to_binary_loader(batch_size=256, num_workers=0):
 
     return (trainloader, validloader, testloader)
 
-
+#### Math equations
 def simple_math_equations_loader(batch_size=256, num_workers=0):
     def equation(x):
         eq1 = np.sum(x, 1)
@@ -543,7 +533,7 @@ def get_mnist_dataset():
         GaussianNoise(0, 0.2)
     ])
 
-    trainset = dataloader(root=DATA, train=True, download=True, transform=transform_all)
-    testset = dataloader(root=DATA, train=False, download=False, transform=transform_all)
+    trainset = dataloader(root="../data/MNIST/", train=True, download=True, transform=transform_all)
+    testset = dataloader(root="../data/MNIST/", train=False, download=False, transform=transform_all)
 
     return ConcatDataset([trainset, testset])

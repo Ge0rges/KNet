@@ -117,7 +117,7 @@ def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_l
         return worker
 
     try:
-        save_model_name = str(i) + "_model_epoch" + str(epoch) + ".pt"
+        save_model_name = None  # Change to save: str(i) + "_model_epoch" + str(epoch) + ".pt"
         perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
                         error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
                         seed)
