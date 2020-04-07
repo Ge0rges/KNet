@@ -97,22 +97,20 @@ def train_model():
     Trains a CIANet model on the following params.
     """
     # ML Hypers
-    main_hypers = {'learning_rate': 0.4025783587760153, 'momentum': 0.7382951058371613, 'lr_drop': 0.18806624433009356,
-               'epochs_drop': 0, 'max_epochs': 24, 'l1_coeff': 2.9765538262283965e-08,
+    main_hypers = {'learning_rate': 0.1025783587760153, 'momentum': 0.7382951058371613, 'lr_drop': 0.18806624433009356,
+               'epochs_drop': 0, 'max_epochs': 5, 'l1_coeff': 2.9765538262283965e-08,
                'l2_coeff': 3.167022697095151e-08, 'zero_threshold': 6.602347377186237e-06, 'batch_size': 329,
-               'weight_decay': 0.34991295058825966, 'loss_threshold': 0.4849395339819411, 'expand_by_k': 1,
-                   'sizes' : {'encoder': [10, 5], 'action': [5, 2, 2, 2], 'decoder': [5, 10]}}
+               'weight_decay': 0, 'loss_threshold': 0.4849395339819411, 'expand_by_k': 1,
+                   'sizes' : {'encoder': [10, 10, 5], 'action': [5, 4, 4], 'decoder': [5, 10, 10]}}
     split_train_new_hypers = {'learning_rate': 0.342377783532879, 'momentum': 0.7603140193361054,
                               'lr_drop': 0.786906032737128, 'epochs_drop': 16, 'max_epochs': 3,
                               'l1_coeff': 5.16140189773329e-08, 'l2_coeff': 7.927273938277364e-08,
                               'zero_threshold': 7.663501673689354e-06,
-                              'drift_threshold': 0.010738526244622092,
-                              'sizes': {'encoder': [10, 5], 'action': [5, 2, 2, 2]}}
+                              'drift_threshold': 0.010738526244622092}
     de_train_new_hypers= {'learning_rate': 0.4642555293963474, 'momentum': 0.38298737729960264,
                            'lr_drop': 0.941087258032139, 'epochs_drop': 16, 'max_epochs': 8,
                            'l1_coeff': 3.659698326397483e-08, 'l2_coeff': 3.084589790581798e-08,
-                           'zero_threshold': 2.1404714986370876e-06,
-                           'sizes': {'encoder': [10, 5], 'action': [5, 2, 2, 2]}}
+                           'zero_threshold': 2.1404714986370876e-06}
 
 
     # Misc Params
@@ -147,5 +145,5 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    find_hypers()
-    # train_model()
+    # find_hypers()
+    train_model()

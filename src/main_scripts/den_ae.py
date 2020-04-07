@@ -100,7 +100,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
             err = error_function(model, testloader, classes_list[:t + 1])
             errors.append(err)
-
         else:
             # copy model
             model_copy = copy.deepcopy(model)
@@ -183,6 +182,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
             err = error_function(model, testloader, classes_list[:t+1])
             errors.append(err)
+            print(errors)
 
     if save_model is not None:
         filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
