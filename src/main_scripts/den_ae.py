@@ -95,7 +95,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                train_loss = trainAE(trainloader, model, criterion, cls=cls, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
+                train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 # test_loss = trainAE(validloader, model, criterion, cl=t, test=True, penalty=penalty, use_cuda=use_cuda)
 
             err = error_function(model, testloader, classes_list[:t + 1])
@@ -130,7 +130,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
                 print('Epoch: [%d | %d]' % (epoch + 1, max_epochs))
 
-                trainAE(trainloader, model, criterion, cls=cls, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
+                trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 # trainAE(validloader, model, criterion, test=True, penalty=penalty, use_cuda=use_cuda)
 
             for param in model.parameters():

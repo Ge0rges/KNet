@@ -16,7 +16,7 @@ def one_hot(targets, cl):
     return targets_onehot
 
 
-def trainAE(batchloader, model, criterion, cls=None, optimizer=None, penalty=None, test=False, use_cuda=False, seed=None):
+def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False, use_cuda=False, seed=None):
     if seed is not None:
         random.seed(seed)
         torch.manual_seed(seed)
@@ -58,9 +58,9 @@ def trainAE(batchloader, model, criterion, cls=None, optimizer=None, penalty=Non
         generate_targets = targets[:, :generate_output.size()[1]]
         action_target = targets[:, generate_output.size()[1]:]
 
-        if cls is not None:
-            action_one_hot = one_hot(action_target, cls)
-            action_target = Variable(action_one_hot)
+        # if cls is not None:
+        #     action_one_hot = one_hot(action_target, cls)
+        #     action_target = Variable(action_one_hot)
 
         # calculate loss
         mse_loss = torch.nn.MSELoss()
@@ -71,7 +71,7 @@ def trainAE(batchloader, model, criterion, cls=None, optimizer=None, penalty=Non
             generate_loss = generate_loss + penalty(model)
             action_loss = action_loss + penalty(model)
 
-        total_loss = action_loss # TODO: add back gen in phases
+        total_loss = action_loss + generate_loss# TODO: add back gen in phases
 
         # record loss
         losses.update(total_loss.data[0], inputs.size(0))
