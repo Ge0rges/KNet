@@ -11,7 +11,7 @@ import torch
 
 from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import simple_math_equations_loader
-from src.utils.eval import calc_avg_AE_AUROC
+from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
@@ -140,8 +140,29 @@ def error_function(model, batch_loader, classes_trained):
     Do not modify params. Abstract method for all experiments.
     """
 
+    # More insights
+    confusion_matrix = build_confusion_matrix(model, batch_loader, classes_list, use_cuda)
+
+    print("Confusion matrix:")
+    print(confusion_matrix)
+
+    print("Per class accuracy:")
+    print(confusion_matrix.diag() / confusion_matrix.sum(0))
+
+    accuracy = calculate_accuracy(confusion_matrix)
+    print("Accuracy:")
+    print(accuracy)
+
+    # Must return one global param on performance
     auroc = calc_avg_AE_AUROC(model, batch_loader, classes_list, classes_trained, use_cuda)
-    return auroc["macro"]
+    print("Auroc:")
+    print(auroc)
+
+    score = (auroc["macro"] + accuracy*1.5) / 2
+    print("Score: ")
+    print(score)
+
+    return score
 
 
 def prepare_experiment():
@@ -153,5 +174,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    # find_hypers()
     train_model()
