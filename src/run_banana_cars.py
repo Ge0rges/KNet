@@ -60,7 +60,7 @@ def find_hypers():
 
         "batch_size": (100, 500, int),
         "weight_decay": (0, 1, float),
-        "loss_threshold": (0, 1, float),
+        "loss_threshold": (0, 0.5, float),
         "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {

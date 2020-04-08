@@ -224,6 +224,7 @@ def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new
                 biases[dict_key].append(param.data)
                 hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
                 hooks.append(hook)
+
             else:
                 raise LookupError()
 

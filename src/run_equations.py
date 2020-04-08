@@ -54,7 +54,7 @@ def find_hypers():
 
         "batch_size": (100, 500, int),
         "weight_decay": (0, 1, float),
-        "loss_threshold": (0, 1, float),
+        "loss_threshold": (0, 0.5, float),
         "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {
@@ -103,7 +103,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
         main_hypers = {'learning_rate': 0.1025783587760153, 'momentum': 0.7382951058371613, 'lr_drop': 0.18806624433009356,
                    'epochs_drop': 0, 'max_epochs': 20, 'l1_coeff': 2.9765538262283965e-08,
                    'l2_coeff': 3.167022697095151e-08, 'zero_threshold': 6.602347377186237e-06, 'batch_size': 329,
-                   'weight_decay': 0, 'loss_threshold': 0.4849395339819411, 'expand_by_k': 1,
+                   'weight_decay': 0, 'loss_threshold': 0.2, 'expand_by_k': 1,
                        'sizes' : {'encoder': [10, 10, 5], 'action': [5, 4, 4], 'decoder': [5, 10, 10]}}
 
     if split_train_new_hypers is None:
