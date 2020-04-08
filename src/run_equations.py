@@ -11,7 +11,7 @@ import torch
 
 from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import simple_math_equations_loader
-from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
+from src.utils.eval import calc_avg_AE_AUROC, build_multilabel_confusion_matrix, calculate_accuracy
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
@@ -101,10 +101,10 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     # ML Hypers
     if main_hypers is None:
         main_hypers = {'learning_rate': 0.1025783587760153, 'momentum': 0.7382951058371613, 'lr_drop': 0.18806624433009356,
-                   'epochs_drop': 0, 'max_epochs': 5, 'l1_coeff': 2.9765538262283965e-08,
+                   'epochs_drop': 0, 'max_epochs': 10, 'l1_coeff': 2.9765538262283965e-08,
                    'l2_coeff': 3.167022697095151e-08, 'zero_threshold': 6.602347377186237e-06, 'batch_size': 329,
                    'weight_decay': 0, 'loss_threshold': 0.4849395339819411, 'expand_by_k': 1,
-                       'sizes' : {'encoder': [10, 10, 5], 'action': [5, 4, 4], 'decoder': [5, 10, 10]}}
+                       'sizes' : {'encoder': [10, 5], 'action': [5, 4], 'decoder': [5, 10]}}
 
     if split_train_new_hypers is None:
         split_train_new_hypers = {'learning_rate': 0.342377783532879, 'momentum': 0.7603140193361054,
@@ -141,15 +141,21 @@ def error_function(model, batch_loader, classes_trained):
     """
 
     # More insights
-    confusion_matrix = build_confusion_matrix(model, batch_loader, classes_list, use_cuda)
+    confusion_matrix = build_multilabel_confusion_matrix(model, batch_loader, classes_list, use_cuda)
 
-    print("Confusion matrix:")
-    print(confusion_matrix)
+    accuracy = 0
+    print("Multilabel confusion matrix:")
+    for i in range(confusion_matrix.shape[0]):
+        i_conf_matrix = confusion_matrix[i]
+        print(i_conf_matrix)
 
-    print("Per class accuracy:")
-    print(confusion_matrix.diag() / confusion_matrix.sum(0))
+        print("Per class accuracy:")
+        class_acc = i_conf_matrix.diag() / i_conf_matrix.sum(0)
+        print(class_acc)
 
-    accuracy = calculate_accuracy(confusion_matrix)
+        accuracy += calculate_accuracy(i_conf_matrix)
+
+    accuracy /= confusion_matrix.shape[0]
     print("Accuracy:")
     print(accuracy)
 

@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from sklearn.metrics import roc_curve, auc, roc_auc_score
+from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix
 from sklearn.preprocessing import label_binarize
 from torch.autograd import Variable
 
@@ -148,6 +148,43 @@ def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
         for t, p in zip(classes_b.view(-1), preds.view(-1)):
             confusion_matrix[p, t] += 1
+
+    return confusion_matrix
+
+
+def build_multilabel_confusion_matrix(model, dataloader, all_classes, use_cuda):
+
+    all_targets = None
+    all_predictions = None
+    for i, (inputs, targets) in enumerate(dataloader):
+        if use_cuda:
+            inputs = inputs.cuda()
+            targets = targets.cuda()
+
+        # Classes contains the targets for gen phase as well
+        targets = targets[:, targets.size()[1] - len(all_classes):]
+
+        inputs = Variable(inputs)
+
+        model.phase = "ACTION"
+        outputs = model(inputs)
+
+        predictions = np.where(outputs.data > 0.5, 1, 0)
+
+        if all_targets is None:
+            all_targets = np.asarray(targets)
+            all_predictions = predictions
+
+        else:
+            # Concatenate by row
+            all_targets = np.concatenate((all_targets, np.asarray(targets)), axis=0)
+            all_predictions = np.concatenate((all_predictions, predictions), axis=0)
+
+    confusion_matrix = multilabel_confusion_matrix(all_targets, all_predictions)
+
+    confusion_matrix = torch.from_numpy(confusion_matrix)
+    if use_cuda:
+        confusion_matrix = confusion_matrix.cude()
 
     return confusion_matrix
 
