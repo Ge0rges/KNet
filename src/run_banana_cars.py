@@ -186,7 +186,7 @@ def error_function(model, batch_loader, classes_trained):
     print(confusion_matrix)
 
     print("Per class accuracy:")
-    print(confusion_matrix.diag()/confusion_matrix.sum(0))
+    print(confusion_matrix.diag()/confusion_matrix.sum(1))
 
     accuracy = calculate_accuracy(confusion_matrix)
     print("Accuracy:")
