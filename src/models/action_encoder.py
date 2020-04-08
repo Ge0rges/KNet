@@ -4,7 +4,7 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes=None, oldWeights=None, oldBiases=None):
+    def __init__(self, sizes=None, oldWeights=None, oldBiases=None, connected=False):
         assert sizes is not None
 
         # Safer
@@ -12,6 +12,7 @@ class ActionEncoder(nn.Module):
 
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
+        self.connected = connected
 
         # Encoder
         encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
@@ -29,7 +30,14 @@ class ActionEncoder(nn.Module):
     def forward(self, x):
         # x = x.view(-1, 28*28)
         x = self.encoder(x)
-        y = self.action(x)
+
+        if self.connected:
+            ci = x
+        else:
+            ci = torch.autograd.Variable(torch.zeros(x.shape))
+            ci.data = x.data.clone()
+
+        y = self.action(ci)
 
         if self.phase is 'ACTION':
             return y

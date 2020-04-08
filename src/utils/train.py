@@ -8,8 +8,15 @@ from torch.autograd import Variable
 from progress.bar import Bar
 from src.utils.misc import AverageMeter
 
+def one_hot(targets, cl):
+    targets_onehot = torch.zeros(targets.shape)
+    for i, t in enumerate(targets):
+        if int(targets[i][cl]) == 1:
+            targets_onehot[i][cl] = 1
+    return targets_onehot
 
-def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=False, use_cuda=False, seed=None):
+
+def trainAE(batchloader, model, criterion, cls=None, optimizer=None, penalty=None, test=False, use_cuda=False, seed=None):
     if seed is not None:
         random.seed(seed)
         torch.manual_seed(seed)
@@ -32,9 +39,11 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
     for batch_idx, (inputs, targets) in enumerate(batchloader):
         # measure data loading time
         data_time.update(time.time() - end)
+
         if use_cuda:
             inputs = inputs.cuda()
             targets = targets.cuda()
+
 
         inputs = Variable(inputs)
         targets = Variable(targets)
@@ -49,6 +58,10 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
 
         generate_targets = targets[:, :generate_output.size()[1]]
         action_target = targets[:, generate_output.size()[1]:]
+
+        if cls is not None:
+            action_one_hot = one_hot(action_target, cls)
+            action_target = Variable(action_one_hot)
 
         # calculate loss
         mse_loss = torch.nn.MSELoss()
