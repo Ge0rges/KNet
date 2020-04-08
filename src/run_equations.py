@@ -170,7 +170,7 @@ def error_function(model, batch_loader, classes_trained):
     print("Score: ")
     print(score)
 
-    return score
+    return accuracy
 
 
 def prepare_experiment():
