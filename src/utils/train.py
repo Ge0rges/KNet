@@ -49,7 +49,6 @@ def trainAE(batchloader, model, criterion, cls=None, optimizer=None, penalty=Non
         targets = Variable(targets)
 
         # compute output
-        model.float()
         model.phase = "GENERATE"
         generate_output = model(inputs)
 

@@ -150,7 +150,9 @@ def error_function(model, batch_loader, classes_trained):
         print(i_conf_matrix)
 
         print("Per class accuracy:")
-        class_acc = i_conf_matrix.diag() / i_conf_matrix.sum(0)
+        diag = i_conf_matrix.diag()
+        sum = i_conf_matrix.sum(1)
+        class_acc = diag/sum
         print(class_acc)
 
         accuracy += calculate_accuracy(i_conf_matrix)
@@ -168,7 +170,7 @@ def error_function(model, batch_loader, classes_trained):
     print("Score: ")
     print(score)
 
-    return score
+    return accuracy
 
 
 def prepare_experiment():
