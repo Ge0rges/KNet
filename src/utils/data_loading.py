@@ -487,9 +487,9 @@ def simple_math_equations_loader(batch_size=256, num_workers=0):
 
         return TensorDataset(task_tensor_data, task_tensor_labels)
 
-    traindataset = get_data_set(100000)
-    validdataset = get_data_set(20000)
-    testdataset = get_data_set(10000)
+    traindataset = get_data_set(50000)
+    validdataset = get_data_set(2000)
+    testdataset = get_data_set(1000)
 
     train_labels = [i[1] for i in traindataset]
     valid_labels = [i[1] for i in validdataset]
