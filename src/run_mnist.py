@@ -106,7 +106,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             "momentum": 0.0,
             "lr_drop": 0.25,
             "epochs_drop": 5,
-            "max_epochs": 1,
+            "max_epochs": 20,
             "l1_coeff": 1e-10,
             "l2_coeff": 1e-10,
             "zero_threshold": 1e-4,
