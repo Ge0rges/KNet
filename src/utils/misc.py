@@ -1,3 +1,4 @@
+
 import errno
 import os
 import numpy as np
@@ -5,6 +6,8 @@ import torch
 from PIL import Image
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
 
 def one_hot(targets, classes):
@@ -40,6 +43,16 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+def plot_tensor(tensor, img_format):
+    assert np.prod(tensor.size()) == np.prod(img_format)
+    data = tensor.numpy()
+    data = data.reshape(img_format)
+    imgplot = plt.imshow(data, interpolation="nearest")
+    imgplot.set_cmap('Greys')
+
+    plt.show()
 
 
 class BananaCarImageDataset(Dataset):
@@ -192,7 +205,6 @@ class AESampler(Sampler):
                     left -= 1
             else:
                 start -= 1
-        print("indices", self.indices)
 
     def __iter__(self):
         return (self.indices[i] for i in torch.randperm(len(self.indices)))

@@ -12,7 +12,7 @@ import torch
 from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import mnist_loader
 from src.utils.eval import calc_avg_AE_AUROC
-from src.utils.misc import DataloaderWrapper
+from src.utils.misc import DataloaderWrapper, plot_tensor
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
@@ -188,6 +188,14 @@ def prepare_experiment():
     pass
 
 
+def test_img_display():
+    dataloader = data_loaders[0]
+    train, valid, test = dataloader.get_loaders()
+    for idx, (inputs, targets) in enumerate(train):
+        plot_tensor(inputs[0], (28, 28))
+
+
 if __name__ == "__main__":
     # find_hypers()
-    train_model()
+    # train_model()
+    test_img_display()
