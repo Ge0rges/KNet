@@ -44,7 +44,7 @@ def find_hypers():
 
     # ML Hyper Bounds
     params_bounds = {
-        "learning_rate": (1e-10, 1, float),
+        "learning_rate": (1e-10, 100, float),
         "momentum": (0, 0.99, float),
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
