@@ -76,6 +76,7 @@ Candidate Networks:
 - torch 0.3.1 (Compiled from source)
 - torchvision 0.2.1
 - sklearn 0.0
+- matplotlib 3.2.1
 
 ## Style Guide
 We use the industry standard [PEP8].
