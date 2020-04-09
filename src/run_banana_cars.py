@@ -12,6 +12,7 @@ from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import bc_loader
 from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
 from src.utils.data_preprocessing import dataset_reshaping
+from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
@@ -24,8 +25,8 @@ num_workers = 0  # Leave this as zero for now.
 filepath1 = os.path.join(os.path.dirname(__file__), "../data/banana_car/banana/resized/")
 filepath2 = os.path.join(os.path.dirname(__file__), "../data/banana_car/car/resized/")
 
-data_loaders = [bc_loader(filepath1, "banana", 0, batch_size=256, num_workers=0),
-                bc_loader(filepath2, "car", 1, batch_size=256, num_workers=0)]
+data_loaders = [DataloaderWrapper(bc_loader, args=[filepath1, "banana", 0], batch_size=256, num_workers=0),
+                DataloaderWrapper(bc_loader, args=[filepath2, "car", 1], batch_size=256, num_workers=0)]
 
 
 def find_hypers():
@@ -60,7 +61,7 @@ def find_hypers():
 
         "batch_size": (100, 500, int),
         "weight_decay": (0, 1, float),
-        "loss_threshold": (0, 1, float),
+        "loss_threshold": (0, 0.5, float),
         "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {
@@ -203,13 +204,14 @@ def error_function(model, batch_loader, classes_trained):
 
     return score
 
+
 def test_abstraction(model):
     """
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
 
     filepath3 = os.path.join(os.path.dirname(__file__), "../data/banana_car/bananacar/resized/")
-    bananacar_loader = bc_loader(filepath3, "bananacar", None, batch_size=256, num_workers=0)
+    bananacar_loader = bc_loader([filepath3, "bananacar", None], batch_size=256, num_workers=0)
 
     trainloader, validloader, testloader = bananacar_loader
 

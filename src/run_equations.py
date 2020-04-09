@@ -12,13 +12,14 @@ import torch
 from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import simple_math_equations_loader
 from src.utils.eval import calc_avg_AE_AUROC, build_multilabel_confusion_matrix, calculate_accuracy
+from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(4)  # Dataset specific, list of classification classes
-data_loader = [simple_math_equations_loader()]  # The loader to be used for the data.
+data_loader = [DataloaderWrapper(simple_math_equations_loader)]  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 
@@ -54,7 +55,7 @@ def find_hypers():
 
         "batch_size": (100, 500, int),
         "weight_decay": (0, 1, float),
-        "loss_threshold": (0, 1, float),
+        "loss_threshold": (0, 0.5, float),
         "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {
@@ -103,8 +104,8 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
         main_hypers = {'learning_rate': 0.1025783587760153, 'momentum': 0, 'lr_drop': 0.18806624433009356,
                    'epochs_drop': 0, 'max_epochs': 20, 'l1_coeff': 0,
                    'l2_coeff': 3.167022697095151e-08, 'zero_threshold': 6.602347377186237e-06, 'batch_size': 329,
-                   'weight_decay': 0, 'loss_threshold': 0.4849395339819411, 'expand_by_k': 1,
-                       'sizes' : {'encoder': [10, 5, 5, 5, 4], 'action': [4, 4, 4], 'decoder': [4, 10]}}
+                   'weight_decay': 0, 'loss_threshold': 0.2, 'expand_by_k': 1,
+                       'sizes' : {'encoder': [10, 10, 5], 'action': [5, 4, 4], 'decoder': [5, 10, 10]}}
 
     if split_train_new_hypers is None:
         split_train_new_hypers = {'learning_rate': 0.342377783532879, 'momentum': 0.7603140193361054,

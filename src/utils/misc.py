@@ -75,7 +75,7 @@ class BananaCarImageDataset(Dataset):
                 for j in tensor_img.size():
                     new_size *= j
                 tensor_img = tensor_img.view((new_size))
-                if self.name == "bananacar":
+                if self.name == "banana_car":
                     label = torch.Tensor([0.5, 0.5])
 
                 else:
@@ -96,7 +96,7 @@ class BananaCarImageDataset(Dataset):
                 new_size *= j
             tensor_img = tensor_img.view((new_size))
 
-            if self.name == "bananacar":
+            if self.name == "banana_car":
                 label = torch.Tensor([0.5, 0.5])
 
             else:
@@ -107,6 +107,26 @@ class BananaCarImageDataset(Dataset):
             sample = (tensor_img, label)
 
             return sample
+
+
+class DataloaderWrapper(object):
+    """Wraps the Dataloader class to increase its utility in various situations"""
+
+    def __init__(self, dataloaderfn, args=None, batch_size=256, num_workers=0):
+        self.dataloader = dataloaderfn
+        self.args = args
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+
+    def get_loaders(self, batch_size=None, num_workers=None):
+        if batch_size:
+            self.batch_size = batch_size
+        if num_workers:
+            self.num_workers = num_workers
+        if self.args:
+            return self.dataloader(self.args, batch_size=self.batch_size, num_workers=self.num_workers)
+        else:
+            return self.dataloader(batch_size=self.batch_size, num_workers=self.num_workers)
 
 
 class AverageMeter(object):
@@ -172,6 +192,7 @@ class AESampler(Sampler):
                     left -= 1
             else:
                 start -= 1
+        print("indices", self.indices)
 
     def __iter__(self):
         return (self.indices[i] for i in torch.randperm(len(self.indices)))

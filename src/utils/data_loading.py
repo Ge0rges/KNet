@@ -15,17 +15,21 @@ CAR_LABEL = 1
 ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
 
 
-def bc_loader(dir, name, label, batch_size=256, num_workers=0):
-    """Loader to be used only for the car, banana and bananacar datasets"""
+def bc_loader(args, batch_size=256, num_workers=0):
+    """Loader to be used only for the car, banana and banana_car datasets"""
+    assert len(args) == 3
+    dir = args[0]
+    name = args[1]
+    label = args[2]
     assert os.path.isdir(dir)
-    if name == "bananacar":
+    if name == "banana_car":
         proportions = [0, 0, 1]
     else:
         proportions = [0.7, 0.5, 0.25]
     dataset = BananaCarImageDataset(dir, name, label, ALL_BANANA_CAR_LABELS)
 
     num_samples = len(dataset)
-    if name == "bananacar":
+    if name == "banana_car":
         labels = [[0.5, 0.5]]*num_samples
     else:
         labels = [label]*num_samples
@@ -46,10 +50,15 @@ def bc_loader(dir, name, label, batch_size=256, num_workers=0):
     return (trainloader, validloader, testloader)
 
 
-def all_bc_loader(dirs, names, labels, batch_size=256, num_workers=0):
+def all_bc_loader(args, batch_size=256, num_workers=0):
     """Dirs must be of the shape: [[train, valid, test], [train,valid,test]]"""
     # first we do the train dataloader
+    assert len(args) == 3
+    dirs = args[0]
+    names = args[1]
+    labels = args[2]
     print("loading training set")
+
     datasets = []
     for i in range(len(dirs)):
         name = names[i]
@@ -147,7 +156,10 @@ def EEG_get_task_dataset(task_num):
     return dataset
 
 
-def EEG_task_loader(task_num, batch_size=256, num_workers=0):
+def EEG_task_loader(args, batch_size=256, num_workers=0):
+    assert len(args) == 1
+    task_num = args[0]
+
     task_data = np.load("../data/EEG_Processed/task{}_task.npy".format(task_num+1))
     num_samples = len(task_data)
     task_labels = [task_num]*num_samples
@@ -267,7 +279,7 @@ def EEG_raw_to_bands_loader(batch_size=256, num_workers=0):
 
 
 def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
-    task_data = np.load("../data/EEG_Processed/calm_band.npy")
+    task_data = np.load("./data/EEG_Processed/calm_band.npy")
     num_samples = len(task_data)
     task_labels = [1] * num_samples
     # task_data = normalize(task_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)
@@ -279,7 +291,7 @@ def EEG_bands_to_binary_loader(batch_size=256, num_workers=0):
 
     task_dataset = TensorDataset(task_data, task_tensor_labels)
 
-    normal_data = np.load("../data/EEG_Processed/normal_band.npy")
+    normal_data = np.load("./data/EEG_Processed/normal_band.npy")
     num_samples = len(normal_data)
     normal_labels = [0] * num_samples
     # random_data = normalize(normal_data.reshape((num_samples, 256 * 4)), norm='l2', axis=0)

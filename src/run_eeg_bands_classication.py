@@ -12,13 +12,14 @@ from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import EEG_bands_to_binary_loader
 from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
 from src.utils.data_preprocessing import EEG_preprocess_tasks_to_binary
+from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(2)  # Dataset specific, list of classification classes
-data_loader = [EEG_bands_to_binary_loader()]  # The loader to be used for the data.
+data_loader = [DataloaderWrapper(EEG_bands_to_binary_loader)]  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 
@@ -54,7 +55,7 @@ def find_hypers():
 
         "batch_size": (100, 500, int),
         "weight_decay": (0, 1, float),
-        "loss_threshold": (0, 1, float),
+        "loss_threshold": (0, 0.5, float),
         "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {
