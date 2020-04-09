@@ -102,7 +102,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            "learning_rate": 10,
+            "learning_rate": 20,
             "momentum": 0,
             "lr_drop": 0.5,
             "epochs_drop": 20,
@@ -113,9 +113,9 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
 
             ## Global net size
             "sizes": {
-                "encoder": [28*28, 312, 128, 32],
-                "action": [32, 10],
-                "decoder": [32, 128, 312, 28 * 28]
+                "encoder": [28*28, 312, 128, 32, 10],
+                "action": [10, 10],
+                "decoder": [10, 32, 128, 312, 28 * 28]
             },
 
             # Unique to main
