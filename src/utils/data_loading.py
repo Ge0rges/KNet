@@ -527,13 +527,13 @@ def mnist_loader(batch_size=256, num_workers=0):
     l = len(labels)
 
     trainsampler = AESampler(labels, start_from=0, amount=int(l*0.7))
-    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=None, num_workers=num_workers)
 
     validsampler = AESampler(labels, start_from=int(l*0.7), amount=int(l*0.05))
-    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    validloader = DataLoader(dataset, batch_size=batch_size, sampler=None, num_workers=num_workers)
 
     testsampler = AESampler(labels, start_from=int(l*0.7) + int(l*0.05))
-    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    testloader = DataLoader(dataset, batch_size=batch_size, sampler=None, num_workers=num_workers)
 
     print("Done preparing AE dataloader")
 

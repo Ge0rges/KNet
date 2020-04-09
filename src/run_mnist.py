@@ -18,7 +18,7 @@ seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(10)  # Dataset specific, list of classification classes
-data_loaders = [mnist_loader()]  # The loader to be used for the data.
+data_loaders = [mnist_loader(batch_size=64)]  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 
@@ -102,19 +102,20 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            "learning_rate": 0.2,
-            "momentum": 0.0,
-            "lr_drop": 0.25,
-            "epochs_drop": 5,
-            "max_epochs": 20,
-            "l1_coeff": 1e-10,
-            "l2_coeff": 1e-10,
+            "learning_rate": 10,
+            "momentum": 0,
+            "lr_drop": 0.5,
+            "epochs_drop": 20,
+            "max_epochs": 100,
+            "l1_coeff": 0,
+            "l2_coeff": 0,
             "zero_threshold": 1e-4,
 
             ## Global net size
             "sizes": {
-                "encoder": [28*28, 10],
-                "action": [10, 10]
+                "encoder": [28*28, 312, 128, 32],
+                "action": [32, 10],
+                "decoder": [32, 128, 312, 28 * 28]
             },
 
             # Unique to main
@@ -127,8 +128,8 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if split_train_new_hypers is None:
         split_train_new_hypers = {
             # Common
-            "learning_rate": 0.2,
-            "momentum": 0.0,
+            "learning_rate": 10,
+            "momentum": 0.9,
             "lr_drop": 0.25,
             "epochs_drop": 5,
             "max_epochs": 1,

@@ -4,7 +4,7 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes=None, oldWeights=None, oldBiases=None, connected=False):
+    def __init__(self, sizes=None, oldWeights=None, oldBiases=None, connected=True, ff=False):
         assert sizes is not None
 
         # Safer
@@ -13,22 +13,25 @@ class ActionEncoder(nn.Module):
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
         self.connected = connected
+        self.ff = ff
 
         # Encoder
         encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        encoder_layers.append(nn.Sigmoid())
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
         decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        decoder_layers.append(nn.Sigmoid())
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
         action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        action_layers.append(nn.Sigmoid())
+        action_layers.append(nn.Softmax())
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
-        # x = x.view(-1, 28*28)
+        x = x.view(-1, 28*28)
         x = self.encoder(x)
 
         if self.connected:
@@ -40,6 +43,8 @@ class ActionEncoder(nn.Module):
         y = self.action(ci)
 
         if self.phase is 'ACTION':
+            if self.ff:
+                return x
             return y
 
         x = self.decoder(x)
@@ -64,7 +69,7 @@ class ActionEncoder(nn.Module):
         ]
 
         for i in range(1, len(sizes) - 1):
-            layers.append(nn.ReLU())
+            layers.append(nn.Sigmoid())
             layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
 
         return layers
