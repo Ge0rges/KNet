@@ -31,7 +31,6 @@ class ActionEncoder(nn.Module):
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
-        x = x.view(-1, 28*28)
         x = self.encoder(x)
 
         if self.connected:

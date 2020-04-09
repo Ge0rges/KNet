@@ -7,7 +7,6 @@ from PIL import Image
 from torch.utils.data import Dataset
 from torch.utils.data.sampler import Sampler
 import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 
 
 def one_hot(targets, classes):

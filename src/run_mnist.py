@@ -107,7 +107,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             "momentum": 0,
             "lr_drop": 0.5,
             "epochs_drop": 20,
-            "max_epochs": 100,
+            "max_epochs": 20,
             "l1_coeff": 0,
             "l2_coeff": 0,
             "zero_threshold": 1e-4,
@@ -197,5 +197,4 @@ def test_img_display():
 
 if __name__ == "__main__":
     # find_hypers()
-    # train_model()
-    test_img_display()
+    train_model()

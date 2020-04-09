@@ -104,11 +104,11 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            'learning_rate': 0.4490416862227188,
-            'momentum': 0.025741197429137695,
-            'lr_drop': 0.6245910158282362,
+            'learning_rate': 10,
+            'momentum': 0.0,
+            'lr_drop': 0.2,
             'epochs_drop': 1,
-            'max_epochs': 10,
+            'max_epochs': 20,
             'l1_coeff': 5.7920640008705895e-08,
             'l2_coeff': 4.5146303701506056e-08,
             'zero_threshold': 5.258323745879798e-06,
@@ -208,5 +208,5 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    find_hypers()
-    # prepare_experiment()
+    #find_hypers()
+    train_model()
