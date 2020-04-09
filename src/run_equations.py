@@ -12,13 +12,14 @@ import torch
 from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import simple_math_equations_loader
 from src.utils.eval import calc_avg_AE_AUROC, build_multilabel_confusion_matrix, calculate_accuracy
+from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(4)  # Dataset specific, list of classification classes
-data_loader = [simple_math_equations_loader()]  # The loader to be used for the data.
+data_loader = [DataloaderWrapper(simple_math_equations_loader)]  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 

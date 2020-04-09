@@ -45,7 +45,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
 
     print('==> Preparing dataset')
-    trainloader, validloader, testloader = data_loader[0]
+    trainloader, validloader, testloader = data_loader[0].get_loaders()
 
     print("==> Creating model")
     model = ActionEncoder(sizes=actionencoder_sizes)
@@ -72,7 +72,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
         print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
 
         if len(data_loader) >= len(classes_list) and t > 0:
-            trainloader, validloader, testloader = data_loader[t]
+            trainloader, validloader, testloader = data_loader[t].get_loaders()
 
         if t == 0:
             print("==> Learning")
