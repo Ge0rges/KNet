@@ -12,7 +12,7 @@ from src.main_scripts import main_ae, optimize_hypers
 from src.utils.data_loading import bc_loader
 from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
 from src.utils.data_preprocessing import dataset_reshaping
-from src.utils.misc import DataloaderWrapper
+from src.utils.misc import DataloaderWrapper, plot_tensor
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
@@ -22,8 +22,8 @@ classes_list = range(2)  # Dataset specific, list of classification classes
 num_workers = 0  # Leave this as zero for now.
 
 # The loader to be used for the data. Change the data path if necessary
-filepath1 = os.path.join(os.path.dirname(__file__), "../data/banana_car/banana/resized/")
-filepath2 = os.path.join(os.path.dirname(__file__), "../data/banana_car/car/resized/")
+filepath1 = os.path.join(os.path.dirname(__file__), "./data/banana_car/banana/1/resized/1/")
+filepath2 = os.path.join(os.path.dirname(__file__), "./data/banana_car/car/1/resized/1/")
 
 data_loaders = [DataloaderWrapper(bc_loader, args=[filepath1, "banana", 0], batch_size=256, num_workers=0),
                 DataloaderWrapper(bc_loader, args=[filepath2, "car", 1], batch_size=256, num_workers=0)]
@@ -236,6 +236,14 @@ def prepare_experiment():
     dataset_reshaping("bananacar", bananacar_path)
 
 
+def test_img_display():
+    dataloader = data_loaders[0]
+    train, valid, test = dataloader.get_loaders()
+    for idx, (inputs, targets) in enumerate(train):
+        plot_tensor(inputs[0], (480, 640, 3), mode="RGB")
+
+
 if __name__ == "__main__":
     best_accuracy, best_params, best_model = find_hypers()
     test_abstraction(best_model)
+    # test_img_display()
