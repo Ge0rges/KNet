@@ -47,6 +47,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     print('==> Preparing dataset')
     trainloader, validloader, testloader = data_loader[0].get_loaders(batch_size=batch_size)
 
+    if len(data_loader) > len(classes_list):
+        print("==> Preparing evaluation dataset")
+        eval_testloader = data_loader[-1].get_test_loader(batch_size=batch_size)
+    else:
+        eval_testloader = None
+
     print("==> Creating model")
     model = ActionEncoder(sizes=actionencoder_sizes)
 
@@ -98,7 +104,11 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 # test_loss = trainAE(validloader, model, criterion, cl=t, test=True, penalty=penalty, use_cuda=use_cuda)
 
-            err = error_function(model, testloader, classes_list[:t + 1])
+            if eval_testloader is not None:
+                print("USING EVAL LOADER")
+                err = error_function(model, eval_testloader, classes_list[:t+1])
+            else:
+                err = error_function(model, testloader, classes_list[:t+1])
             errors.append(err)
         else:
             # copy model
@@ -179,8 +189,11 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             #
             #   remove all neurons which have no weights that are non_zero
             #   save network.
-
-            err = error_function(model, testloader, classes_list[:t+1])
+            if eval_testloader is not None:
+                print("USING EVAL LOADER")
+                err = error_function(model, eval_testloader, classes_list[:t+1])
+            else:
+                err = error_function(model, testloader, classes_list[:t+1])
             errors.append(err)
             print(errors)
 

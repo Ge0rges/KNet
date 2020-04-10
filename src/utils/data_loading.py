@@ -520,32 +520,48 @@ def simple_math_equations_loader(batch_size=256, num_workers=0):
 
 ##### MNIST
 def mnist_loader(batch_size=256, num_workers=0):
-    allset = get_mnist_dataset()
+    train, test = get_mnist_dataset()
 
-    data = torch.zeros((len(allset), 28*28))
-    for i in range(0, len(allset)):
-        data[i] = allset[i][0].view((28*28))
+    traindata = torch.zeros((len(train), 28*28))
+    for i in range(0, len(train)):
+        traindata[i] = train[i][0].view((28*28))
 
-    class_labels = list(i[1] for i in allset)
+    trainclass_labels = list(i[1] for i in train)
 
-    tensor_class_labels = torch.Tensor(class_labels)
-    tensor_class_labels = one_hot(tensor_class_labels, range(10))
+    traintensor_class_labels = torch.Tensor(trainclass_labels)
+    traintensor_class_labels = one_hot(traintensor_class_labels, range(10))
 
-    tensor_labels = torch.cat([data, tensor_class_labels], 1)
+    traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
 
-    dataset = TensorDataset(data, tensor_labels)
+    traindataset = TensorDataset(traindata, traintensor_labels)
 
-    labels = [i[1] for i in dataset]
-    l = len(labels)
+    trainlabels = [i[1] for i in traindataset]
 
-    trainsampler = AESampler(labels, start_from=0, amount=int(l*0.7))
-    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    trainsampler = AESampler(trainlabels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
-    validsampler = AESampler(labels, start_from=int(l*0.7), amount=int(l*0.05))
-    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    testdata = torch.zeros(len(test), 28*28)
+    for i in range(0, len(test)):
+        testdata[i] = test[i][0].view((28*28))
 
-    testsampler = AESampler(labels, start_from=int(l*0.7) + int(l*0.05))
-    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    testclass_labels = list(i[1] for i in test)
+
+    testtensor_class_labels = torch.Tensor(testclass_labels)
+    testtensor_class_labels = one_hot(testtensor_class_labels, range(10))
+
+    testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
+
+    testdataset = TensorDataset(testdata, testtensor_labels)
+
+    testlabels = [i[1] for i in testdataset]
+
+    l = len(testlabels)
+
+    validsampler = AESampler(testlabels, start_from=0, amount=int(l*0.2))
+    validloader = DataLoader(testdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(testlabels, start_from=int(l*0.2))
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
 
     print("Done preparing AE dataloader")
 
@@ -556,36 +572,55 @@ def mnist_class_loader(args, batch_size=256, num_workers=0):
     assert len(args) == 1
     cls = args[0]
 
-    allset = get_mnist_dataset()
-    data = []
-    for i in range(len(allset)):
-        if allset[i][1] == cls:
-            data.append(allset[i][0].view((28*28)).numpy())
-    data = np.array(data)
+    train, test = get_mnist_dataset()
+    traindata = []
+    for i in range(len(train)):
+        if train[i][1] == cls:
+            traindata.append(train[i][0].view((28*28)).numpy())
+    traindata = np.array(traindata)
 
-    class_labels = [cls]*len(data)
-    tensor_class_labels = torch.Tensor(class_labels)
-    tensor_class_labels = one_hot(tensor_class_labels, range(10))
+    trainclass_labels = [cls]*len(traindata)
 
-    data = torch.Tensor(data)
-    tensor_labels = torch.cat([data, tensor_class_labels], 1)
-    dataset = TensorDataset(data, tensor_labels)
+    traindata = torch.Tensor(traindata)
+    traintensor_class_labels = torch.Tensor(trainclass_labels)
+    traintensor_class_labels = one_hot(traintensor_class_labels, range(10))
 
-    labels = [i[1] for i in dataset]
-    l = len(labels)
+    traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
 
-    trainsampler = AESampler(labels, start_from=0, amount=int(l*0.7))
-    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+    traindataset = TensorDataset(traindata, traintensor_labels)
 
-    validsampler = AESampler(labels, start_from=int(l*0.7), amount=int(l*0.05))
-    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+    trainlabels = [i[1] for i in traindataset]
 
-    testsampler = AESampler(labels, start_from=int(l*0.7) + int(l*0.05))
-    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+    trainsampler = AESampler(trainlabels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
-    print("Done preparing AE dataloader for class", cls)
+    testdata = []
+    for i in range(len(test)):
+        if test[i][1] == cls:
+            testdata.append(train[i][0].view((28*28)).numpy())
+    testdata = np.array(testdata)
 
-    return (trainloader, validloader, testloader)
+    testclass_labels = [cls]*len(testdata)
+
+    testdata = torch.Tensor(testdata)
+    testtensor_class_labels = torch.Tensor(testclass_labels)
+    testtensor_class_labels = one_hot(testtensor_class_labels, range(10))
+
+    testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
+
+    testdataset = TensorDataset(testdata, testtensor_labels)
+
+    testlabels = [i[1] for i in testdataset]
+
+    l = len(testlabels)
+
+    validsampler = AESampler(testlabels, start_from=0, amount=int(l * 0.2))
+    validloader = DataLoader(testdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(testlabels, start_from=int(l * 0.2))
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    return trainloader, validloader, testloader
 
 
 def get_mnist_dataset():
@@ -598,6 +633,6 @@ def get_mnist_dataset():
     ])
 
     trainset = dataloader(root="../data/MNIST/", train=True, download=True, transform=transform_all)
-    # testset = dataloader(root="../data/MNIST/", train=False, download=False, transform=transform_all)
+    testset = dataloader(root="../data/MNIST/", train=False, download=False, transform=transform_all)
 
-    return ConcatDataset([trainset])
+    return trainset, testset

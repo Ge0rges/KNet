@@ -147,6 +147,16 @@ class DataloaderWrapper(object):
         else:
             return self.dataloader(batch_size=self.batch_size, num_workers=self.num_workers)
 
+    def get_test_loader(self, batch_size=None, num_workers=None):
+        if batch_size:
+            self.batch_size = batch_size
+        if num_workers:
+            self.num_workers = num_workers
+        if self.args:
+            return self.dataloader(self.args, batch_size=self.batch_size, num_workers=self.num_workers)[2]
+        else:
+            return self.dataloader(batch_size=self.batch_size, num_workers=self.num_workers)[2]
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value
