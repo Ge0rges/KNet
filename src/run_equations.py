@@ -44,7 +44,7 @@ def find_hypers():
 
     # ML Hyper Bounds
     params_bounds = {
-        "learning_rate": (1e-10, 100, float),
+        "learning_rate": (1e-10, 30, float),
         "momentum": (0, 0.99, float),
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
@@ -59,7 +59,7 @@ def find_hypers():
         "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {
-            "learning_rate": (1e-10, 1, float),
+            "learning_rate": (1e-10, 30, float),
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
@@ -71,7 +71,7 @@ def find_hypers():
         },
 
         "de_train_new_hypers": {
-            "learning_rate": (1e-10, 1, float),
+            "learning_rate": (1e-10, 30, float),
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
@@ -183,4 +183,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    train_model()
+    find_hypers()

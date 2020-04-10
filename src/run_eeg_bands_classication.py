@@ -44,7 +44,7 @@ def find_hypers():
 
     # ML Hyper Bounds
     params_bounds = {
-        "learning_rate": (1e-10, 100, float),
+        "learning_rate": (1e-10, 30, float),
         "momentum": (0, 0.99, float),
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
@@ -59,7 +59,7 @@ def find_hypers():
         "expand_by_k": (0, 20, int),
 
         "split_train_new_hypers": {
-            "learning_rate": (1e-10, 1, float),
+            "learning_rate": (1e-10, 30, float),
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
@@ -71,7 +71,7 @@ def find_hypers():
         },
 
         "de_train_new_hypers": {
-            "learning_rate": (1e-10, 1, float),
+            "learning_rate": (1e-10, 30, float),
             "momentum": (0, 0.99, float),
             "lr_drop": (0, 1, float),
             "epochs_drop": (0, 20, int),
@@ -104,7 +104,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            'learning_rate': 0.5,
+            'learning_rate': 0.001,
             'momentum': 0.0,
             'lr_drop': 0.0,
             'epochs_drop': 20,
@@ -116,7 +116,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             ## Global net size
             "sizes": {
                 "encoder": [2, 50, 10, 1],
-                "action": [1, 2]
+                "action": [1, 5, 3, 2]
             },
 
             # Unique to main
@@ -182,7 +182,7 @@ def error_function(model, batch_loader, classes_trained):
     print(confusion_matrix)
 
     print("Per class accuracy:")
-    print(confusion_matrix.diag()/confusion_matrix.sum(1))
+    print(confusion_matrix.diag() / confusion_matrix.sum(1))
 
     accuracy = calculate_accuracy(confusion_matrix)
     print("Accuracy:")
@@ -193,7 +193,7 @@ def error_function(model, batch_loader, classes_trained):
     print("Auroc:")
     print(auroc)
 
-    score = (auroc["macro"] + accuracy)/2
+    score = (auroc["macro"] + accuracy) / 2
     print("Score: ")
     print(score)
 
@@ -208,5 +208,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    #find_hypers()
-    train_model()
+    find_hypers()
