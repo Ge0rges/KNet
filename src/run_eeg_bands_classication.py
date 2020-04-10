@@ -104,13 +104,13 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            'learning_rate': 0.059,
+            'learning_rate': 0.5,
             'momentum': 0.0,
             'lr_drop': 0.2,
             'epochs_drop': 20,
             'max_epochs': 20,
             'l1_coeff': 0.0,
-            'l2_coeff': 0.1,
+            'l2_coeff': 0.0,
             'zero_threshold': 1e-4,
 
             ## Global net size
@@ -129,7 +129,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if split_train_new_hypers is None:
         split_train_new_hypers = {
             # Common
-            'learning_rate': 0.059,
+            'learning_rate': 0.5,
             'momentum': 0.0,
             'lr_drop': 0.2,
             'epochs_drop': 20,
@@ -145,7 +145,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if de_train_new_hypers is None:
         de_train_new_hypers = {
             # Common
-            'learning_rate': 0.059,
+            'learning_rate': 0.5,
             'momentum': 0.0,
             'lr_drop': 0.2,
             'epochs_drop': 20,

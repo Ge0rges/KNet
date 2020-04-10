@@ -129,11 +129,11 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if split_train_new_hypers is None:
         split_train_new_hypers = {
             # Common
-            "learning_rate": 10,
-            "momentum": 0.9,
-            "lr_drop": 0.25,
-            "epochs_drop": 5,
-            "max_epochs": 1,
+            "learning_rate": 20,
+            "momentum": 0.0,
+            "lr_drop": 0.5,
+            "epochs_drop": 20,
+            "max_epochs": 10,
             "l1_coeff": 1e-10,
             "l2_coeff": 1e-10,
             "zero_threshold": 1e-4,
@@ -145,11 +145,11 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if de_train_new_hypers is None:
         de_train_new_hypers = {
             # Common
-            "learning_rate": 0.2,
+            "learning_rate": 0.20,
             "momentum": 0.0,
-            "lr_drop": 0.25,
-            "epochs_drop": 5,
-            "max_epochs": 1,
+            "lr_drop": 0.5,
+            "epochs_drop": 20,
+            "max_epochs": 10,
             "l1_coeff": 1e-10,
             "l2_coeff": 1e-10,
             "zero_threshold": 1e-4,
