@@ -3,6 +3,7 @@ import os
 import shutil
 import random
 import torch
+import numpy as np
 
 from torch.autograd import Variable
 from progress.bar import Bar
@@ -175,3 +176,16 @@ class l1l2_penalty(object):
                 penalty += row.norm(2)
 
         return self.l2_coeff * penalty
+
+
+class ResourceConstrainingPenalty:
+    def __init__(self, coeff=1, bytes_available=16000000000):
+        self.coeff = coeff
+        self.resources = bytes_available
+
+    def __call__(self, model):
+        penalty = 0
+        for name, param in model.named_parameters():
+            if param.requires_grad and 'bias' not in name:
+                penalty += -np.abs(1/param) + self.resources
+        return self.coeff * penalty
