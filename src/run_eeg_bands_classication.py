@@ -104,23 +104,23 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            'learning_rate': 10,
+            'learning_rate': 0.2,
             'momentum': 0.0,
             'lr_drop': 0.2,
-            'epochs_drop': 1,
+            'epochs_drop': 20,
             'max_epochs': 20,
-            'l1_coeff': 5.7920640008705895e-08,
-            'l2_coeff': 4.5146303701506056e-08,
-            'zero_threshold': 5.258323745879798e-06,
+            'l1_coeff': 0.0,
+            'l2_coeff': 0.1,
+            'zero_threshold': 1e-4,
 
             ## Global net size
             "sizes": {
-                "encoder": [2, 1],
-                "action": [1, 2]
+                "encoder": [2, 10, 1],
+                "action": [1, 10, 2]
             },
 
             # Unique to main
-            'batch_size': 500,
+            'batch_size': 256,
             'weight_decay': 0.22590651579084853,
             'loss_threshold': 0.3770745278503695,
             'expand_by_k': 8,
