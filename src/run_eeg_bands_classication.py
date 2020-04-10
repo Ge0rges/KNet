@@ -106,7 +106,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             # Common
             'learning_rate': 0.5,
             'momentum': 0.0,
-            'lr_drop': 0.2,
+            'lr_drop': 0.0,
             'epochs_drop': 20,
             'max_epochs': 100,
             'l1_coeff': 0.0,
@@ -131,7 +131,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             # Common
             'learning_rate': 0.5,
             'momentum': 0.0,
-            'lr_drop': 0.2,
+            'lr_drop': 0.0,
             'epochs_drop': 20,
             'max_epochs': 100,
             'l1_coeff': 3.329438489585988e-08,
@@ -147,7 +147,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             # Common
             'learning_rate': 0.5,
             'momentum': 0.0,
-            'lr_drop': 0.2,
+            'lr_drop': 0.0,
             'epochs_drop': 20,
             'max_epochs': 100,
             'l1_coeff': 3.329438489585988e-08,
