@@ -10,7 +10,7 @@ To train a model, run train_model().
 import torch
 
 from src.main_scripts import main_ae, optimize_hypers
-from src.utils.data_loading import mnist_loader
+from src.utils.data_loading import mnist_loader, mnist_class_loader
 from src.utils.eval import calc_avg_AE_AUROC
 from src.utils.misc import DataloaderWrapper, plot_tensor
 
@@ -19,7 +19,7 @@ seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(10)  # Dataset specific, list of classification classes
-data_loaders = [DataloaderWrapper(mnist_loader)]  # The loader to be used for the data.
+data_loaders = [DataloaderWrapper(mnist_class_loader, args=[i]) for i in classes_list]  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 
