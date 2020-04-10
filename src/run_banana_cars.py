@@ -22,8 +22,8 @@ classes_list = range(2)  # Dataset specific, list of classification classes
 num_workers = 0  # Leave this as zero for now.
 
 # The loader to be used for the data. Change the data path if necessary
-filepath1 = os.path.join(os.path.dirname(__file__), "./data/banana_car/banana/1/resized/1/")
-filepath2 = os.path.join(os.path.dirname(__file__), "./data/banana_car/car/1/resized/1/")
+filepath1 = os.path.join(os.path.dirname(__file__), "./data/banana_car/banana/resized/")
+filepath2 = os.path.join(os.path.dirname(__file__), "./data/banana_car/car/resized/")
 
 data_loaders = [DataloaderWrapper(bc_loader, args=[filepath1, "banana", 0], batch_size=256, num_workers=0),
                 DataloaderWrapper(bc_loader, args=[filepath2, "car", 1], batch_size=256, num_workers=0)]
@@ -213,7 +213,7 @@ def test_abstraction(model):
     filepath3 = os.path.join(os.path.dirname(__file__), "../data/banana_car/bananacar/resized/")
     bananacar_loader = bc_loader([filepath3, "bananacar", None], batch_size=256, num_workers=0)
 
-    trainloader, validloader, testloader = bananacar_loader
+    _, _, testloader = bananacar_loader  # Train and valid are empty
 
     for batch_idx, (inputs, targets) in enumerate(testloader):
         if use_cuda:

@@ -63,6 +63,8 @@ def plot_tensor(tensor, img_format, mode=None):
 
 class BananaCarImageDataset(Dataset):
     def __init__(self, dir, name, label, all_labels):
+        assert os.path.isdir(dir)
+
         self.dir = dir
         self.num_files = 0
         self.name = name
@@ -115,7 +117,7 @@ class BananaCarImageDataset(Dataset):
                 new_size *= j
             tensor_img = tensor_img.view((new_size))
 
-            if self.name == "banana_car":
+            if self.name == "bananacar":
                 label = torch.Tensor([0.5, 0.5])
 
             else:

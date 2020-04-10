@@ -21,15 +21,15 @@ def bc_loader(args, batch_size=256, num_workers=0):
     dir = args[0]
     name = args[1]
     label = args[2]
-    assert os.path.isdir(dir)
-    if name == "banana_car":
+
+    if name == "bananacar":
         proportions = [0, 0, 1]
     else:
         proportions = [0.7, 0.5, 0.25]
     dataset = BananaCarImageDataset(dir, name, label, ALL_BANANA_CAR_LABELS)
 
     num_samples = len(dataset)
-    if name == "banana_car":
+    if name == "bananacar":
         labels = [[0.5, 0.5]]*num_samples
     else:
         labels = [label]*num_samples
