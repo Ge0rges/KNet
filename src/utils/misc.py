@@ -142,8 +142,10 @@ class DataloaderWrapper(object):
     def get_loaders(self, batch_size=None, num_workers=None):
         if batch_size:
             self.batch_size = batch_size
+
         if num_workers:
             self.num_workers = num_workers
+
         if self.args:
             return self.dataloader(self.args, batch_size=self.batch_size, num_workers=self.num_workers)
         else:
@@ -152,8 +154,10 @@ class DataloaderWrapper(object):
     def get_test_loader(self, batch_size=None, num_workers=None):
         if batch_size:
             self.batch_size = batch_size
+
         if num_workers:
             self.num_workers = num_workers
+
         if self.args:
             return self.dataloader(self.args, batch_size=self.batch_size, num_workers=self.num_workers)[2]
         else:
