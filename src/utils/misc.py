@@ -64,6 +64,7 @@ def plot_tensor(tensor, img_format, mode=None):
 class BananaCarImageDataset(Dataset):
     def __init__(self, dir, name, label, all_labels):
         assert os.path.isdir(dir)
+        assert name == "banana" or name == "car" or name == "bananacar"
 
         self.dir = dir
         self.num_files = 0
