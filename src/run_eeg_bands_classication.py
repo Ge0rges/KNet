@@ -104,7 +104,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            'learning_rate': 0.2,
+            'learning_rate': 0.059,
             'momentum': 0.0,
             'lr_drop': 0.2,
             'epochs_drop': 20,
@@ -115,8 +115,8 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
 
             ## Global net size
             "sizes": {
-                "encoder": [2, 10, 1],
-                "action": [1, 10, 2]
+                "encoder": [2, 50, 10, 1],
+                "action": [1, 2]
             },
 
             # Unique to main
@@ -129,11 +129,11 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if split_train_new_hypers is None:
         split_train_new_hypers = {
             # Common
-            'learning_rate': 0.22888422782802215,
-            'momentum': 0.48035138581116665,
-            'lr_drop': 0.09186895739623514,
-            'epochs_drop': 9,
-            'max_epochs': 3,
+            'learning_rate': 0.059,
+            'momentum': 0.0,
+            'lr_drop': 0.2,
+            'epochs_drop': 20,
+            'max_epochs': 20,
             'l1_coeff': 3.329438489585988e-08,
             'l2_coeff': 7.224999999999999e-08,
             'zero_threshold': 8.5e-06,
@@ -145,11 +145,11 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if de_train_new_hypers is None:
         de_train_new_hypers = {
             # Common
-            'learning_rate': 0.22888422782802215,
-            'momentum': 0.48035138581116665,
-            'lr_drop': 0.09186895739623514,
-            'epochs_drop': 9,
-            'max_epochs': 3,
+            'learning_rate': 0.059,
+            'momentum': 0.0,
+            'lr_drop': 0.2,
+            'epochs_drop': 20,
+            'max_epochs': 20,
             'l1_coeff': 3.329438489585988e-08,
             'l2_coeff': 7.224999999999999e-08,
             'zero_threshold': 8.5e-06,
