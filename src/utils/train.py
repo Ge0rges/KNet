@@ -75,7 +75,7 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
         total_loss = action_loss + generate_loss# TODO: add back gen in phases
 
         # record loss
-        losses.update(total_loss.data[0], inputs.size(0))
+        losses.update(total_loss.data.item(), inputs.size(0))
 
         if not test:
             # compute gradient and do SGD step

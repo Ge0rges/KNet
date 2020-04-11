@@ -71,10 +71,11 @@ Candidate Networks:
 # Dependencies
 - Python 3.7
 - numpy 1.18.2
-- Pillow 6.0.0
+- Pillow 6.2.2 or Pillow-SIMD 6.2.2post1
+    - For pillow-simd you will need a SSE4.1 capable CPU and `sudo apt-get install libjpeg-dev zlib1g-dev`
 - progress 1.5
-- torch 0.3.1 (Compiled from source)
-- torchvision 0.2.1
+- torch 1.3.1
+- torchvision 0.4.2
 - sklearn 0.0
 - matplotlib 3.2.1
 
