@@ -176,12 +176,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
             # Note: In ICLR 18 paper the order of these steps are switched, we believe this makes more sense.
             # print("==> Splitting Neurons")
-            model = split_neurons(model_copy, model, trainloader, validloader, split_train_new_hypers, use_cuda)
+            model = split_neurons(model_copy, model, trainloader, validloader, criterion, split_train_new_hypers, use_cuda)
 
             # Could be train_loss or test_loss
             if train_loss > loss_threshold:
                 # print("==> Dynamic Expansion")
-                model = dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers, use_cuda)
+                model = dynamic_expansion(expand_by_k, model, trainloader, validloader, criterion, de_train_new_hypers, use_cuda)
 
             #   add k neurons to all layers.
             #   optimize training on those weights with l1 regularization, and an addition cost based on
@@ -205,7 +205,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     return (model, errors)
 
 
-def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new_hypers, cuda):
+def dynamic_expansion(expand_by_k, model, trainloader, validloader, criterion, de_train_new_hypers, cuda):
     sizes, weights, biases, hooks = {}, {}, {}, []
     modules = get_modules(model)
     for dict_key, module in modules.items():
@@ -245,7 +245,7 @@ def dynamic_expansion(expand_by_k, model, trainloader, validloader, de_train_new
             sizes[dict_key][-1] -= expand_by_k
 
     # From here, everything taken from DE. #
-    return train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, de_train_new_hypers, cuda)
+    return train_new_neurons(model, modules, trainloader, validloader, criterion, sizes, weights, biases, hooks, de_train_new_hypers, cuda)
 
 
 def get_modules(model):
@@ -430,10 +430,10 @@ def split_neurons(old_model, new_model, trainloader, validloader, split_train_ne
         return new_model
 
     # From here, everything taken from DE. #
-    return train_new_neurons(new_model, new_modules, trainloader, validloader, sizes, weights, biases, hooks, split_train_new_hypers, cuda)
+    return train_new_neurons(new_model, new_modules, trainloader, validloader, criterion, sizes, weights, biases, hooks, split_train_new_hypers, cuda)
 
 
-def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, biases, hooks, hypers, cuda=False):
+def train_new_neurons(model, modules, trainloader, validloader, criterion, sizes, weights, biases, hooks, hypers, cuda=False):
     # Get params
     learning_rate = hypers["learning_rate"]
     max_epochs = hypers["max_epochs"]
@@ -455,7 +455,6 @@ def train_new_neurons(model, modules, trainloader, validloader, sizes, weights, 
     )
 
     learning_rate = lr_drop
-    criterion = nn.BCELoss()
 
     for epoch in range(max_epochs):
 
