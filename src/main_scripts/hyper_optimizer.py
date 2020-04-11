@@ -131,11 +131,7 @@ def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_l
 
     except Exception as e:
         print("worker " + str(i) + " crashed:" + str(e))
-        try:
-            return (0, worker[1], worker[2])
-
-        except:
-            return (0, worker[1], None)
+        return (0, worker[1], None)
 
 def random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
     """

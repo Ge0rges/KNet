@@ -34,7 +34,7 @@ def find_hypers():
     Runs hyper_optimizer to find the best ML params.
     """
     # Net shape
-    autoencoder_input = 480*360*3
+    autoencoder_input = 360*270*3
     hidden_autoencoder_layers = 1
     hidden_action_layers = 1
     actionnet_output = 2
@@ -121,7 +121,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
 
             ## Global net size
             "sizes": {
-                "encoder": [480*360*3, 3000, 300],
+                "encoder": [360*270*3, 3000, 300],
                 "action": [300, 30, 2]
             },
 
@@ -229,7 +229,7 @@ def prepare_experiment():
     Preprocesses the data.
     """
     banana_path = "../data/banana_car/banana/"  # the path to your banana dataset folder, include ending /
-    dataset_reshaping("banana", banana_path, new_size=(480, 360))
+    dataset_reshaping("banana", banana_path, new_size=(360, 270))
     car_path = "../data/banana_car/car/"  # the path to your car dataset folder, include ending /
     dataset_reshaping("car", car_path)
     bananacar_path = "../data/banana_car/bananacar/"  # the path to your bananacar dataset folder, include ending /
@@ -237,5 +237,7 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    best_accuracy, best_params, best_model = find_hypers()
-    test_abstraction(best_model)
+    prepare_experiment()
+    #
+    # best_accuracy, best_params, best_model = find_hypers()
+    # test_abstraction(best_model)

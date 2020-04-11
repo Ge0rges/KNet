@@ -27,7 +27,7 @@ class ActionEncoder(nn.Module):
 
         # Action
         action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        action_layers.append(nn.Softmax())
+        action_layers.append(nn.Sigmoid())
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):

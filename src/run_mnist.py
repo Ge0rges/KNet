@@ -211,4 +211,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    find_hypers()
+    train_model()
