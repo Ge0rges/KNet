@@ -237,7 +237,5 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    prepare_experiment()
-    #
-    # best_accuracy, best_params, best_model = find_hypers()
-    # test_abstraction(best_model)
+    best_accuracy, best_params, best_model = find_hypers()
+    test_abstraction(best_model)
