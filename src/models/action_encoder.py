@@ -36,8 +36,8 @@ class ActionEncoder(nn.Module):
         if self.connected:
             ci = x
         else:
-            ci = torch.autograd.Variable(torch.zeros(x.shape))
-            ci.data = x.data.clone()
+            ci = torch.zeros(x.shape)
+            ci.data = x.data.clone().detach()
 
         y = self.action(ci)
 

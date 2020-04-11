@@ -209,19 +209,19 @@ def test_abstraction(model):
     """
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
-
     filepath3 = os.path.join(os.path.dirname(__file__), "../data/banana_car/bananacar/resized/")
     bananacar_loader = bc_loader([filepath3, "bananacar", None], batch_size=256, num_workers=0)
 
     _, _, testloader = bananacar_loader  # Train and valid are empty
 
-    for batch_idx, (inputs, targets) in enumerate(testloader):
-        if use_cuda:
-            inputs = inputs.cuda()
-            targets = targets.cuda()
+    with torch.no_grad():
+        for batch_idx, (inputs, targets) in enumerate(testloader):
+            if use_cuda:
+                inputs = inputs.cuda()
+                targets = targets.cuda()
 
-        outputs = model(inputs)
-        print(outputs)
+            outputs = model(inputs)
+            print(outputs)
 
 
 def prepare_experiment():

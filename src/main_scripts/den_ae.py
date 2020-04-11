@@ -544,7 +544,7 @@ class freeze_hook(object):
 
     def __call__(self, grad):
 
-        grad_clone = grad.clone()
+        grad_clone = grad.clone().detach()
 
         if self.bias:
             for i in range(grad.shape[0]):
@@ -568,7 +568,7 @@ class active_grads_hook(object):
 
     def __call__(self, grad):
 
-        grad_clone = grad.clone()
+        grad_clone = grad.clone().detach()
 
         if self.bias:
             if self.mask1.size:
