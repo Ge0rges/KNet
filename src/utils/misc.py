@@ -18,6 +18,15 @@ def one_hot(targets, classes):
     return targets_onehot
 
 
+def one_vs_all_one_hot(targets, cls, classes):
+    targets = targets.type(torch.LongTensor).view(-1)
+    targets_onehot = torch.zeros(targets.size()[0], len(classes))
+    for i, t in enumerate(targets):
+        if t == cls:
+            targets_onehot[i][cls] = 1
+    return targets_onehot
+
+
 def fft_psd(sampling_time, sample_num, data):
     """
     Get the the FFT power spectral densities for the given data

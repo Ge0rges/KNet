@@ -6,7 +6,7 @@ import os
 
 from torch.utils.data import DataLoader, ConcatDataset, TensorDataset
 from sklearn.preprocessing import normalize
-from src.utils.misc import GaussianNoise, AESampler, one_hot, BananaCarImageDataset
+from src.utils.misc import GaussianNoise, AESampler, one_hot, BananaCarImageDataset, one_vs_all_one_hot
 
 
 ### Banana Cars
@@ -573,17 +573,15 @@ def mnist_class_loader(args, batch_size=256, num_workers=0):
     cls = args[0]
 
     train, test = get_mnist_dataset()
-    traindata = []
-    for i in range(len(train)):
-        if train[i][1] == cls:
-            traindata.append(train[i][0].view((28*28)).numpy())
-    traindata = np.array(traindata)
 
-    trainclass_labels = [cls]*len(traindata)
+    traindata = torch.zeros((len(train), 28*28))
+    for i in range(0, len(train)):
+        traindata[i] = train[i][0].view((28*28))
 
-    traindata = torch.Tensor(traindata)
+    trainclass_labels = list(i[1] for i in train)
+
     traintensor_class_labels = torch.Tensor(trainclass_labels)
-    traintensor_class_labels = one_hot(traintensor_class_labels, range(10))
+    traintensor_class_labels = one_vs_all_one_hot(traintensor_class_labels, cls, range(10))
 
     traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
 
@@ -594,17 +592,14 @@ def mnist_class_loader(args, batch_size=256, num_workers=0):
     trainsampler = AESampler(trainlabels, start_from=0)
     trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
 
-    testdata = []
-    for i in range(len(test)):
-        if test[i][1] == cls:
-            testdata.append(train[i][0].view((28*28)).numpy())
-    testdata = np.array(testdata)
+    testdata = torch.zeros(len(test), 28*28)
+    for i in range(0, len(test)):
+        testdata[i] = test[i][0].view((28*28))
 
-    testclass_labels = [cls]*len(testdata)
+    testclass_labels = list(i[1] for i in test)
 
-    testdata = torch.Tensor(testdata)
     testtensor_class_labels = torch.Tensor(testclass_labels)
-    testtensor_class_labels = one_hot(testtensor_class_labels, range(10))
+    testtensor_class_labels = one_vs_all_one_hot(testtensor_class_labels, cls, range(10))
 
     testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
 
