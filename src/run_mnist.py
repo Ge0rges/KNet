@@ -50,8 +50,8 @@ def find_hypers():
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
         "max_epochs": (5, 25, int),
-        "l1_coeff": (1e-20, 1e-7, float),
-        "l2_coeff": (1e-20, 1e-7, float),
+        "l1_coeff": (1e-20, 0, float),
+        "l2_coeff": (1e-20, 0, float),
         "zero_threshold": (0, 1e-5, float),
 
         "batch_size": (100, 500, int),
@@ -106,7 +106,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             # Common
             "learning_rate": 20,
             "momentum": 0,
-            "lr_drop": 0.5,
+            "lr_drop": 0,
             "epochs_drop": 20,
             "max_epochs": 30,
             "l1_coeff": 0,
@@ -121,7 +121,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             },
 
             # Unique to main
-            "batch_size": 256,
+            "batch_size": 420,
             "weight_decay": 0,
             "loss_threshold": 1e-2,
             "expand_by_k": 10,
