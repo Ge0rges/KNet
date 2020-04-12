@@ -45,8 +45,6 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
             inputs = inputs.to('cuda')
             targets = targets.to('cuda')
 
-        inputs = Variable(inputs)
-        targets = Variable(targets)
 
         # compute output
         model.phase = "GENERATE"
@@ -60,25 +58,26 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
 
         # if cls is not None:
         #     action_one_hot = one_hot(action_target, cls)
-        #     action_target = Variable(action_one_hot)
+        #     action_target = action_one_hot
 
         # calculate loss
-        mse_loss = torch.nn.MSELoss()
-        generate_loss = mse_loss(generate_output, generate_targets)
+        optimizer.zero_grad()
+
+        encoder_loss = torch.nn.MSELoss()
+        generate_loss = encoder_loss(generate_output, generate_targets)
         action_loss = criterion(action_output, action_target)
 
         if penalty is not None:
             generate_loss = generate_loss + penalty(model)
             action_loss = action_loss + penalty(model)
 
-        total_loss = action_loss + generate_loss# TODO: add back gen in phases
+        total_loss = action_loss + generate_loss  # TODO: add back gen in phases
 
         # record loss
-        losses.update(total_loss.data.item(), inputs.size(0))
+        losses.update(total_loss.item(), inputs.size(0))
 
         if not test:
             # compute gradient and do SGD step
-            optimizer.zero_grad()
             total_loss.backward()
             optimizer.step()
 
