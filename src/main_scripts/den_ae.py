@@ -59,7 +59,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     # Use Cuda
     if use_cuda:
         model = model.cuda()
-        # model = nn.DataParallel(model)
         cudnn.benchmark = True
         criterion = criterion.to("cuda")
 
@@ -565,7 +564,6 @@ class active_grads_hook(object):
         if mask2 is not None:
             self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
         self.bias = bias
-        self.__name__ = "active_grads_hook"
 
     def __call__(self, grad):
         grad_clone = grad.clone().detach()
