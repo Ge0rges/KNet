@@ -35,7 +35,6 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda):
             inputs = inputs.cuda()
             targets = targets.cuda()
 
-        inputs = Variable(inputs)
         outputs = model(inputs).data
 
         sum_targets = torch.cat((sum_targets, targets), 0)
@@ -59,7 +58,6 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
     for idx, (input, target) in enumerate(batchloader):
         target = target[:, -len(all_classes):]
         target = label_binarize(target, all_classes)
-        input = Variable(input)
         model.phase = "ACTION"
         output = model(input).data
 
@@ -105,7 +103,6 @@ def calc_avg_AE_band_error(model, batchloader):
         target = target[:, target.size()[1] - 2:]
         target = target.numpy()
 
-        input = Variable(input)
         model.phase = "ACTION"
         output = model(input).data.numpy()
 
@@ -139,8 +136,6 @@ def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
         classes = classes[:, classes.size()[1] - len(all_classes):]
         _, classes_b = torch.max(classes, 1)
 
-        inputs = Variable(inputs)
-
         model.phase = "ACTION"
         outputs = model(inputs)
 
@@ -163,8 +158,6 @@ def build_multilabel_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
         # Classes contains the targets for gen phase as well
         targets = targets[:, targets.size()[1] - len(all_classes):]
-
-        inputs = Variable(inputs)
 
         model.phase = "ACTION"
         outputs = model(inputs)
