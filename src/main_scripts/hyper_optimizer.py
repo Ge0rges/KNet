@@ -1,12 +1,13 @@
 """
 File contains functions to search for best parameters.
 """
-import itertools
+# import itertools
 import random
 
 from src.main_scripts.den_ae import main_ae
-from multiprocessing.pool import Pool
-from multiprocessing import cpu_count
+# from src.utils.data_loading import EEG_bands_to_binary_loader
+# from torch.multiprocessing.pool import Pool
+# from torch.multiprocessing import cpu_count
 import numpy as np
 from sklearn.decomposition import PCA
 
@@ -64,18 +65,24 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
 
         print("Optimization Epoch: %d/%d" % (epoch+1, epochs))
 
-        # Multithreading!
-        pool = Pool(min(generation_size, cpu_count()))
-        args = [range(len(workers)), itertools.repeat(epoch), workers, itertools.repeat(len(workers)),
-                              itertools.repeat(error_function),  itertools.repeat(use_cuda),
-                              itertools.repeat(data_loader),  itertools.repeat(num_workers),
-                              itertools.repeat(classes_list), itertools.repeat(criterion),  itertools.repeat(seed)
-                            ]
-        workers = pool.starmap(train_worker, args)
+        # # Multithreading!
+        # pool = Pool(min(generation_size, cpu_count()))
+        # args = itertools.zip(range(len(workers)), itertools.repeat(epoch), workers, itertools.repeat(len(workers)),
+        #                       itertools.repeat(error_function),  itertools.repeat(use_cuda),
+        #                       itertools.repeat(data_loader),  itertools.repeat(num_workers),
+        #                       itertools.repeat(classes_list), itertools.repeat(criterion),  itertools.repeat(seed)
+        #                     )
+        # workers = pool.map(train_worker_star, args)
+        #
+        # pool.close()
+        # pool.join()
 
-        pool.close()
-        pool.join()
-
+        workers_new = []
+        for i in range(len(workers)):
+            result = train_worker(i, epoch, workers[i], len(workers), error_function, use_cuda, data_loader, num_workers,
+                                                         classes_list, criterion, seed)
+            workers_new.append(result)
+        workers = workers_new
 
         # Sort the workers
         workers = sorted(workers, key=lambda x: x[0])
@@ -91,6 +98,13 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
             workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
 
     return best_worker
+
+
+def train_worker_star(args):
+    """
+    Calls train_worker(*args).
+    """
+    return train_worker(*args)
 
 
 def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_loader, num_workers, classes_list,
