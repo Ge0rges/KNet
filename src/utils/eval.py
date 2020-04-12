@@ -56,16 +56,17 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
     sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
 
     for idx, (input, target) in enumerate(batchloader):
+        device = 'cpu'
         if use_cuda:
             input = input.to('cuda')
-            # target = target.to('cuda', non_blocking=True)  do not use cuda for target as it breaks label_binarize from sklearn
+            device = 'cuda'
 
         target = target[:, -len(all_classes):]
         target = label_binarize(target, all_classes)
         model.phase = "ACTION"
         output = model(input).data
 
-        target = torch.LongTensor(target).to('cuda')
+        target = torch.LongTensor(target).to(device)
         sum_targets = torch.cat((sum_targets, target), 0)
         sum_outputs = torch.cat((sum_outputs, output), 0)
 
