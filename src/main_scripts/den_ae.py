@@ -59,8 +59,9 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     # Use Cuda
     if use_cuda:
         model = model.cuda()
-        model = nn.DataParallel(model)
+        # model = nn.DataParallel(model)
         cudnn.benchmark = True
+        criterion = criterion.to("cuda")
 
     # initialize parameters
     for name, param in model.named_parameters():
@@ -315,7 +316,7 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
     return hooks, prev_active
 
 
-def split_neurons(old_model, new_model, trainloader, validloader, split_train_new_hypers, cuda=False):
+def split_neurons(old_model, new_model, trainloader, validloader, criterion, split_train_new_hypers, cuda=False):
     sizes, weights, biases, hooks = {}, {}, {}, []
 
     suma = 0
@@ -564,9 +565,9 @@ class active_grads_hook(object):
         if mask2 is not None:
             self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
         self.bias = bias
+        self.__name__ = "active_grads_hook"
 
     def __call__(self, grad):
-
         grad_clone = grad.clone().detach()
 
         if self.bias:

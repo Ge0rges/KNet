@@ -57,19 +57,27 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
     sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
 
     for idx, (input, target) in enumerate(batchloader):
+        if use_cuda:
+            input = input.to('cuda')
+            # target = target.to('cuda', non_blocking=True)  do not use cuda for target as it breaks label_binarize from sklearn
+
         target = target[:, -len(all_classes):]
         target = label_binarize(target, all_classes)
         input = Variable(input)
         model.phase = "ACTION"
         output = model(input).data
 
-        target = torch.LongTensor(target)
+        target = torch.LongTensor(target).to('cuda')
         sum_targets = torch.cat((sum_targets, target), 0)
         sum_outputs = torch.cat((sum_outputs, output), 0)
 
     fpr = dict()
     tpr = dict()
     roc_auc = dict()
+
+    # switching back to cpu for roc computation otherwise it breaks
+    sum_targets = sum_targets.to('cpu')
+    sum_outputs = sum_outputs.to('cpu')
     for i in classes:
         fpr[i], tpr[i], _ = roc_curve(sum_targets[:, i], sum_outputs[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
@@ -97,11 +105,15 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
     return roc_auc
 
 
-def calc_avg_AE_band_error(model, batchloader):
+def calc_avg_AE_band_error(model, batchloader, use_cuda=False):
 
     errors = []
 
     for idx, (input, target) in enumerate(batchloader):
+        if use_cuda:
+            input = input.to('cuda')
+            target = target.to('cuda')
+
         target = target[:, target.size()[1] - 2:]
         target = target.numpy()
 
@@ -132,8 +144,8 @@ def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
     for i, (inputs, classes) in enumerate(dataloader):
         if use_cuda:
-            inputs = inputs.cuda()
-            classes = classes.cuda()
+            inputs = inputs.to('cuda')
+            classes = classes.to('cuda')
 
         # Classes contains the targets for gen phase as well
         classes = classes[:, classes.size()[1] - len(all_classes):]
@@ -158,8 +170,8 @@ def build_multilabel_confusion_matrix(model, dataloader, all_classes, use_cuda):
     all_predictions = None
     for i, (inputs, targets) in enumerate(dataloader):
         if use_cuda:
-            inputs = inputs.cuda()
-            targets = targets.cuda()
+            inputs = inputs.to('cuda')
+            targets = targets.to('cuda')
 
         # Classes contains the targets for gen phase as well
         targets = targets[:, targets.size()[1] - len(all_classes):]

@@ -42,9 +42,8 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
         data_time.update(time.time() - end)
 
         if use_cuda:
-            inputs = inputs.cuda()
-            targets = targets.cuda()
-
+            inputs = inputs.to('cuda')
+            targets = targets.to('cuda')
 
         inputs = Variable(inputs)
         targets = Variable(targets)

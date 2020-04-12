@@ -139,9 +139,10 @@ def dataset_reshaping(name, directory_path, new_size=(360, 270)):
 
     for (dirpath, dirnames, filenames) in os.walk(directory_path):
         for file in filenames:
-            if file.endswith(".jpg") or file.endswith(".jfif"):
+            if file.endswith(".jpg") or file.endswith(".jfif") and "resized/" not in file:
                 files.append(dirpath + "/" + file)
-
+    if not os.path.isdir(directory_path + "resized/"):
+        os.mkdir(directory_path + "resized/")
     for i, f in enumerate(files):
         img = Image.open(f)
         new_img = img.resize(new_size)
