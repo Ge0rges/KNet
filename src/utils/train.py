@@ -5,7 +5,6 @@ import random
 import torch
 import numpy as np
 
-from torch.autograd import Variable
 from progress.bar import Bar
 from src.utils.misc import AverageMeter
 
@@ -47,39 +46,40 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
 
 
         # compute output
-        model.phase = "GENERATE"
-        generate_output = model(inputs)
+        with torch.autograd.detect_anomaly():
+            model.phase = "GENERATE"
+            generate_output = model(inputs)
 
-        model.phase = "ACTION"
-        action_output = model(inputs)
+            model.phase = "ACTION"
+            action_output = model(inputs)
 
-        generate_targets = targets[:, :generate_output.size()[1]]
-        action_target = targets[:, generate_output.size()[1]:]
+            generate_targets = targets[:, :generate_output.size()[1]]
+            action_target = targets[:, generate_output.size()[1]:]
 
-        # if cls is not None:
-        #     action_one_hot = one_hot(action_target, cls)
-        #     action_target = action_one_hot
+            # if cls is not None:
+            #     action_one_hot = one_hot(action_target, cls)
+            #     action_target = action_one_hot
 
-        # calculate loss
-        optimizer.zero_grad()
+            # calculate loss
+            optimizer.zero_grad()
 
-        encoder_loss = torch.nn.MSELoss()
-        generate_loss = encoder_loss(generate_output, generate_targets)
-        action_loss = criterion(action_output, action_target)
+            encoder_loss = torch.nn.MSELoss()
+            generate_loss = encoder_loss(generate_output, generate_targets)
+            action_loss = criterion(action_output, action_target)
 
-        if penalty is not None:
-            generate_loss = generate_loss + penalty(model)
-            action_loss = action_loss + penalty(model)
+            if penalty is not None:
+                generate_loss = generate_loss + penalty(model)
+                action_loss = action_loss + penalty(model)
 
-        total_loss = action_loss + generate_loss  # TODO: add back gen in phases
+            total_loss = action_loss + generate_loss  # TODO: add back gen in phases
 
-        # record loss
-        losses.update(total_loss.item(), inputs.size(0))
+            # record loss
+            losses.update(total_loss.item(), inputs.size(0))
 
-        if not test:
-            # compute gradient and do SGD step
-            total_loss.backward()
-            optimizer.step()
+            if not test:
+                # compute gradient and do SGD step
+                total_loss.backward()
+                optimizer.step()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
