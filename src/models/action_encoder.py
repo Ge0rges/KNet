@@ -4,7 +4,7 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes=None, oldWeights=None, oldBiases=None, connected=True, ff=False):
+    def __init__(self, sizes=None, oldWeights=None, oldBiases=None, connected=False, ff=True):
         assert sizes is not None
 
         # Safer
@@ -17,12 +17,12 @@ class ActionEncoder(nn.Module):
 
         # Encoder
         encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        encoder_layers.append(nn.Sigmoid())
+        encoder_layers.append(nn.LeakyReLU())
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
         decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        decoder_layers.append(nn.Sigmoid())
+        decoder_layers.append(nn.LeakyReLU())
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
@@ -68,7 +68,7 @@ class ActionEncoder(nn.Module):
         ]
 
         for i in range(1, len(sizes) - 1):
-            layers.append(nn.Sigmoid())
+            layers.append(nn.LeakyReLU())
             layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
 
         return layers
