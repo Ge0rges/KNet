@@ -115,9 +115,9 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
 
             ## Global net size
             "sizes": {
-                "encoder": [28*28, 312, 128, 32, 10],
+                "encoder": [28*28, 312, 10],
                 "action": [10, 10],
-                "decoder": [10, 32, 128, 312, 28 * 28]
+                "decoder": [10, 312, 28 * 28]
             },
 
             # Unique to main
