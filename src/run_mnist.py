@@ -36,7 +36,7 @@ def find_hypers():
     core_invariant_size = 405  # None is PCA
 
     # PBT Params
-    generation_size = 8
+    generation_size = 4
     number_of_generations = 16
     standard_deviation = 0.1
 
