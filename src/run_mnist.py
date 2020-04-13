@@ -115,9 +115,9 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
 
             ## Global net size
             "sizes": {
-                "encoder": [28*28, 312, 10],
-                "action": [10, 10],
-                "decoder": [10, 312, 28 * 28]
+                "encoder": [28*28, 600, 405],
+                "action": [405, 120, 10],
+                "decoder": []
             },
 
             # Unique to main
@@ -211,4 +211,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    train_model()
+    find_hypers()
