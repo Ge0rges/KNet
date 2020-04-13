@@ -64,8 +64,10 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
         target = label_binarize(target, all_classes)
         model.phase = "ACTION"
         output = model(input).data
-
-        target = torch.LongTensor(target).to('cuda')
+        if use_cuda:
+            target = torch.LongTensor(target).to('cuda')
+        else:
+            target = torch.LongTensor(target)
         sum_targets = torch.cat((sum_targets, target), 0)
         sum_outputs = torch.cat((sum_outputs, output), 0)
 
