@@ -44,7 +44,6 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
             inputs = inputs.to('cuda')
             targets = targets.to('cuda')
 
-
         # compute output
         with torch.autograd.detect_anomaly():
             model.phase = "GENERATE"
@@ -55,10 +54,6 @@ def trainAE(batchloader, model, criterion, optimizer=None, penalty=None, test=Fa
 
             generate_targets = targets[:, :generate_output.size()[1]]
             action_target = targets[:, generate_output.size()[1]:]
-
-            # if cls is not None:
-            #     action_one_hot = one_hot(action_target, cls)
-            #     action_target = action_one_hot
 
             # calculate loss
             optimizer.zero_grad()

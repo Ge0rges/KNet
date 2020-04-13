@@ -60,7 +60,7 @@ def plot_tensor(tensor, img_format, mode=None):
             data = tensor.numpy()
             data = data.reshape(img_format).astype(np.uint8)
 
-            imgplot = plt.imshow(data, interpolation="nearest")
+            plt.imshow(data, interpolation="nearest")
     else:
         data = tensor.numpy()
         data = data.reshape(img_format)

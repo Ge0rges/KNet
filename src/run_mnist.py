@@ -10,17 +10,17 @@ To train a model, run train_model().
 import torch
 
 from src.main_scripts import main_ae, optimize_hypers
-from src.utils.data_loading import mnist_loader, mnist_class_loader
+from src.utils.data_loading import mnist_loader, mnist_balanced_class_loader
 from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
-from src.utils.misc import DataloaderWrapper, plot_tensor
+from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
 use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(10)  # Dataset specific, list of classification classes
-data_loaders = [DataloaderWrapper(mnist_class_loader, args=[i]) for i in classes_list]
-data_loaders.extend([DataloaderWrapper(mnist_loader)])  # The loader to be used for the data.
+data_loaders = [DataloaderWrapper(mnist_balanced_class_loader, args=[i]) for i in classes_list]
+# data_loaders.extend([DataloaderWrapper(mnist_loader)])  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 
@@ -104,24 +104,24 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
-            "learning_rate": 20,
-            "momentum": 0,
+            "learning_rate": 0.06,
+            "momentum": 0.0,
             "lr_drop": 0,
-            "epochs_drop": 20,
-            "max_epochs": 30,
-            "l1_coeff": 0,
+            "epochs_drop": 60,
+            "max_epochs": 60,
+            "l1_coeff": 1e-10,
             "l2_coeff": 0,
             "zero_threshold": 1e-4,
 
             ## Global net size
             "sizes": {
-                "encoder": [28*28, 600, 405],
-                "action": [405, 120, 10],
+                "encoder": [28*28, 32, 10],
+                "action": [10, 10],
                 "decoder": []
             },
 
             # Unique to main
-            "batch_size": 420,
+            "batch_size": 128,
             "weight_decay": 0,
             "loss_threshold": 1e-2,
             "expand_by_k": 10,
@@ -211,4 +211,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    find_hypers()
+    train_model()

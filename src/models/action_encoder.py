@@ -20,17 +20,17 @@ class ActionEncoder(nn.Module):
 
         # Encoder
         encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        encoder_layers.append(nn.LeakyReLU())  # Must be non-linear
+        encoder_layers.append(nn.Sigmoid())  # Must be non-linear
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
         decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        decoder_layers.append(nn.LeakyReLU())  # Must be non-linear
+        decoder_layers.append(nn.Sigmoid())  # Must be non-linear
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
         action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
-        action_layers.append(nn.Sigmoid())  # Must be sigmoid-0-1 for BCELoss or same domain.
+        action_layers.append(nn.Sigmoid())  # Domain [0,1] for BCELoss .
         self.action = nn.Sequential(*action_layers)
 
     def forward(self, x):
@@ -46,8 +46,6 @@ class ActionEncoder(nn.Module):
 
         if self.phase is 'ACTION':
             if self.ff:
-                sigmoid = nn.Sigmoid()
-                x = sigmoid(x)
                 return x
             return y
 

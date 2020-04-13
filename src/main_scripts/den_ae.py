@@ -43,7 +43,6 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
     momentum = main_hypers["momentum"]
     actionencoder_sizes = main_hypers["sizes"]
 
-
     print('==> Preparing dataset')
     trainloader, validloader, testloader = data_loaders[0].get_loaders(batch_size=batch_size)
 
@@ -90,7 +89,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                                   weight_decay=weight_decay
                                   )
 
-            penalty = l1_penalty(coeff=l1_coeff)
+            penalty = l1l2_penalty(model=model, l1_coeff=l1_coeff, l2_coeff=l2_coeff)
 
             for epoch in range(max_epochs):
 
@@ -111,6 +110,7 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
             else:
                 err = error_function(model, testloader, classes_list[:t+1])
             errors.append(err)
+
         else:
             # copy model
             model_copy = copy.deepcopy(model)
@@ -561,13 +561,16 @@ class freeze_hook(object):
 class active_grads_hook(object):
 
     def __init__(self, mask1, mask2, bias=False):
+        self.__name__ = "why do i use this"
+
         self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
         if mask2 is not None:
             self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
         self.bias = bias
-
+#
     def __call__(self, grad):
-        grad_clone = grad.clone().detach()
+        with torch.autograd.detect_anomaly():
+            grad_clone = grad.clone().detach()
 
         if self.bias:
             if self.mask1.size:
