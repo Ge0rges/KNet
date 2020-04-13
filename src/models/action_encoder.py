@@ -80,6 +80,7 @@ class ActionEncoder(nn.Module):
 
     def get_layer(self, input, output, init_weights=None, init_biases=None, index=0):
         layer = nn.Linear(input, output)
+        torch.nn.init.kaiming_uniform_(layer.weight, mode='fan_in', nonlinearity='leaky_relu')
 
         if init_weights is not None:
             weights = init_weights[index]
