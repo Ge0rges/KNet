@@ -623,6 +623,8 @@ def mnist_proportional_class_loader(args, batch_size=256, num_workers=0):
     cls = args[0]
     proportions = args[1]
     assert len(proportions) == 10
+    for k in range(10):
+        assert 0 <= proportions[k] <= 1
 
     train, test = get_mnist_dataset()
 
