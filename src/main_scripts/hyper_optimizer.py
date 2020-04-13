@@ -206,7 +206,10 @@ def explore(params, param_bounds, standard_deviation=0.1):
 
     # Recursive calls till base case
     for key, value in iterator:
-        if isinstance(value, dict) and key is not "sizes":
+        if key == "sizes":
+            continue
+
+        if isinstance(value, dict):
             params[key] = explore(value, param_bounds[key], standard_deviation)
 
         elif isinstance(value, list):
@@ -222,7 +225,7 @@ def explore(params, param_bounds, standard_deviation=0.1):
                                                       
             params[key] = new_value
 
-        elif key is not "sizes":
+        else:
             raise NotImplementedError
 
     return params
