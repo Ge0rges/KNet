@@ -618,6 +618,154 @@ def mnist_class_loader(args, batch_size=256, num_workers=0):
     return trainloader, validloader, testloader
 
 
+def mnist_balanced_loader(batch_size=256, num_workers=0):
+    train, test = get_mnist_dataset()
+
+    cls_count = [0]*10
+    for i in train:
+        cls_count[i[1]] += 1
+
+    min_cls = np.min(cls_count)
+    cls_count = [min_cls]*10
+    traindata = torch.zeros((min_cls*10, 28*28))
+    trainclass_labels = []
+    inp_idx = 0
+    data_idx = 0
+    while np.sum(cls_count) > 0:
+        inp = train[inp_idx]
+        if cls_count[inp[1]] > 0:
+            traindata[data_idx] = inp[0].view((28*28))
+            trainclass_labels.append(inp[1])
+            data_idx += 1
+            cls_count[inp[1]] -= 1
+        inp_idx += 1
+
+    traintensor_class_labels = torch.Tensor(trainclass_labels)
+    traintensor_class_labels = one_hot(traintensor_class_labels, range(10))
+
+    traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
+
+    traindataset = TensorDataset(traindata, traintensor_labels)
+
+    trainlabels = [i[1] for i in traindataset]
+
+    trainsampler = AESampler(trainlabels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    cls_count = [0] * 10
+    for i in test:
+        cls_count[i[1]] += 1
+    min_cls = np.min(cls_count)
+    cls_count = [min_cls] * 10
+    testdata = torch.zeros((min_cls * 10, 28 * 28))
+    testclass_labels = []
+    inp_idx = 0
+    data_idx = 0
+    while np.sum(cls_count) > 0:
+        inp = test[inp_idx]
+        if cls_count[inp[1]] > 0:
+            testdata[data_idx] = inp[0].view((28 * 28))
+            testclass_labels.append(inp[1])
+            data_idx += 1
+            cls_count[inp[1]] -= 1
+        inp_idx += 1
+
+    testtensor_class_labels = torch.Tensor(testclass_labels)
+    testtensor_class_labels = one_hot(testtensor_class_labels, range(10))
+
+    testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
+
+    testdataset = TensorDataset(testdata, testtensor_labels)
+
+    testlabels = [i[1] for i in testdataset]
+
+    l = len(testlabels)
+
+    validsampler = AESampler(testlabels, start_from=0, amount=int(l*0.2))
+    validloader = DataLoader(testdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(testlabels, start_from=int(l*0.2))
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    print("Done preparing AE dataloader")
+
+    return (trainloader, validloader, testloader)
+
+
+def mnist_balanced_class_loader(args, batch_size=256, num_workers=0):
+    assert len(args) == 1
+    cls = args[0]
+
+    train, test = get_mnist_dataset()
+
+    cls_count = [0]*10
+    for i in train:
+        cls_count[i[1]] += 1
+    min_cls = np.min(cls_count)
+    cls_count = [min_cls]*10
+    traindata = torch.zeros((min_cls*10, 28*28))
+    trainclass_labels = []
+    inp_idx = 0
+    data_idx = 0
+    while np.sum(cls_count) > 0:
+        inp = train[inp_idx]
+        if cls_count[inp[1]] > 0:
+            traindata[data_idx] = inp[0].view((28*28))
+            trainclass_labels.append(inp[1])
+            data_idx += 1
+            cls_count[inp[1]] -= 1
+        inp_idx += 1
+
+    traintensor_class_labels = torch.Tensor(trainclass_labels)
+    traintensor_class_labels = one_vs_all_one_hot(traintensor_class_labels, cls, range(10))
+
+    traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
+
+    traindataset = TensorDataset(traindata, traintensor_labels)
+
+    trainlabels = [i[1] for i in traindataset]
+
+    trainsampler = AESampler(trainlabels, start_from=0)
+    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
+
+    cls_count = [0] * 10
+    for i in test:
+        cls_count[i[1]] += 1
+    min_cls = np.min(cls_count)
+    cls_count = [min_cls] * 10
+    testdata = torch.zeros((min_cls * 10, 28 * 28))
+    testclass_labels = []
+    inp_idx = 0
+    data_idx = 0
+    while np.sum(cls_count) > 0:
+        inp = test[inp_idx]
+        if cls_count[inp[1]] > 0:
+            testdata[data_idx] = inp[0].view((28 * 28))
+            testclass_labels.append(inp[1])
+            data_idx += 1
+            cls_count[inp[1]] -= 1
+        inp_idx += 1
+
+    testtensor_class_labels = torch.Tensor(testclass_labels)
+    testtensor_class_labels = one_vs_all_one_hot(testtensor_class_labels, cls, range(10))
+
+    testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
+
+    testdataset = TensorDataset(testdata, testtensor_labels)
+
+    testlabels = [i[1] for i in testdataset]
+
+    l = len(testlabels)
+
+    validsampler = AESampler(testlabels, start_from=0, amount=int(l * 0.2))
+    validloader = DataLoader(testdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
+
+    testsampler = AESampler(testlabels, start_from=int(l * 0.2))
+    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
+
+    return trainloader, validloader, testloader
+
+
 def get_mnist_dataset():
     dataloader = datasets.MNIST
 
