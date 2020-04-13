@@ -1,21 +1,15 @@
 """
 File contains functions to search for best parameters.
 """
-# import itertools
 import random
 import numpy as np
-import torch.multiprocessing as mp
-from multiprocessing.pool import Pool
 
-from src.main_scripts.den_ae import main_ae
-# from src.utils.data_loading import EEG_bands_to_binary_loader
-# from torch.multiprocessing.pool import Pool
-# from torch.multiprocessing import cpu_count
-import numpy as np
+from torch.multiprocessing import Pool, cpu_count, set_start_method
 from sklearn.decomposition import PCA
+from src.main_scripts.den_ae import main_ae
 
 
-def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cuda=False, data_loader=None,
+def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cuda=False, data_loaders=None,
                     num_workers=0, classes_list=None, criterion=None, seed=None, error_function=None,
                     encoder_in=None, hidden_encoder=None, hidden_action=None, action_out=None, core_invariant_size=None,
                     params_bounds=None, workers_seed=None):
@@ -32,7 +26,7 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     assert hidden_action is not None
     assert hidden_encoder is not None
     assert encoder_in is not None
-    assert data_loader is not None
+    assert data_loaders is not None
     assert classes_list is not None
     assert criterion is not None
     assert error_function is not None
@@ -44,6 +38,9 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     if seed is not None:
         random.seed(seed)
 
+    if use_cuda:
+        set_start_method('spawn')
+
     # Generate initial params
     workers = []
 
@@ -51,7 +48,7 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     if autoencoder_out is None or autoencoder_out <= 0:
         print("Doing PCA on the data...")
         autoencoder_out = []
-        for dl in data_loader:
+        for dl in data_loaders:
             autoencoder_out.append(pca_dataset(data_loader=dl, threshold=0.9))
         autoencoder_out = int(max(autoencoder_out))
 
@@ -68,24 +65,28 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
 
         print("Optimization Epoch: %d/%d" % (epoch+1, epochs))
 
-        # # Multithreading!
-        # pool = Pool(min(generation_size, cpu_count()))
-        # args = itertools.zip(range(len(workers)), itertools.repeat(epoch), workers, itertools.repeat(len(workers)),
-        #                       itertools.repeat(error_function),  itertools.repeat(use_cuda),
-        #                       itertools.repeat(data_loader),  itertools.repeat(num_workers),
-        #                       itertools.repeat(classes_list), itertools.repeat(criterion),  itertools.repeat(seed)
-        #                     )
-        # workers = pool.map(train_worker_star, args)
-        #
-        # pool.close()
-        # pool.join()
+        # Multithreading!
+        generation_size -= generation_size % cpu_count()
 
-        workers_new = []
+        pool = Pool(min(generation_size, cpu_count()))
+        args = []
         for i in range(len(workers)):
-            result = train_worker(i, epoch, workers[i], len(workers), error_function, use_cuda, data_loader, num_workers,
-                                                         classes_list, criterion, seed)
-            workers_new.append(result)
-        workers = workers_new
+            i_args = [i, epoch, workers[i], len(workers), error_function, use_cuda, data_loaders, num_workers,
+                      classes_list, criterion, seed]
+            args.append(i_args)
+
+        workers = pool.starmap(train_worker, args)
+
+        pool.close()
+        pool.join()
+
+        # # Linear :(
+        # workers_new = []
+        # for i in range(len(workers)):
+        #     result = train_worker(i, epoch, workers[i], len(workers), error_function, use_cuda, data_loader, num_workers,
+        #                                                  classes_list, criterion, seed)
+        #     workers_new.append(result)
+        # workers = workers_new
 
         # Sort the workers
         workers = sorted(workers, key=lambda x: x[0])
@@ -101,14 +102,6 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
             workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
 
     return best_worker
-
-
-def train_worker_star(args):
-    """
-    Calls train_worker(*args).
-    """
-    return train_worker(*args)
-
 
 def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_loader, num_workers, classes_list,
                  criterion, seed):

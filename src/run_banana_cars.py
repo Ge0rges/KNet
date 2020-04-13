@@ -90,7 +90,7 @@ def find_hypers():
 
     best_worker = optimize_hypers(error_function=error_function, generation_size=generation_size,
                                   epochs=number_of_generations, standard_deviation=standard_deviation,
-                                  use_cuda=use_cuda, data_loader=data_loaders, num_workers=num_workers,
+                                  use_cuda=use_cuda, data_loaders=data_loaders, num_workers=num_workers,
                                   classes_list=classes_list, criterion=criterion, seed=seed,
                                   encoder_in=autoencoder_input, hidden_encoder=hidden_autoencoder_layers,
                                   hidden_action=hidden_action_layers, action_out=actionnet_output,
