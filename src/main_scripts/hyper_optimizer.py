@@ -68,7 +68,7 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
         # Multithreading!
         generation_size -= generation_size % cpu_count()
 
-        pool = Pool(min(generation_size, cpu_count()))
+        pool = Pool(max(generation_size, cpu_count()))
         args = []
         for i in range(len(workers)):
             i_args = [i, epoch, workers[i], len(workers), error_function, use_cuda, data_loaders, num_workers,
