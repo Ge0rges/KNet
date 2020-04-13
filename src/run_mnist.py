@@ -16,11 +16,11 @@ from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
-use_cuda = False  # Change to use CUDA
+use_cuda = True  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(10)  # Dataset specific, list of classification classes
 data_loaders = [DataloaderWrapper(mnist_balanced_class_loader, args=[i]) for i in classes_list]
-# data_loaders.extend([DataloaderWrapper(mnist_loader)])  # The loader to be used for the data.
+data_loaders.extend([DataloaderWrapper(mnist_loader)])  # The loader to be used for the data.
 num_workers = 0  # Leave this as zero for now.
 
 
@@ -36,8 +36,8 @@ def find_hypers():
     core_invariant_size = 405  # None is PCA
 
     # PBT Params
-    generation_size = 16
-    number_of_generations = 30
+    generation_size = 8
+    number_of_generations = 50
     standard_deviation = 0.1
 
     # Seed workers
@@ -104,8 +104,9 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if main_hypers is None:
         main_hypers = {
             # Common
+
             "learning_rate": 0.06,
-            "momentum": 0.0,
+            "momentum": 0,
             "lr_drop": 0,
             "epochs_drop": 60,
             "max_epochs": 60,
@@ -121,7 +122,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             },
 
             # Unique to main
-            "batch_size": 128,
+            "batch_size": 105,
             "weight_decay": 0,
             "loss_threshold": 1e-2,
             "expand_by_k": 10,
@@ -130,9 +131,9 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if split_train_new_hypers is None:
         split_train_new_hypers = {
             # Common
-            "learning_rate": 20,
+            "learning_rate": 0.06,
             "momentum": 0.0,
-            "lr_drop": 0.5,
+            "lr_drop": 0,
             "epochs_drop": 20,
             "max_epochs": 30,
             "l1_coeff": 1e-10,
@@ -146,9 +147,9 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     if de_train_new_hypers is None:
         de_train_new_hypers = {
             # Common
-            "learning_rate": 0.20,
+            "learning_rate": 0.10,
             "momentum": 0.0,
-            "lr_drop": 0.5,
+            "lr_drop": 0,
             "epochs_drop": 20,
             "max_epochs": 30,
             "l1_coeff": 1e-10,
