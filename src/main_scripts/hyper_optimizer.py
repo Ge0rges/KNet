@@ -3,6 +3,9 @@ File contains functions to search for best parameters.
 """
 # import itertools
 import random
+import numpy as np
+import torch.multiprocessing as mp
+from multiprocessing.pool import Pool
 
 from src.main_scripts.den_ae import main_ae
 # from src.utils.data_loading import EEG_bands_to_binary_loader
@@ -44,9 +47,9 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
     # Generate initial params
     workers = []
 
-    print("Doing PCA on the data...")
     autoencoder_out = int(core_invariant_size) if core_invariant_size is not None else None
     if autoencoder_out is None or autoencoder_out <= 0:
+        print("Doing PCA on the data...")
         autoencoder_out = []
         for dl in data_loader:
             autoencoder_out.append(pca_dataset(data_loader=dl, threshold=0.9))

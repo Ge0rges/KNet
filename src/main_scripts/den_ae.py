@@ -11,9 +11,9 @@ from src.utils.train import trainAE
 from src.utils import l1_penalty, l1l2_penalty
 
 def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=None, error_function=None, use_cuda=False,
-            data_loader=None, num_workers=0, classes_list=None, criterion=None, save_model=None, seed_rand=None):
+            data_loaders=None, num_workers=0, classes_list=None, criterion=None, save_model=None, seed_rand=None):
 
-    assert data_loader is not None
+    assert data_loaders is not None
     assert classes_list is not None
     assert criterion is not None
     assert main_hypers is not None
@@ -45,11 +45,11 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
 
     print('==> Preparing dataset')
-    trainloader, validloader, testloader = data_loader[0].get_loaders(batch_size=batch_size)
+    trainloader, validloader, testloader = data_loaders[0].get_loaders(batch_size=batch_size)
 
-    if len(data_loader) > len(classes_list):
+    if len(data_loaders) > len(classes_list):
         print("==> Preparing evaluation dataset")
-        eval_testloader = data_loader[-1].get_test_loader(batch_size=batch_size)
+        eval_testloader = data_loaders[-1].get_test_loader(batch_size=batch_size)
     else:
         eval_testloader = None
 
@@ -77,8 +77,9 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
 
         print('\nTask: [%d | %d]\n' % (t + 1, len(classes_list)))
 
-        if len(data_loader) >= len(classes_list) and t > 0:
-            trainloader, validloader, testloader = data_loader[t].get_loaders(batch_size=batch_size)
+        if len(data_loaders) >= len(classes_list) and t > 0:
+            assert t < len(data_loaders)
+            trainloader, validloader, testloader = data_loaders[t].get_loaders(batch_size=batch_size)
 
         if t == 0:
             print("==> Learning")

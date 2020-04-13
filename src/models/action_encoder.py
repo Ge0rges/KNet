@@ -8,6 +8,9 @@ class ActionEncoder(nn.Module):
         assert sizes is not None
 
         # Safer
+        if ff:
+            sizes["encoder"][-1] = sizes["action"][-1]
+            sizes["action"][0] = sizes["encoder"][-1]
         sizes["decoder"] = list(reversed(sizes["encoder"]))
 
         super(ActionEncoder, self).__init__()

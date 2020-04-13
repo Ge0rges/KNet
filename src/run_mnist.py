@@ -33,7 +33,7 @@ def find_hypers():
     hidden_autoencoder_layers = 1
     hidden_action_layers = 1
     actionnet_output = 10
-    core_invariant_size = None  # None is PCA
+    core_invariant_size = 405  # None is PCA
 
     # PBT Params
     generation_size = 8
@@ -50,8 +50,8 @@ def find_hypers():
         "lr_drop": (0, 1, float),
         "epochs_drop": (0, 20, int),
         "max_epochs": (5, 25, int),
-        "l1_coeff": (1e-20, 1e-7, float),
-        "l2_coeff": (1e-20, 1e-7, float),
+        "l1_coeff": (1e-20, 0, float),
+        "l2_coeff": (1e-20, 0, float),
         "zero_threshold": (0, 1e-5, float),
 
         "batch_size": (100, 500, int),
@@ -106,7 +106,7 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
             # Common
             "learning_rate": 20,
             "momentum": 0,
-            "lr_drop": 0.5,
+            "lr_drop": 0,
             "epochs_drop": 20,
             "max_epochs": 30,
             "l1_coeff": 0,
@@ -115,13 +115,13 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
 
             ## Global net size
             "sizes": {
-                "encoder": [28*28, 312, 10],
-                "action": [10, 10],
-                "decoder": [10, 312, 28 * 28]
+                "encoder": [28*28, 600, 405],
+                "action": [405, 120, 10],
+                "decoder": []
             },
 
             # Unique to main
-            "batch_size": 256,
+            "batch_size": 420,
             "weight_decay": 0,
             "loss_threshold": 1e-2,
             "expand_by_k": 10,
@@ -160,9 +160,9 @@ def train_model(main_hypers=None, split_train_new_hypers=None, de_train_new_hype
     save_model = None  # Pass a file name to save this model as. None does not save.
 
     model, results = main_ae(main_hypers=main_hypers, split_train_new_hypers=split_train_new_hypers,
-                      de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
-                      data_loader=data_loaders, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
-                      save_model=save_model, seed_rand=seed)
+                             de_train_new_hypers=de_train_new_hypers, error_function=error_function, use_cuda=use_cuda,
+                             data_loaders=data_loaders, num_workers=num_workers, classes_list=classes_list, criterion=criterion,
+                             save_model=save_model, seed_rand=seed)
 
     print("Done training with results from error function:" + str(results))
 
@@ -211,4 +211,4 @@ def prepare_experiment():
 
 
 if __name__ == "__main__":
-    train_model()
+    find_hypers()
