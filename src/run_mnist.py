@@ -36,8 +36,8 @@ def find_hypers():
     core_invariant_size = 405  # None is PCA
 
     # PBT Params
-    generation_size = 32
-    number_of_generations = 160
+    generation_size = 16
+    number_of_generations = 30
     standard_deviation = 0.1
 
     # Seed workers
