@@ -16,7 +16,7 @@ from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
 seed = None  # Change to seed random functions. None is no Seed.
-use_cuda = True  # Change to use CUDA
+use_cuda = False  # Change to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 classes_list = range(10)  # Dataset specific, list of classification classes
 proportions = [[1/9]*10]*10
