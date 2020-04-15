@@ -102,9 +102,14 @@ Below a compilation of resources we've used along the way, including academic pa
 - [Mendeley Banana](https://data.mendeley.com/datasets/zk3tkxndjw/2)
 
 ## Thanks
-Thanks to bjsowa/DEN for providing initial pytorch DEN implementation.
-Thanks to Prof. Steve Mann for providing computational resources.
 Thanks to Prof. John Vervaeke for guidance, thoughts and wisdom.
+
+Thanks to Prof. Steve Mann for providing some computational resources.
+
+Thanks to bjsowa/DEN for inital fork structure.
+
+Thanks to mikacho for guidance on the resource constraining function.
+
 
 ## Citation
 Unavailable
