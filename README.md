@@ -1,5 +1,7 @@
 <div align="center">
+
 # KNet
+
 **A network that integrates plasticity and unsupervised learning in a way that models the brain's function.**
 
 [![CodeFactor](https://www.codefactor.io/repository/github/ge0rges/knet/badge/master?s=2bd0ecc26d1a05b4bb8b1a7855a145c0cce0baf9)](https://www.codefactor.io/repository/github/ge0rges/knet/overview/master)
