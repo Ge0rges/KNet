@@ -1,8 +1,10 @@
+<div align="center">
 # KNet
-## Description
-This network aims to better model two of the brain's core processes that are said to be critical to learning and cognition: plasticity and unsupervised learning. The network aims to do this by being a hybrid of Cascade Correlational Model which models plasticity, and an unsupervised neural network based on the wake sleep algorithm.
+**A network that integrates plasticity and unsupervised learning in a way that models the brain's function.**
 
-So far, our design has led us to having a wake-sleep network whose layers are CCNs with a variable number of nodes.
+[![CodeFactor](https://www.codefactor.io/repository/github/ge0rges/knet/badge/master?s=2bd0ecc26d1a05b4bb8b1a7855a145c0cce0baf9)](https://www.codefactor.io/repository/github/ge0rges/knet/overview/master)
+
+</div>
 
 ## Detailed High Level Idea
 Model the entire process by which humans have come to exist using various types of neural networks, and a computational base.
