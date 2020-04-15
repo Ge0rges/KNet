@@ -70,8 +70,8 @@ def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cu
 
         pool = Pool(max(generation_size, cpu_count()))
         args = []
-        for i in range(len(workers)):
-            i_args = [i, epoch, workers[i], len(workers), error_function, use_cuda, data_loaders, num_workers,
+        for i, worker in enumerate(workers):
+            i_args = [i, epoch, worker, len(workers), error_function, use_cuda, data_loaders, num_workers,
                       classes_list, criterion, seed]
             args.append(i_args)
 
@@ -215,11 +215,11 @@ def explore(params, param_bounds, standard_deviation=0.1):
         elif isinstance(value, list):
             params[key] = explore(value, param_bounds[key], standard_deviation)
 
-        elif isinstance(value, float) or isinstance(value, int):
-            lower, upper, type = param_bounds[key]
+        elif isinstance(value, (float, int)):
+            lower, upper, value_type = param_bounds[key]
 
-            new_value = type(standard_deviation*random.choice([-1, 1])) if value == 0 else \
-                            type((standard_deviation*random.choice([-1, 1])+1)*value)
+            new_value = value_type(standard_deviation * random.choice([-1, 1])) if value == 0 else \
+                            value_type((standard_deviation * random.choice([-1, 1]) + 1) * value)
             new_value = max(lower, new_value)
             new_value = min(upper, new_value)
                                                       
@@ -234,10 +234,10 @@ def explore(params, param_bounds, standard_deviation=0.1):
 def construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
     sizes = {}
 
-    def power_law(input, output, number_of_layers, layer_number):
-        exp = np.log(input) - np.log(output)
+    def power_law(input_size, output_size, number_of_layers, layer_number):
+        exp = np.log(input_size) - np.log(output_size)
         exp = np.divide(exp, np.log(number_of_layers))
-        result = input/np.power(layer_number, exp)
+        result = input_size / np.power(layer_number, exp)
 
         return result
 
@@ -294,4 +294,3 @@ def pca_dataset(data_loader=None, threshold=0.9):
             n_comp += 1
 
     return n_comp
-

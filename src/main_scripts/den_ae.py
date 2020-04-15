@@ -104,12 +104,12 @@ def main_ae(main_hypers=None, split_train_new_hypers=None, de_train_new_hypers=N
                 train_loss = trainAE(trainloader, model, criterion, optimizer=optimizer, penalty=penalty, use_cuda=use_cuda)
                 # test_loss = trainAE(validloader, model, criterion, cl=t, test=True, penalty=penalty, use_cuda=use_cuda)
 
-            if eval_testloader is not None:
-                print("USING EVAL LOADER")
-                err = error_function(model, eval_testloader, classes_list[:t+1])
-            else:
-                err = error_function(model, testloader, classes_list[:t+1])
-            errors.append(err)
+                if eval_testloader is not None:
+                    print("USING EVAL LOADER")
+                    err = error_function(model, eval_testloader, classes_list[:t+1])
+                else:
+                    err = error_function(model, testloader, classes_list[:t+1])
+                errors.append(err)
 
         else:
             # copy model
@@ -530,8 +530,8 @@ def train_new_neurons(model, modules, trainloader, validloader, criterion, sizes
                 added_neurons.append(weight_indexes)
 
         new_sizes[name2] = [sizes[name2][0]]
-        for i, weights in enumerate(added_neurons):
-            new_sizes[name2].append(sizes[name2][i + 1] + len(weights))
+        for i, added_weights in enumerate(added_neurons):
+            new_sizes[name2].append(sizes[name2][i + 1] + len(added_weights))
 
     return ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
 
