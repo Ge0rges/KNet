@@ -172,13 +172,19 @@ class l1l2_penalty(object):
 
 
 class ResourceConstrainingPenalty:
-    def __init__(self, coeff=1, bytes_available=16000000000):
+    def __init__(self, coeff=1, bytes_available=16000000000, exponent=2):
         self.coeff = coeff
         self.resources = bytes_available
+        self.n = exponent
 
     def __call__(self, model):
-        penalty = 0
+        resources_used = 0
         for name, param in model.named_parameters():
             if param.requires_grad and 'bias' not in name:
-                penalty += -np.abs(1/param) + self.resources
-        return self.coeff * penalty
+                resources_used += 8
+
+        numerator = np.power((resources_used - self.resources), self.n)
+        denominator = np.power(self.resources, self.n-1)
+        penalty = np.divide(numerator, denominator)
+
+        return self.coeff*penalty
