@@ -3,7 +3,6 @@ import torch
 import os
 import torch.optim as optim
 
-from torch.utils.data import DataLoader
 from src.utils.misc import DataloaderWrapper
 from src.models import ActionEncoder
 from src.main_scripts.train import train
@@ -41,7 +40,6 @@ class DENTrainer:
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = len(data_loaders)
-        self.task = 0
         self.model = ActionEncoder(sizes=sizes).to(device)
 
         self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate, momentum=momentum)
@@ -49,15 +47,14 @@ class DENTrainer:
         self._epochs_to_train = None
 
     # Train Functions
-    def train_all_tasks(self, epochs: int):
+    def train_all_tasks_sequentially(self, epochs: int, with_den=True):
         errs = []
         for i in range(self.number_of_tasks):
-            self.task = i
-            errs.append(self.train_current_task(epochs))
+            errs.append(self.train_current_task([i], epochs, with_den))
 
         return errs
 
-    def train_current_task(self, epochs: int, with_den=True):
+    def train_tasks(self, tasks: [int], epochs: int, with_den=True):
         # train_new_neurons will need this.
         self._epochs_to_train = epochs
 
@@ -67,10 +64,10 @@ class DENTrainer:
 
         # Make a copy for split, get train_loader.
         model_copy = copy.deepcopy(self.model) if with_den else None
-        train_loader = self.train_loaders[self.task]
+        train_loader = self.train_loaders[tasks[0]] # Give the data loader of the first task only.
 
         for i in range(epochs):
-            self.train_one_epoch(train_loader)  # DEN requires selective training. We do this from t=0.
+            self.train_one_epoch(train_loader, tasks)  # DEN requires selective training. We do this from t=0.
 
         # Do DEN.
         if self.task > 0 and with_den:
@@ -85,19 +82,19 @@ class DENTrainer:
             #     hook.remove()
 
             # Desaturate saturated neurons
-            self.model, loss = self.split_saturated_neurons(model_copy, train_loader)
+            self.model, loss = self.split_saturated_neurons(model_copy, train_loader, tasks)
 
             # If loss is still above a certain threshold, add capacity.
             if loss > self.loss_threshold:
-                self.model = self.dynamically_expand(train_loader)
+                self.model = self.dynamically_expand(train_loader, tasks)
 
         return self.error_function(self.model, train_loader, self.task)
 
-    def train_one_epoch(self, loader: DataLoader):
+    def train_one_epoch(self, loader: DataloaderWrapper, tasks):
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
 
-        loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device)
+        loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
         err = self.error_function
         return loss, err
 
@@ -137,7 +134,7 @@ class DENTrainer:
         hooks = action_hooks + encoder_hooks
         return hooks
 
-    def split_saturated_neurons(self, model_copy: torch.nn.Module, loader: DataLoader):
+    def split_saturated_neurons(self, model_copy: torch.nn.Module, loader: DataloaderWrapper, tasks: [int]):
         sizes, weights, biases, hooks = {}, {}, {}, []
 
         suma = 0
@@ -248,9 +245,9 @@ class DENTrainer:
         if suma == 0:
             return self.model
 
-        return self.train_new_neurons(new_modules, sizes, weights, biases, hooks, loader)
+        return self.train_new_neurons(new_modules, sizes, weights, biases, hooks, loader, tasks)
 
-    def dynamically_expand(self, loader: DataLoader):
+    def dynamically_expand(self, loader: DataloaderWrapper, tasks: [int]):
         sizes, weights, biases, hooks = {}, {}, {}, []
         modules = get_modules(self.model)
 
@@ -293,9 +290,9 @@ class DENTrainer:
                 sizes[dict_key][-1] -= self.expand_by_k
 
         # From here, everything taken from DE. #
-        return self.train_new_neurons(modules, sizes, weights, biases, hooks, loader)
+        return self.train_new_neurons(modules, sizes, weights, biases, hooks, loader, tasks)
 
-    def train_new_neurons(self, modules: list, sizes: dict, weights: dict, biases: dict, hooks: list, loader: DataLoader):
+    def train_new_neurons(self, modules: list, sizes: dict, weights: dict, biases: dict, hooks: list, loader: DataloaderWrapper, tasks: [int]):
         # TODO: Make module generation dynamic
         new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
@@ -304,7 +301,7 @@ class DENTrainer:
             self.penalty.old_model = self.model
 
         for i in range(self._epochs_to_train):
-            train(loader, new_model, self.criterion, self.optimizer, self.penalty, False, self.device)
+            train(loader, new_model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
 
         # Remove hooks. Hooks still needed?
         raise NotImplementedError # Do hooks even work on new_model, different params registered?

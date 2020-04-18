@@ -24,7 +24,6 @@ class PytorchTrainable(tune.Trainable):
 
     def _setup(self, config):
         self.trainer = config.get("DENTrainer")
-        self.epochs = config.get("epochs")
 
         self.trainer.optimizer = torch.optim.SGD(
             self.trainer.model.parameters(),
@@ -42,8 +41,7 @@ class PytorchTrainable(tune.Trainable):
     def _train(self):
         # Do one epoch for all tasks
         for i in range(self.trainer.number_of_tasks):
-            self.trainer.task = i
-            self.trainer.train_current_task(self.epochs)
+            self.trainer.train_tasks([i], 5, True)
 
         err = self.trainer.test_model(task=self.trainer.task)
         return {"mean_accuracy": err}
@@ -123,7 +121,6 @@ class OptimizerController:
                 # distribution for resampling
                 "lr": lambda: np.random.uniform(0.0001, 1),
                 "momentum": lambda: np.random.uniform(0, 0.99),
-                "epochs": lambda: int(np.random.uniform(5, 120)),
                 "expand_by_k": lambda: int(np.random.uniform(1, 20)),
                 "l1_coeff": lambda: np.random.uniform(1e-20, 0),
                 "l2_coeff": lambda: np.random.uniform(1e-20, 0)
@@ -161,7 +158,6 @@ class OptimizerController:
                 "lr": tune.uniform(0.001, 1),
                 "momentum": tune.uniform(0, 1),
                 "DENTrainer": self.trainer,
-                "epochs": int(tune.uniform(5, 120)),
                 "expand_by_k": int(tune.uniform(1, 20)),
                 "l1_coeff": np.random.uniform(1e-20, 0),
                 "l2_coeff": np.random.uniform(1e-20, 0)

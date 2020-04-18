@@ -4,9 +4,10 @@ import numpy as np
 
 from progress.bar import Bar
 from src.utils.misc import AverageMeter
+from src.utils.misc import DataloaderWrapper
 
 
-def train(batch_loader, model, criterion, optimizer, penalty, testing, device):
+def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int]):
 
     # switch to train or evaluate mode
     if testing:
