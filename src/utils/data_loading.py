@@ -15,24 +15,34 @@ CAR_LABEL = 1
 ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
 
 
-def bc_loader(args, batch_size=256, num_workers=0):
+def bc_loader(task, batch_size=256, num_workers=0):
     """Loader to be used only for the car, banana and banana_car datasets"""
-    assert len(args) == 3
-    dir = args[0]
-    name = args[1]
-    label = args[2]
 
+    if task == 0:
+        name = "banana"
+        label = BANANA_LABEL
+        directory = "../data/banana_car/banana/resized/"
+    elif task == 1:
+        name = "car"
+        label = CAR_LABEL
+        directory = "../data/banana_car/car/resized/"
+    elif task == 2:
+        name = "bananacar"
+        label = [0.5, 0.5]
+        directory = "../data/banana_car/bananacar/resized/"
+    else:
+        print("Given task {} not in the available tasks for this loader".format(task))
+        raise AssertionError
+
+    # proportions: can be modified depending on what is required
     if name == "bananacar":
         proportions = [0, 0, 1]
     else:
         proportions = [0.7, 0.5, 0.25]
-    dataset = BananaCarImageDataset(dir, name, label, ALL_BANANA_CAR_LABELS)
+    dataset = BananaCarImageDataset(directory, name, label, ALL_BANANA_CAR_LABELS)
 
     num_samples = len(dataset)
-    if name == "bananacar":
-        labels = [[0.5, 0.5]]*num_samples
-    else:
-        labels = [label]*num_samples
+    labels = [label]*num_samples
 
     train_size = int(num_samples*proportions[0])
     trainsampler = AESampler(labels, start_from=0, amount=train_size)
@@ -50,6 +60,8 @@ def bc_loader(args, batch_size=256, num_workers=0):
     return (trainloader, validloader, testloader)
 
 
+# Not useful anymore for our new implementation but keeping it in case it becomes useful/relevant again
+# Do not use as is, would need modifications to be usable in the new architecture
 def all_bc_loader(args, batch_size=256, num_workers=0):
     """Dirs must be of the shape: [[train, valid, test], [train,valid,test]]"""
     # first we do the train dataloader
@@ -519,6 +531,9 @@ def simple_math_equations_loader(batch_size=256, num_workers=0):
     return (trainloader, validloader, testloader)
 
 ##### MNIST
+
+# Not useful anymore for our new implementation but keeping it in case it becomes useful/relevant again
+# Do not use as is, would need modifications to be usable in the new architecture
 def mnist_loader(batch_size=256, num_workers=0):
     train, test = get_mnist_dataset()
 
@@ -568,9 +583,9 @@ def mnist_loader(batch_size=256, num_workers=0):
     return (trainloader, validloader, testloader)
 
 
-def mnist_class_loader(args, batch_size=256, num_workers=0):
-    assert len(args) == 1
-    cls = args[0]
+def mnist_class_loader(task, batch_size=256, num_workers=0):
+    assert task in list(range(10))
+    cls = task
 
     train, test = get_mnist_dataset()
 
@@ -618,13 +633,16 @@ def mnist_class_loader(args, batch_size=256, num_workers=0):
     return trainloader, validloader, testloader
 
 
-def mnist_proportional_class_loader(args, batch_size=256, num_workers=0):
-    assert len(args) == 2
-    cls = args[0]
-    proportions = args[1]
-    assert len(proportions) == 10
-    for k in range(10):
-        assert 0 <= proportions[k] <= 1
+def mnist_proportional_class_loader(task, batch_size=256, num_workers=0):
+    assert task in list(range(10))
+    cls = task
+
+    # setting the proportions for each dataset, the proportions represent how much data is going to be taking for each
+    # class w.r.t to the smallest dataset in the datasets. Default is [1/9]*10 then setting proportions[cls] to 1
+    # this ensures that the dataloader is composed of half the cls we're looking at and the other half has the same
+    # proportion of the rest of classes
+    proportions = [1/9]*10
+    proportions[cls] = 1
 
     train, test = get_mnist_dataset()
 

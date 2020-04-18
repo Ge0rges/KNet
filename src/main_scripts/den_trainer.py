@@ -104,7 +104,6 @@ class DENTrainer:
     def test_model(self, task=None):
         return self._loss_for_loader_in_eval(self.test_loaders, task)
 
-
     def _loss_for_loader_in_eval(self, loaders, task=None):
         if task is None:
             losses = []
@@ -119,7 +118,6 @@ class DENTrainer:
             loss = train(loaders[task], self.model, self.criterion, self.optimizer, self.penalty, True, self.device)
             err = self.error_function(self.model, loaders[task], task)
             return loss, err
-
 
     # DEN Functions
     def select_neurons(self):

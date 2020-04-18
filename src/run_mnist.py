@@ -25,7 +25,10 @@ number_of_tasks = range(10)  # Dataset specific, list of classification classes
 penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0, old_model=None)  # Penalty for all
 
 data_loaders = []
-raise NotImplementedError
+for i in number_of_tasks:
+    data_loader = []
+    for j in ["train", "valid", "test"]:
+        data_loader.append(DataloaderWrapper(mnist_proportional_class_loader, i, j, batch_size=256, num_workers=0))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.
@@ -33,8 +36,8 @@ if seed is not None:
     random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
-    if use_cuda:
-        torch.cuda.manual_seed_all(seed)
+    # if use_cuda:
+    #     torch.cuda.manual_seed_all(seed)
 
 def find_hypers():
     """

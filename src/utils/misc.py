@@ -142,35 +142,23 @@ class BananaCarImageDataset(Dataset):
 class DataloaderWrapper(object):
     """Wraps the Dataloader class to increase its utility in various situations"""
 
-    def __init__(self, dataloaderfn, args=None, batch_size=256, num_workers=0):
+    def __init__(self,  dataloaderfn, task, category, batch_size=256, num_workers=0):
         self.dataloader = dataloaderfn
-        self.args = args
+        self.task = task
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-    def get_loaders(self, batch_size=None, num_workers=None):
-        if batch_size:
-            self.batch_size = batch_size
-
-        if num_workers:
-            self.num_workers = num_workers
-
-        if self.args:
-            return self.dataloader(self.args, batch_size=self.batch_size, num_workers=self.num_workers)
+        if category == "train":
+            self.loader_index = 0
+        elif category == "valid":
+            self.loader_index = 1
+        elif category == "test":
+            self.loader_index = 2
         else:
-            return self.dataloader(batch_size=self.batch_size, num_workers=self.num_workers)
+            raise NameError
 
-    def get_test_loader(self, batch_size=None, num_workers=None):
-        if batch_size:
-            self.batch_size = batch_size
-
-        if num_workers:
-            self.num_workers = num_workers
-
-        if self.args:
-            return self.dataloader(self.args, batch_size=self.batch_size, num_workers=self.num_workers)[2]
-        else:
-            return self.dataloader(batch_size=self.batch_size, num_workers=self.num_workers)[2]
+    def __iter__(self):
+        return self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index]
 
 
 class AverageMeter(object):
