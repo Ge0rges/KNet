@@ -16,12 +16,12 @@ class DENTrainer:
 
         # Get the loaders by task
         self.train_loaders = []
-        self.eval_loaders = []
+        self.valid_loaders = []
         self.test_loaders = []
 
         for train_loader, eval_loader, test_loader in data_loaders:
             self.train_loaders.append(train_loader)
-            self.eval_loaders.append(eval_loader)
+            self.valid_loaders.append(eval_loader)
             self.test_loaders.append(test_loader)
 
         # Initalize params
@@ -98,7 +98,7 @@ class DENTrainer:
 
     # Eval Function
     def eval_model(self, task=None):
-        return self._loss_for_loader_in_eval(self.eval_loaders, task)
+        return self._loss_for_loader_in_eval(self.valid_loaders, task)
 
     # Test function
     def test_model(self, task=None):
