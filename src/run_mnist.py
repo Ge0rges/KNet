@@ -29,6 +29,7 @@ for i in number_of_tasks:
     data_loader = []
     for j in ["train", "valid", "test"]:
         data_loader.append(DataloaderWrapper(mnist_proportional_class_loader, i, j, batch_size=256, num_workers=0))
+    data_loaders.append(tuple(data_loader))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.

@@ -156,9 +156,20 @@ class DataloaderWrapper(object):
             self.loader_index = 2
         else:
             raise NameError
+        self.length = None
+
+    def __len__(self):
+        if self.length is None:
+            self.length = len(self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index])
+        return self.length
 
     def __iter__(self):
-        return self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index]
+        if self.length is None:
+            dataloader = self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index]
+            self.length = len(dataloader)
+            return iter(dataloader)
+        else:
+            return iter(self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index])
 
 
 class AverageMeter(object):
