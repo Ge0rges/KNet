@@ -19,7 +19,7 @@ from src.utils.data_loading import mnist_loader, mnist_proportional_class_loader
 from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
-device = torch.device("cpu")  # Change to "gpu" to use CUDA
+device = torch.device("cpu")  # Change to "cuda" to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = range(10)  # Dataset specific, list of classification classes
 penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0, old_model=None)  # Penalty for all
