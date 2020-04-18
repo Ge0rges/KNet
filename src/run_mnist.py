@@ -37,7 +37,7 @@ if seed is not None:
     random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
-    if use_cuda:
+    if device.type == "cuda":
         torch.cuda.manual_seed_all(seed)
 
 def find_hypers():
