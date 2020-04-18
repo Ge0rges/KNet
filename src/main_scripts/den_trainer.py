@@ -3,6 +3,7 @@ import torch
 import os
 import torch.optim as optim
 
+from torch.utils.data import DataLoader
 from src.utils.misc import DataloaderWrapper
 from src.models import ActionEncoder
 from src.main_scripts.train import train
@@ -92,7 +93,7 @@ class DENTrainer:
 
         return self.error_function(self.model, train_loader, self.task)
 
-    def train_one_epoch(self, loader):
+    def train_one_epoch(self, loader: DataLoader):
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
 
@@ -136,7 +137,7 @@ class DENTrainer:
         hooks = action_hooks + encoder_hooks
         return hooks
 
-    def split_saturated_neurons(self, model_copy, loader):
+    def split_saturated_neurons(self, model_copy: torch.nn.Module, loader: DataLoader):
         sizes, weights, biases, hooks = {}, {}, {}, []
 
         suma = 0
@@ -249,7 +250,7 @@ class DENTrainer:
 
         return self.train_new_neurons(new_modules, sizes, weights, biases, hooks, loader)
 
-    def dynamically_expand(self, loader):
+    def dynamically_expand(self, loader: DataLoader):
         sizes, weights, biases, hooks = {}, {}, {}, []
         modules = get_modules(self.model)
 
@@ -294,7 +295,7 @@ class DENTrainer:
         # From here, everything taken from DE. #
         return self.train_new_neurons(modules, sizes, weights, biases, hooks, loader)
 
-    def train_new_neurons(self, modules, sizes, weights, biases, hooks, loader):
+    def train_new_neurons(self, modules: list, sizes: dict, weights: dict, biases: dict, hooks: list, loader: DataLoader):
         # TODO: Make module generation dynamic
         new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
@@ -372,7 +373,7 @@ class DENTrainer:
         return ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
 
     # Misc
-    def save_model(self, model_name):
+    def save_model(self, model_name: str):
         filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
         filepath = os.path.join(filepath, model_name)
         torch.save({'state_dict': self.model.state_dict()}, filepath)
