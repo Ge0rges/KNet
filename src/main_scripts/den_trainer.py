@@ -38,7 +38,7 @@ class DENTrainer:
         self.number_of_tasks = len(data_loaders)
         self.task = 0
         self.model = ActionEncoder(sizes=sizes)
-
+        self.model = self.model.to(device)
         self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate, momentum=momentum)
 
         self._epochs_to_train = None
