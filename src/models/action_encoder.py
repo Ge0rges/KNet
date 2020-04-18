@@ -4,8 +4,7 @@ import numpy as np
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes=None, oldWeights=None, oldBiases=None, connected=False, ff=True):
-        assert sizes is not None
+    def __init__(self, sizes, oldWeights=None, oldBiases=None, connected=False, ff=True):
 
         # Safer
         if ff:

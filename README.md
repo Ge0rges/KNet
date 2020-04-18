@@ -82,6 +82,7 @@ Candidate Networks:
 - torchvision 0.4.2
 - sklearn 0.0
 - matplotlib 3.2.1
+- Ray[Tune] (pip install 'ray[tune']) 0.8.4
 
 ## Style Guide
 We use the industry standard [PEP8].

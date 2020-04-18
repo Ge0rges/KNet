@@ -9,12 +9,11 @@ from torch.utils.data.sampler import Sampler
 import matplotlib.pyplot as plt
 
 
-def one_hot(targets, classes):
-    targets = targets.type(torch.LongTensor).view(-1)
-    targets_onehot = torch.zeros(targets.size()[0], len(classes))
+def one_hot(targets, cl):
+    targets_onehot = torch.zeros(targets.shape)
     for i, t in enumerate(targets):
-        if t in classes:
-            targets_onehot[i][classes.index(t)] = 1
+        if int(targets[i][cl]) == 1:
+            targets_onehot[i][cl] = 1
     return targets_onehot
 
 

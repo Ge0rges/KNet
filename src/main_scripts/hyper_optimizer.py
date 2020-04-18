@@ -3,294 +3,242 @@ File contains functions to search for best parameters.
 """
 import random
 import numpy as np
+import ray
+import torch
+import os
 
-from torch.multiprocessing import Pool, cpu_count, set_start_method
 from sklearn.decomposition import PCA
-from src.main_scripts.den_ae import main_ae
+from src.main_scripts.den_trainer import DENTrainer
+
+from ray import tune
+from ray.tune.schedulers import PopulationBasedTraining
+from ray.tune.utils import validate_save_restore
+from ray.tune.trial import ExportFormat
 
 
-def optimize_hypers(generation_size=8, epochs=10, standard_deviation=0.1, use_cuda=False, data_loaders=None,
-                    num_workers=0, classes_list=None, criterion=None, seed=None, error_function=None,
-                    encoder_in=None, hidden_encoder=None, hidden_action=None, action_out=None, core_invariant_size=None,
-                    params_bounds=None, workers_seed=None):
+class PytorchTrainable(tune.Trainable):
     """
-    Trains generation_size number of models for epochs number of times.
-    At every epoch the bottom 20% workers copy the top 20%
-    At every epoch the bottom 80% of workers explore their parameters.
-    Returns the best hyperparameters found for running den_ae().
-
-    Recommend setting generation size as a multiple of cpu_count()
+    Train a Pytorch net with Trainable and PopulationBasedTraining scheduler.
+    Finds hypers for one task.
     """
 
-    assert action_out is not None
-    assert hidden_action is not None
-    assert hidden_encoder is not None
-    assert encoder_in is not None
-    assert data_loaders is not None
-    assert classes_list is not None
-    assert criterion is not None
-    assert error_function is not None
-    assert generation_size > 0
-    assert epochs > 0
-    assert params_bounds is not None
-    assert workers_seed is None or len(workers_seed) <= generation_size
+    def _setup(self, config):
+        self.trainer = config.get("DENTrainer")
+        self.epochs = config.get("epochs")
 
-    if seed is not None:
-        random.seed(seed)
+        self.trainer.optimizer = torch.optim.SGD(
+            self.trainer.model.parameters(),
+            lr=config.get("lr", 0.01),
+            momentum=config.get("momentum", 0.9))
 
-    if use_cuda:
-        set_start_method('spawn')
+        self.trainer.expand_by_k = config.get("expand_by_k", 10)
 
-    # Generate initial params
-    workers = []
+        if hasattr(self.trainer.penalty, "l1_coeff"):
+            self.trainer.penalty.l1_coeff = config.get("l1_coeff", 0)
 
-    autoencoder_out = int(core_invariant_size) if core_invariant_size is not None else None
-    if autoencoder_out is None or autoencoder_out <= 0:
-        print("Doing PCA on the data...")
-        autoencoder_out = []
-        for dl in data_loaders:
-            autoencoder_out.append(pca_dataset(data_loader=dl, threshold=0.9))
-        autoencoder_out = int(max(autoencoder_out))
+        if hasattr(self.trainer.penalty, "l2_coeff"):
+            self.trainer.penalty.l2_coeff = config.get("l2_coeff", 0)
 
-    print("Initializing workers...")
-    workers.extend(workers_seed)
-    for i in range(generation_size-len(workers_seed)):
-        workers.append((0, random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder,
-                                       hidden_action, action_out)))
+    def _train(self):
+        # Do one epoch for all tasks
+        for i in range(self.trainer.number_of_tasks):
+            self.trainer.task = i
+            self.trainer.train_current_task(self.epochs)
 
+        err = self.trainer.test_model(task=self.trainer.task)
+        return {"mean_accuracy": err}
 
-    # Train our models
-    best_worker = None
-    for epoch in range(epochs):
+    def _save(self, checkpoint_dir):
+        checkpoint_path = os.path.join(checkpoint_dir, "model.pth")
+        torch.save(self.trainer.model.state_dict(), checkpoint_path)
+        return checkpoint_path
 
-        print("Optimization Epoch: %d/%d" % (epoch+1, epochs))
+    def _restore(self, checkpoint_path):
+        self.trainer.model.load_state_dict(torch.load(checkpoint_path))
 
-        # Multithreading!
-        generation_size -= generation_size % cpu_count()
-
-        pool = Pool(max(generation_size, cpu_count()))
-        args = []
-        for i, worker in enumerate(workers):
-            i_args = [i, epoch, worker, len(workers), error_function, use_cuda, data_loaders, num_workers,
-                      classes_list, criterion, seed]
-            args.append(i_args)
-
-        workers = pool.starmap(train_worker, args)
-
-        pool.close()
-        pool.join()
-
-        # # Linear :(
-        # workers_new = []
-        # for i in range(len(workers)):
-        #     result = train_worker(i, epoch, workers[i], len(workers), error_function, use_cuda, data_loader, num_workers,
-        #                                                  classes_list, criterion, seed)
-        #     workers_new.append(result)
-        # workers = workers_new
-
-        # Sort the workers
-        workers = sorted(workers, key=lambda x: x[0])
-        best_worker = workers[-1]
-        print("At epoch {} got best worker: {}".format(epoch, best_worker))
-
-        # Bottom 20% get top 20% params.
-        for i, worker in enumerate(workers[:int(len(workers) * 0.2)]):
-            workers[i] = (worker[0], exploit(workers, worker)[1])
-
-        # Bottom 80% explores
-        for i, worker in enumerate(workers[:int(len(workers) * 0.8)]):
-            workers[i] = (worker[0], explore(worker[1], params_bounds, standard_deviation))
-
-    return best_worker
-
-def train_worker(i, epoch, worker, workers_len, error_function, use_cuda, data_loader, num_workers, classes_list,
-                 criterion, seed):
-    """
-    Trains one worker.
-    """
-
-    print("Running worker: %d/%d" % (i + 1, workers_len))
-    # No need to train top 20% beyond the first epoch.
-    if epoch > 0 and i > int(workers_len * 0.8):
-        return worker
-
-    try:
-        save_model_name = None  # Change to save: str(i) + "_model_epoch" + str(epoch) + ".pt"
-        model, perfs = main_ae(worker[1], worker[1]["split_train_new_hypers"], worker[1]["de_train_new_hypers"],
-                        error_function, use_cuda, data_loader, num_workers, classes_list, criterion, save_model_name,
-                        seed)
-        perf = sum(perfs) / len(perfs)
-
-        worker = (perf, worker[1], model)
-
-        return worker
-
-    except Exception as e:
-        print("worker " + str(i) + " crashed:" + str(e))
-        return (0, worker[1], None)
-
-def random_init(params_bounds, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
-    """
-    Randomly initializes the parameters within their bounds.
-    """
-    # Safely iterate over dict or list
-    if isinstance(params_bounds, dict):
-        iterator = params_bounds.items()
-
-    elif isinstance(params_bounds, list):
-        iterator = enumerate(params_bounds)
-
-    else:
-        raise NotImplementedError
-
-    # Build the params
-    params = {}
-
-    for key, value in iterator:
-        if isinstance(value, dict):
-            params[key] = random_init(value, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out)
-
-        elif isinstance(value, list):
-            params[key] = random_init(value, autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out)
-
-        elif isinstance(value, tuple):
-            lower, upper, type = params_bounds[key]
-
-            rand = random.uniform(lower, upper)
-            params[key] = type(rand)
+    def _export_model(self, export_formats, export_dir):
+        if export_formats == [ExportFormat.MODEL]:
+            path = os.path.join(export_dir, "exported_actionnet.pt")
+            torch.save(self.trainer.model.state_dict(), path)
+            return {export_formats[0]: path}
 
         else:
-            raise NotImplementedError
+            raise ValueError("unexpected formats: " + str(export_formats))
 
-    # Sizes
-    params["sizes"] = construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out)
-    return params
+    def reset_config(self, new_config):
+        for param_group in self.trainer.optimizer.param_groups:
+            if "lr" in new_config:
+                param_group["lr"] = new_config["lr"]
+            if "momentum" in new_config:
+                param_group["momentum"] = new_config["momentum"]
+
+        self.config = new_config
+        return True
 
 
-def exploit(workers, worker):
+class OptimizerController:
     """
-    Worker copies one of the top 20%.
-    workers: List of tuples (score, params). Sorted.
-
-    >>> workers = [(0.9, {"param0":"m"}), (0.5, {"param2":"m"}), (0.6, {"param1":"m"}), (0.2, {"param4":"m"}), (0.2, {"param3":"m"})]
-    >>> exploit(workers, worker[4])
-    (0.9, {"param0":"m"})
+    An interface between our experiments and the trainable API of Ray tune.
+    Makes the required parameters accessible to Trainable.
+    Exposes our layer sizes constructor function.
     """
-    selected_worker = worker
-    while worker is not selected_worker and not len(workers) == 1:
-        top20_top_index = len(workers)-1
-        top20_bottom_index = min(len(workers) - int(0.2*len(workers)), len(workers) - 1)
 
-        random_top20 = random.randrange(top20_bottom_index, top20_top_index)
+    def __init__(self, device, data_loaders, criterion, penalty,
+                 error_function, encoder_in, hidden_encoder_layers, hidden_action_layers, action_out, core_invariant_size=None):
+        """
+        Creates a controller object.
+        """
 
-        selected_worker = workers[random_top20]
+        # Sizes
+        self.encoder_in = encoder_in
+        self.hidden_encoder = hidden_encoder_layers
+        self.hidden_action = hidden_action_layers
+        self.action_out = action_out
+        self.core_invariant_size = core_invariant_size
 
-    return selected_worker
+        # Get the CI size
+        if core_invariant_size is None:
+            self.core_invariant_size = self.pca_dataset(data_loaders, threshold=0.9)
 
+        # Build the network arch
+        sizes = self.construct_network_sizes()
 
-def explore(params, param_bounds, standard_deviation=0.1):
-    """
-    Params are modified to be either increased or decreased by roughly one standard deviation.
-    They remain within their bounds.
-    """
-    # Safely iterate
-    iterator = None
-    if isinstance(params, dict):
-        iterator = params.items()
+        # Setup trainer. LR, Momentum, expand_by_k will be replaced.
+        self.trainer = DENTrainer(data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function)
 
-    elif isinstance(params, list):
-        iterator = enumerate(params)
+    def __call__(self):
+        ray.init()
 
-    else:
-        raise NotImplementedError
+        # check if PytorchTrainable will save/restore correctly before execution
+        validate_save_restore(PytorchTrainable)
+        validate_save_restore(PytorchTrainable, use_object_store=True)
 
-    # Recursive calls till base case
-    for key, value in iterator:
-        if key == "sizes":
-            continue
+        # PBT Params
+        scheduler = PopulationBasedTraining(
+            time_attr="training_iteration",
+            metric="mean_accuracy",
+            mode="max",
+            perturbation_interval=5,
+            hyperparam_mutations={
+                # distribution for resampling
+                "lr": lambda: np.random.uniform(0.0001, 1),
+                "momentum": lambda: np.random.uniform(0, 0.99),
+                "epochs": lambda: int(np.random.uniform(5, 120)),
+                "expand_by_k": lambda: int(np.random.uniform(1, 20)),
+                "l1_coeff": lambda: np.random.uniform(1e-20, 0),
+                "l2_coeff": lambda: np.random.uniform(1e-20, 0)
+            })
 
-        if isinstance(value, dict):
-            params[key] = explore(value, param_bounds[key], standard_deviation)
+        # Tune params
+        class CustomStopper(tune.Stopper):
+            def __init__(self):
+                self.should_stop = False
 
-        elif isinstance(value, list):
-            params[key] = explore(value, param_bounds[key], standard_deviation)
+            def __call__(self, trial_id, result):
+                max_iter = 100
+                if not self.should_stop and result["mean_accuracy"] > 0.96:
+                    self.should_stop = True
+                return self.should_stop or result["training_iteration"] >= max_iter
 
-        elif isinstance(value, (float, int)):
-            lower, upper, value_type = param_bounds[key]
+            def stop_all(self):
+                return self.should_stop
 
-            new_value = value_type(standard_deviation * random.choice([-1, 1])) if value == 0 else \
-                            value_type((standard_deviation * random.choice([-1, 1]) + 1) * value)
-            new_value = max(lower, new_value)
-            new_value = min(upper, new_value)
-                                                      
-            params[key] = new_value
+        stopper = CustomStopper()
 
-        else:
-            raise NotImplementedError
+        analysis = tune.run(
+            PytorchTrainable,
+            name="pbt_test",
+            scheduler=scheduler,
+            reuse_actors=True,
+            verbose=1,
+            stop=stopper,
+            export_formats=[ExportFormat.MODEL],
+            checkpoint_score_attr="mean_accuracy",
+            checkpoint_freq=5,
+            keep_checkpoints_num=4,
+            num_samples=4,
+            config={
+                "lr": tune.uniform(0.001, 1),
+                "momentum": tune.uniform(0, 1),
+                "DENTrainer": self.trainer,
+                "epochs": int(tune.uniform(5, 120)),
+                "expand_by_k": int(tune.uniform(1, 20)),
+                "l1_coeff": np.random.uniform(1e-20, 0),
+                "l2_coeff": np.random.uniform(1e-20, 0)
+            })
 
-    return params
+        # Retrieve results
+        best_trial = analysis.get_best_trial("mean_accuracy")
+        best_checkpoint = max(analysis.get_trial_checkpoints_paths(best_trial, "mean_accuracy"))
 
+        restored_trainable = PytorchTrainable()
+        restored_trainable.restore(best_checkpoint[0])
+        best_model = restored_trainable.trainer.model
+        # Note that test only runs on a small random set of the test data, thus the
+        # accuracy may be different from metrics shown in tuning process.
+        test_acc = self.trainer.test_model()
 
-def construct_network_sizes(autoencoder_out, encoder_in, hidden_encoder, hidden_action, action_out):
-    sizes = {}
+        return test_acc, best_model
 
-    def power_law(input_size, output_size, number_of_layers, layer_number):
-        exp = np.log(input_size) - np.log(output_size)
-        exp = np.divide(exp, np.log(number_of_layers))
-        result = input_size / np.power(layer_number, exp)
+    def construct_network_sizes(self):
 
-        return result
+        def power_law(input_size, output_size, number_of_layers, layer_number):
+            exp = np.log(input_size) - np.log(output_size)
+            exp = np.divide(exp, np.log(number_of_layers))
+            result = input_size / np.power(layer_number, exp)
 
-    # AutoEncoder
-    middle_layers = []
+            return result
 
-    for i in range(2, hidden_encoder+2):
-        current = int(power_law(encoder_in, autoencoder_out, hidden_encoder+2, i))
-        if current <= autoencoder_out or current <= 1:
-            break
-        middle_layers.append(current)
+        sizes = {}
 
-    sizes["encoder"] = [int(encoder_in)] + middle_layers + [int(autoencoder_out)]
+        # AutoEncoder
+        middle_layers = []
 
-    # Action
-    middle_layers = []
-    for i in range(2, hidden_action+2):
-        current = int(power_law(autoencoder_out, action_out, hidden_action+2, i))
-        if current <= autoencoder_out or current <= 1:
-            break
-        middle_layers.append(current)
+        for i in range(2, self.hidden_encoder + 2):
+            current = int(power_law(self.encoder_in, self.core_invariant_size, self.hidden_encoder + 2, i))
+            if current <= self.core_invariant_size or current <= 1:
+                break
+            middle_layers.append(current)
 
-    sizes["action"] = [int(autoencoder_out)] + middle_layers + [int(action_out)]
+        sizes["encoder"] = [int(self.encoder_in)] + middle_layers + [int(self.core_invariant_size)]
 
-    return sizes
+        # Action
+        middle_layers = []
+        for i in range(2, self.hidden_action + 2):
+            current = int(power_law(self.core_invariant_size, self.action_out, self.hidden_action + 2, i))
+            if current <= self.core_invariant_size or current <= 1:
+                break
+            middle_layers.append(current)
 
+        sizes["action"] = [int(self.core_invariant_size)] + middle_layers + [int(self.action_out)]
 
-def pca_dataset(data_loader=None, threshold=0.9):
-    assert data_loader is not None
+        return sizes
 
-    # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
-    # that hopefully will be representative
-    train, valid, test = data_loader.get_loaders()
-    train_data = []
-    for i, (input, target) in enumerate(train):
-        n = input.size()[0]
-        indices = np.random.choice(list(range(n)), size=(int(n/5)))
-        input = input.numpy()
-        data = input[indices]
-        train_data.extend(data)
+    def pca_dataset(self, data_loader, threshold=0.9):
 
-    train_data = np.array(train_data)
-    model = PCA()
-    model.fit_transform(train_data)
-    var = model.explained_variance_ratio_.cumsum()
-    n_comp = 0
-    vars = []
-    for i in var:
-        vars.append(i)
-        if i >= threshold:
-            n_comp += 1
-            break
-        else:
-            n_comp += 1
+        # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
+        # that hopefully will be representative
+        train, valid, test = data_loader
+        train_data = []
+        for i, (input, target) in enumerate(train):
+            n = input.size()[0]
+            indices = np.random.choice(list(range(n)), size=(int(n / 5)))
+            input = input.numpy()
+            data = input[indices]
+            train_data.extend(data)
 
-    return n_comp
+        train_data = np.array(train_data)
+        model = PCA()
+        model.fit_transform(train_data)
+        variance_cumsum = model.explained_variance_ratio_.cumsum()
+
+        n_comp = 0
+        for cum_variance in variance_cumsum:
+            if cum_variance >= threshold:
+                n_comp += 1
+                break
+            else:
+                n_comp += 1
+
+        return n_comp
+

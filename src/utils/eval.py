@@ -22,18 +22,16 @@ def accuracy(output, target, topk=(1,)):
     return res
 
 
-def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda):
+def calc_avg_AUROC(model, batchloader, number_of_tasks, classes, device):
     """Calculates average of the AUROC for selected classes in the dataset
     """
 
-    sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
-    sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
+    sum_targets = torch.LongTensor().to(device)
+    sum_outputs = torch.FloatTensor().to(device)
 
     for batch_idx, (inputs, targets) in enumerate(batchloader):
-
-        if use_cuda:
-            inputs = inputs.cuda()
-            targets = targets.cuda()
+        input = input.to(device)
+        target = target.to(device)
 
         outputs = model(inputs).data
 
@@ -42,27 +40,25 @@ def calc_avg_AUROC(model, batchloader, all_classes, classes, use_cuda):
 
     sum_area = 0
     for cls in classes:
-        scores = sum_outputs[:, all_classes.index(cls)]
+        scores = sum_outputs[:, cls]
         sum_area += AUROC(scores.cpu().numpy(), (sum_targets == cls).cpu().numpy())
 
     return (sum_area / len(classes))
 
 
-def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
+def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, classes, device):
     """Calculates average of the AUROC for the autoencoder
     """
 
-    sum_targets = torch.cuda.LongTensor() if use_cuda else torch.LongTensor()
-    sum_outputs = torch.cuda.FloatTensor() if use_cuda else torch.FloatTensor()
+    sum_targets = torch.LongTensor().to(device)
+    sum_outputs = torch.FloatTensor().to(device)
 
     for idx, (input, target) in enumerate(batchloader):
-        device = 'cpu'
-        if use_cuda:
-            input = input.to('cuda')
-            device = 'cuda'
+        input = input.to(device)
+        target = target.to(device)
 
-        target = target[:, -len(all_classes):]
-        target = label_binarize(target, all_classes)
+        target = target[:, - number_of_tasks:]
+        target = label_binarize(target, number_of_tasks)
         model.phase = "ACTION"
         output = model(input).data
 
@@ -104,14 +100,13 @@ def calc_avg_AE_AUROC(model, batchloader, all_classes, classes, use_cuda):
     return roc_auc
 
 
-def calc_avg_AE_band_error(model, batchloader, use_cuda=False):
+def calc_avg_AE_band_error(model, batchloader, device):
 
     errors = []
 
     for idx, (input, target) in enumerate(batchloader):
-        if use_cuda:
-            input = input.to('cuda')
-            target = target.to('cuda')
+        input = input.to(device)
+        target = target.to(device)
 
         target = target[:, target.size()[1] - 2:]
         target = target.numpy()
@@ -133,20 +128,16 @@ def calculate_accuracy(confusion_matrix):
     return confusion_matrix.diag().sum()/confusion_matrix.sum()
 
 
-def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
+def build_confusion_matrix(model, dataloader, number_of_tasks, device):
 
-    confusion_matrix = torch.zeros(len(all_classes), len(all_classes))
-
-    if use_cuda:
-        confusion_matrix = confusion_matrix.cuda()
+    confusion_matrix = torch.zeros(number_of_tasks, number_of_tasks).to(device)
 
     for i, (inputs, classes) in enumerate(dataloader):
-        if use_cuda:
-            inputs = inputs.to('cuda')
-            classes = classes.to('cuda')
+        inputs = inputs.to(device)
+        classes = classes.to(device)
 
         # Classes contains the targets for gen phase as well
-        classes = classes[:, classes.size()[1] - len(all_classes):]
+        classes = classes[:, classes.size()[1] - number_of_tasks:]
         _, classes_b = torch.max(classes, 1)
 
         model.phase = "ACTION"
@@ -160,17 +151,16 @@ def build_confusion_matrix(model, dataloader, all_classes, use_cuda):
     return confusion_matrix
 
 
-def build_multilabel_confusion_matrix(model, dataloader, all_classes, use_cuda):
+def build_multilabel_confusion_matrix(model, dataloader, number_of_tasks, device):
 
     all_targets = None
     all_predictions = None
     for i, (inputs, targets) in enumerate(dataloader):
-        if use_cuda:
-            inputs = inputs.to('cuda')
-            targets = targets.to('cuda')
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         # Classes contains the targets for gen phase as well
-        targets = targets[:, targets.size()[1] - len(all_classes):]
+        targets = targets[:, targets.size()[1] - number_of_tasks:]
 
         model.phase = "ACTION"
         outputs = model(inputs)
@@ -188,9 +178,7 @@ def build_multilabel_confusion_matrix(model, dataloader, all_classes, use_cuda):
 
     confusion_matrix = multilabel_confusion_matrix(all_targets, all_predictions)
 
-    confusion_matrix = torch.from_numpy(confusion_matrix)
-    if use_cuda:
-        confusion_matrix = confusion_matrix.cude()
+    confusion_matrix = torch.from_numpy(confusion_matrix).to(device)
 
     return confusion_matrix
 
