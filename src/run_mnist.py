@@ -15,7 +15,7 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import l1l2_penalty
 from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
-from src.utils.data_loading import mnist_loader, mnist_proportional_class_loader
+from src.utils.data_loading import mnist_proportional_class_loader
 from src.utils.misc import DataloaderWrapper
 
 # Global experiment params
@@ -37,8 +37,8 @@ if seed is not None:
     random.seed(seed)
     torch.manual_seed(seed)
     np.random.seed(seed)
-    # if use_cuda:
-    #     torch.cuda.manual_seed_all(seed)
+    if use_cuda:
+        torch.cuda.manual_seed_all(seed)
 
 def find_hypers():
     """

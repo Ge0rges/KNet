@@ -31,14 +31,15 @@ class DENTrainer:
         self.expand_by_k = expand_by_k
         self.error_function = err_func
 
+        # DEN Thresholds
         self.zero_threshold = 1e-05
         self.drift_threshold = 0.02
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = len(data_loaders)
         self.task = 0
-        self.model = ActionEncoder(sizes=sizes)
-        self.model = self.model.to(device)
+        self.model = ActionEncoder(sizes=sizes).to(device)
+
         self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate, momentum=momentum)
 
         self._epochs_to_train = None
