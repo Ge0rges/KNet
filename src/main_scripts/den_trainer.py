@@ -3,6 +3,7 @@ import torch
 import os
 import torch.optim as optim
 
+from src.utils.misc import DataloaderWrapper
 from src.models import ActionEncoder
 from src.main_scripts.train import train
 
@@ -12,7 +13,9 @@ class DENTrainer:
     Implements DEN training.
     """
 
-    def __init__(self, data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device, err_func):
+    def __init__(self, data_loaders: [(DataloaderWrapper, DataloaderWrapper, DataloaderWrapper)],
+                 sizes: dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
+                 device: torch.device, err_func):
 
         # Get the loaders by task
         self.train_loaders = []
@@ -45,7 +48,7 @@ class DENTrainer:
         self._epochs_to_train = None
 
     # Train Functions
-    def train_all_tasks(self, epochs):
+    def train_all_tasks(self, epochs: int):
         errs = []
         for i in range(self.number_of_tasks):
             self.task = i
@@ -53,7 +56,7 @@ class DENTrainer:
 
         return errs
 
-    def train_current_task(self, epochs, with_den=True):
+    def train_current_task(self, epochs: int, with_den=True):
         # train_new_neurons will need this.
         self._epochs_to_train = epochs
 
