@@ -142,7 +142,9 @@ class BananaCarImageDataset(Dataset):
 class DataloaderWrapper(object):
     """Wraps the Dataloader class to increase its utility in various situations"""
 
-    def __init__(self,  dataloaderfn, task, category, batch_size=256, num_workers=0):
+    def __init__(self, dataloader_manager,  dataloaderfn, task, category, batch_size=256, num_workers=0):
+        self.dataloader_manager = dataloader_manager
+        self.id = None
         self.dataloader = dataloaderfn
         self.task = task
         self.batch_size = batch_size
@@ -157,19 +159,55 @@ class DataloaderWrapper(object):
         else:
             raise NameError
         self.length = None
+        self.id = self.dataloader_manager.register(self)
+
+    def get_loader(self):
+        return self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index]
+
+    def get_id(self):
+        return self.id
 
     def __len__(self):
         if self.length is None:
-            self.length = len(self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index])
+            self.length = len(self.dataloader_manager.get_loader(self))
         return self.length
 
     def __iter__(self):
         if self.length is None:
-            dataloader = self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index]
+            dataloader = self.dataloader_manager.get_loader(self)
             self.length = len(dataloader)
             return iter(dataloader)
         else:
-            return iter(self.dataloader(self.task, batch_size=self.batch_size, num_workers=self.num_workers)[self.loader_index])
+            return iter(self.dataloader_manager.get_loader(self))
+
+
+class DataloaderManager(object):
+    """Manages multiple dataloader wrappers and allocates memory for loaders"""
+    def __init__(self):
+        self.ids = []
+        self.current_loader = None
+        self.current_loader_id = None
+
+    def register(self, dataloader_wrapper):
+        id = dataloader_wrapper.get_id()
+        if id is not None and id in self.ids:
+            print("This dataloader_wrapper was already registered with id {}".format(id))
+            return id
+        else:
+            num_ids = len(self.ids)
+            new_id = num_ids
+            self.ids.append(new_id)
+
+            return new_id
+
+    def get_loader(self, dataloader_wrapper):
+        id = dataloader_wrapper.get_id()
+        if self.current_loader_id == id:
+            return self.current_loader
+        else:
+            self.current_loader_id = id
+            self.current_loader = dataloader_wrapper.get_loader()
+            return self.current_loader
 
 
 class AverageMeter(object):

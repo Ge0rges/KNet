@@ -50,7 +50,7 @@ class DENTrainer:
     def train_all_tasks_sequentially(self, epochs: int, with_den=True):
         errs = []
         for i in range(self.number_of_tasks):
-            errs.append(self.train_current_task([i], epochs, with_den))
+            errs.append(self.train_tasks([i], epochs, with_den))
 
         return errs
 
