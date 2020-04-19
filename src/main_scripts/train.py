@@ -37,24 +37,18 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
 
             model.phase = "ACTION"
             action_output = model(inputs)
-            # !!! HARDCODED !!!
-            generate_targets = targets[:, :784]
-            action_target = targets[:, 784:]
+            generate_targets = targets[:, :model.input_size]
+            action_target = targets[:, model.input_size:]
 
             # calculate loss
             optimizer.zero_grad()
 
-            # !!! HARDCODED !!!
-            action_output = action_output[:, 0]
-            action_target = action_target[:, 0]
+            action_output = action_output[:, tasks]
+            action_target = action_target[:, tasks]
 
             # encoder_loss = torch.nn.MSELoss()
             # generate_loss = encoder_loss(generate_output, generate_targets)
             action_loss = criterion(action_output, action_target)
-
-            if int(action_target[0]) == 1:
-                action_target # What?
-                raise NotImplementedError
 
             if penalty is not None:
                 # generate_loss = generate_loss + penalty(model)

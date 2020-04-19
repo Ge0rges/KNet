@@ -17,6 +17,8 @@ class ActionEncoder(nn.Module):
         self.connected = connected
         self.ff = ff
 
+        self.input_size = sizes["encoder"][0]
+
         # Encoder
         encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
         encoder_layers.append(nn.Sigmoid())  # Must be non-linear
