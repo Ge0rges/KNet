@@ -84,13 +84,14 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
     bar.finish()
     return losses.avg
 
+
 class l1l2_penalty:
     def __init__(self, l1_coeff, l2_coeff, old_model):
         self.l1_coeff = l1_coeff
         self.l2_coeff = l2_coeff
         self.old_model = old_model
 
-    def __call__(self, old_model, new_model):
+    def __call__(self, new_model):
         return self.l1(new_model) + self.l2(new_model)
 
     def l1(self, new_model):
@@ -101,7 +102,8 @@ class l1l2_penalty:
 
         return self.l1_coeff * penalty
 
-    def l2(self, old_model, new_model):
+    def l2(self, new_model):
+        assert self.old_model is not None
         penalty = 0
         for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
             if 'bias' in name1:

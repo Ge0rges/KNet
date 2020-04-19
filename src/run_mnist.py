@@ -19,7 +19,7 @@ from src.utils.data_loading import mnist_proportional_class_loader
 from src.utils.misc import DataloaderWrapper, DataloaderManager
 
 # Global experiment params
-device = torch.device("cuda")  # Change to "cuda" to use CUDA
+device = torch.device("cpu")  # Change to "cuda" to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = range(10)  # Dataset specific, list of classification classes
 penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0, old_model=None)  # Penalty for all
@@ -30,7 +30,7 @@ data_loaders = []
 for i in number_of_tasks:
     data_loader = []
     for j in ["train", "valid", "test"]:
-        data_loader.append(DataloaderWrapper(dataloader_manager, mnist_proportional_class_loader, [i], j, batch_size=256, num_workers=0))
+        data_loader.append(DataloaderWrapper(dataloader_manager, mnist_proportional_class_loader, range(10), j, batch_size=256, num_workers=0))
     data_loaders.append(tuple(data_loader))
 
 # Set the seed
