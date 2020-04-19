@@ -633,16 +633,27 @@ def mnist_class_loader(task, batch_size=256, num_workers=0):
     return trainloader, validloader, testloader
 
 
-def mnist_proportional_class_loader(task, batch_size=256, num_workers=0):
-    assert task in list(range(10))
-    cls = task
+def mnist_proportional_class_loader(tasks, batch_size=256, num_workers=0):
+    assert 0 < len(tasks) <= 10
+    for task in tasks:
+        assert task in list(range(10))
 
     # setting the proportions for each dataset, the proportions represent how much data is going to be taking for each
-    # class w.r.t to the smallest dataset in the datasets. Default is [1/9]*10 then setting proportions[cls] to 1
-    # this ensures that the dataloader is composed of half the cls we're looking at and the other half has the same
-    # proportion of the rest of classes
-    proportions = [1/9]*10
-    proportions[cls] = 1
+    # class w.r.t to the smallest dataset in the datasets. Default is equal proportion of labeled data and zeroed out
+    # data
+    k = len(tasks)
+    if k == 10:
+        proportions = [1]*10
+    elif k >= 5:
+        p = float(10 - k)/float(k)
+        proportions = [1]*10
+        for task in tasks:
+            proportions[task] = p
+    else:
+        p = float(k)/float(10 - k)
+        proportions = [p]*10
+        for task in tasks:
+            proportions[task] = 1
 
     train, test = get_mnist_dataset()
 
@@ -669,7 +680,7 @@ def mnist_proportional_class_loader(task, batch_size=256, num_workers=0):
         inp_idx += 1
 
     traintensor_class_labels = torch.Tensor(trainclass_labels)
-    traintensor_class_labels = one_vs_all_one_hot(traintensor_class_labels, cls, range(10))
+    traintensor_class_labels = one_vs_all_one_hot(traintensor_class_labels, tasks, range(10))
 
     traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
 
@@ -703,7 +714,7 @@ def mnist_proportional_class_loader(task, batch_size=256, num_workers=0):
         inp_idx += 1
 
     testtensor_class_labels = torch.Tensor(testclass_labels)
-    testtensor_class_labels = one_vs_all_one_hot(testtensor_class_labels, cls, range(10))
+    testtensor_class_labels = one_vs_all_one_hot(testtensor_class_labels, tasks, range(10))
 
     testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
 

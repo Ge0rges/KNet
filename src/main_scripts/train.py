@@ -37,13 +37,14 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
 
             model.phase = "ACTION"
             action_output = model(inputs)
-
+            # !!! HARDCODED !!!
             generate_targets = targets[:, :784]
             action_target = targets[:, 784:]
 
             # calculate loss
             optimizer.zero_grad()
 
+            # !!! HARDCODED !!!
             action_output = action_output[:, 0]
             action_target = action_target[:, 0]
 

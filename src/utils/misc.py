@@ -17,12 +17,12 @@ def one_hot(targets, cl):
     return targets_onehot
 
 
-def one_vs_all_one_hot(targets, cls, classes):
+def one_vs_all_one_hot(targets, tasks, classes):
     targets = targets.type(torch.LongTensor).view(-1)
     targets_onehot = torch.zeros(targets.size()[0], len(classes))
     for i, t in enumerate(targets):
-        if t == cls:
-            targets_onehot[i][cls] = 1
+        if t in tasks:
+            targets_onehot[i][t] = 1
     return targets_onehot
 
 
