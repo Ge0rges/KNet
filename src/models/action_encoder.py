@@ -136,8 +136,6 @@ class ActionEncoder(nn.Module):
 
             if output != biases.shape[0]:
                 kaiming_weights = torch.rand(output - biases.shape[0])
-                torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
-
                 biases = torch.cat([biases, kaiming_weights], dim=0)
 
             # Set

@@ -226,8 +226,7 @@ class DENTrainer:
                         # Modify new_param  bias to split.
                         new_layer_biases[j] = old_neuron[0]
 
-                        kaiming_bias = torch.zeros((1))
-                        torch.nn.init.kaiming_uniform_(kaiming_bias, mode='fan_in', nonlinearity='leaky_relu')
+                        kaiming_bias = torch.rand((1))
                         append_to_end_biases.append(kaiming_bias)  # New bias is 0
 
                 # Append the split weights and biases to end of layer
