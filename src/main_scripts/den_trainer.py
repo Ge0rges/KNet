@@ -83,16 +83,6 @@ class DENTrainer:
 
         # Do DEN.
         if (len(tasks) > 1 or tasks[0] > 0) and with_den:
-            raise NotImplementedError
-            # Supposedly we won't need this anymore because kevin is implementing SR in all
-            # hooks = self.select_neurons()
-            #
-            # for i in range(epochs):
-            #     self.train_one_epoch(train_loader)
-            #
-            # for hook in hooks:
-            #     hook.remove()
-
             # Desaturate saturated neurons
             loss, err = self.split_saturated_neurons(model_copy, train_loader, tasks)
 
@@ -310,7 +300,7 @@ class DENTrainer:
         return self.train_new_neurons(modules, sizes, weights, biases, hooks, loader, tasks)
 
     def train_new_neurons(self, modules: list, sizes: dict, weights: dict, biases: dict, hooks: list, loader: DataloaderWrapper, tasks: [int]):
-        # TODO: Make module generation dynamic
+        # TODO: Fix hooks
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
         # l1l2penalty is initlaized elsewhere, but we must set the old_model
@@ -320,12 +310,11 @@ class DENTrainer:
         loss, err = self.train_tasks(tasks, self.__epochs_to_train, with_den=False)
 
         # Remove hooks. Hooks still needed?
-        raise NotImplementedError # Do hooks even work on new_model, different params registered?
         for hook in hooks:
             hook.remove()
 
-        new_modules = get_modules(new_model)
-
+        # Removes 0 weights then create new model
+        new_modules = get_modules(self.model)
         new_biases = {}
         new_weights = {}
         new_sizes = {}
@@ -345,7 +334,7 @@ class DENTrainer:
 
                     # Copy over incoming bias for new neuron for previous existing
                     for i in range(param1.data.shape[0], param2.data.shape[0]):
-                        if float(param2[i].norm(1)) > zero_threshold:
+                        if float(param2[i].norm(1)) > self.zero_threshold:
                             new_layer.append(float(param2.data[i]))
 
                     new_biases[name2].append(new_layer)
@@ -370,7 +359,7 @@ class DENTrainer:
                     weight_indexes = []  # Marks neurons with none zero incoming weights
                     for i in range(param1.data.shape[0], param2.data.shape[0]):
                         row = []
-                        if float(param2[i].norm(1)) > zero_threshold:
+                        if float(param2[i].norm(1)) > self.zero_threshold:
                             weight_indexes.append(i)
                             for j in range(param2.data.shape[1]):
                                 row.append(float(param2.data[i, j]))
@@ -383,6 +372,7 @@ class DENTrainer:
             for i, added_weights in enumerate(added_neurons):
                 new_sizes[name2].append(sizes[name2][i + 1] + len(added_weights))
 
+        # Create new model without 0 weights
         self.model = ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
         err = self.error_function(self.model, loader, tasks)
         return loss, err

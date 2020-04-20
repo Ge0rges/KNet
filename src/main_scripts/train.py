@@ -86,6 +86,9 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
 
 
 class l1l2_penalty:
+    """
+    Does not account biases. See paper.
+    """
     def __init__(self, l1_coeff, l2_coeff, old_model):
         self.l1_coeff = l1_coeff
         self.l2_coeff = l2_coeff
