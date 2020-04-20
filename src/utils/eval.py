@@ -46,7 +46,7 @@ def calc_avg_AUROC(model, batchloader, number_of_tasks, classes, device):
     return (sum_area / len(classes))
 
 
-def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, classes, device):
+def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, number_of_tasks_trained, device):
     """Calculates average of the AUROC for the autoencoder
     """
 
@@ -73,7 +73,7 @@ def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, classes, device):
     # switching back to cpu for roc computation otherwise it breaks
     sum_targets = sum_targets.to('cpu')
     sum_outputs = sum_outputs.to('cpu')
-    for i in classes:
+    for i in range(number_of_tasks_trained):
         fpr[i], tpr[i], _ = roc_curve(sum_targets[:, i], sum_outputs[:, i])
         roc_auc[i] = auc(fpr[i], tpr[i])
 
@@ -83,15 +83,15 @@ def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, classes, device):
     # Compute macro-average ROC curve and ROC area
 
     # First aggregate all false positive rates
-    all_fpr = np.unique(np.concatenate([fpr[i] for i in classes]))
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(number_of_tasks_trained)]))
 
     # Then interpolate all ROC curves at this points
     mean_tpr = np.zeros_like(all_fpr)
-    for i in classes:
+    for i in range(number_of_tasks_trained):
         mean_tpr += np.interp(all_fpr, fpr[i], tpr[i])
 
     # Finally average it and compute AUC
-    mean_tpr /= len(classes)
+    mean_tpr /= number_of_tasks_trained
 
     fpr["macro"] = all_fpr
     tpr["macro"] = mean_tpr
