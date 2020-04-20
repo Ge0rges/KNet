@@ -135,8 +135,8 @@ class ActionEncoder(nn.Module):
             biases = layer.bias.data
 
             if output != biases.shape[0]:
-                kaiming_weights = torch.rand(output - biases.shape[0])
-                biases = torch.cat([biases, kaiming_weights], dim=0)
+                rand_biases = torch.rand(output - biases.shape[0])
+                biases = torch.cat([biases, rand_biases], dim=0)
 
             # Set
             layer.bias = nn.Parameter(biases)
