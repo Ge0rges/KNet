@@ -182,6 +182,7 @@ class DataloaderWrapper(object):
 
 
 class DataloaderManager(object):
+    # TODO: Make this a singleton https://python-3-patterns-idioms-test.readthedocs.io/en/latest/Singleton.html
     """Manages multiple dataloader wrappers and allocates memory for loaders"""
     def __init__(self):
         self.ids = []

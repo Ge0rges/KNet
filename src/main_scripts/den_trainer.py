@@ -15,7 +15,7 @@ class DENTrainer:
 
     def __init__(self, data_loaders: [(DataloaderWrapper, DataloaderWrapper, DataloaderWrapper)],
                  sizes: dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
-                 device: torch.device, err_func):
+                 device: torch.device, err_func, err_stop_threshold=None):
 
         # Get the loaders by task
         self.train_loaders = []
@@ -33,6 +33,7 @@ class DENTrainer:
         self.device = device
         self.expand_by_k = expand_by_k
         self.error_function = err_func
+        self.err_stop_threshold = err_stop_threshold if err_stop_threshold else float("inf")
 
         # DEN Thresholds
         self.zero_threshold = 1e-05
@@ -44,7 +45,7 @@ class DENTrainer:
 
         self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate, momentum=momentum)
 
-        self._epochs_to_train = None
+        self.__epochs_to_train = None
 
     # Train Functions
     def train_all_tasks_sequentially(self, epochs: int, with_den=True):
@@ -52,11 +53,15 @@ class DENTrainer:
         for i in range(self.number_of_tasks):
             errs.append(self.train_tasks([i], epochs, with_den))
 
+        # Reset for next train call
+        if hasattr(self.penalty, 'old_model'):
+            self.penalty.old_model = None
+
         return errs
 
     def train_tasks(self, tasks: [int], epochs: int, with_den=True):
         # train_new_neurons will need this.
-        self._epochs_to_train = epochs
+        self.__epochs_to_train = epochs
 
         # l1l2penalty is initialized elsewhere, but we must set the old_model
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
@@ -64,13 +69,20 @@ class DENTrainer:
 
         # Make a copy for split, get train_loader.
         model_copy = copy.deepcopy(self.model) if with_den else None
-        train_loader = self.train_loaders[tasks[0]] # Give the data loader of the first task only.
+        train_loader = self.train_loaders[tasks[0]]  # Give the data loader of the first task only.
 
+        # Set l2 old_model before training
+        if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
+            self.penalty.old_model = self.model
+
+        loss, err = None, None
         for i in range(epochs):
-            self.train_one_epoch(train_loader, tasks)  # DEN requires selective training. We do this from t=0.
+            loss, err = self.train_one_epoch(train_loader, tasks)  # DEN requires selective training. We do this from t=0.
+            if err >= self.err_stop_threshold:
+                break
 
         # Do DEN.
-        if self.task > 0 and with_den:
+        if (len(tasks) > 1 or tasks[0] > 0) and with_den:
             raise NotImplementedError
             # Supposedly we won't need this anymore because kevin is implementing SR in all
             # hooks = self.select_neurons()
@@ -82,31 +94,36 @@ class DENTrainer:
             #     hook.remove()
 
             # Desaturate saturated neurons
-            self.model, loss = self.split_saturated_neurons(model_copy, train_loader, tasks)
+            loss, err = self.split_saturated_neurons(model_copy, train_loader, tasks)
 
             # If loss is still above a certain threshold, add capacity.
             if loss > self.loss_threshold:
-                self.model = self.dynamically_expand(train_loader, tasks)
+                loss, err = self.dynamically_expand(train_loader, tasks)
 
-        return self.error_function(self.model, train_loader, self.task)
+            # Reset for next task
+            if hasattr(self.penalty, 'old_model'):
+                self.penalty.old_model = None
+
+        return loss, err
 
     def train_one_epoch(self, loader: DataloaderWrapper, tasks):
+        # This should be already set unless absolutely only training one epoch
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
 
         loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
-        err = self.error_function
+        err = self.error_function(self.model, loader, tasks)
         return loss, err
 
     # Eval Function
     def eval_model(self, task=None):
-        return self._loss_for_loader_in_eval(self.valid_loaders, task)
+        return self.__loss_for_loader_in_eval(self.valid_loaders, task)
 
     # Test function
     def test_model(self, task=None):
-        return self._loss_for_loader_in_eval(self.test_loaders, task)
+        return self.__loss_for_loader_in_eval(self.test_loaders, task)
 
-    def _loss_for_loader_in_eval(self, loaders, task=None):
+    def __loss_for_loader_in_eval(self, loaders, task=None):
         if task is None:
             losses = []
             for i in range(self.number_of_tasks):
@@ -294,14 +311,13 @@ class DENTrainer:
 
     def train_new_neurons(self, modules: list, sizes: dict, weights: dict, biases: dict, hooks: list, loader: DataloaderWrapper, tasks: [int]):
         # TODO: Make module generation dynamic
-        new_model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
+        self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
         # l1l2penalty is initlaized elsewhere, but we must set the old_model
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
 
-        for i in range(self._epochs_to_train):
-            train(loader, new_model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
+        loss, err = self.train_tasks(tasks, self.__epochs_to_train, with_den=False)
 
         # Remove hooks. Hooks still needed?
         raise NotImplementedError # Do hooks even work on new_model, different params registered?
@@ -367,7 +383,9 @@ class DENTrainer:
             for i, added_weights in enumerate(added_neurons):
                 new_sizes[name2].append(sizes[name2][i + 1] + len(added_weights))
 
-        return ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
+        self.model = ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
+        err = self.error_function(self.model, loader, tasks)
+        return loss, err
 
     # Misc
     def save_model(self, model_name: str):
