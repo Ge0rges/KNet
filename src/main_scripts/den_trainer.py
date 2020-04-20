@@ -51,7 +51,12 @@ class DENTrainer:
     def train_all_tasks_sequentially(self, epochs: int, with_den=True):
         errs = []
         for i in range(self.number_of_tasks):
-            errs.append(self.train_tasks([i], epochs, with_den))
+            print("Task: [{}/{}]".format(i+1, self.number_of_tasks))
+
+            loss, err = self.train_tasks([i], epochs, with_den)
+            errs.append(err)
+
+            print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
         # Reset for next train call
         if hasattr(self.penalty, 'old_model'):
@@ -213,12 +218,17 @@ class DENTrainer:
 
                         # Modify new_param weight to split
                         new_layer_weights[j] = old_neuron[1].tolist()
-                        random_weights = torch.rand(1, len(new_neuron[1]))
-                        append_to_end_weights.append(random_weights.tolist()[0])  # New weights are random
+
+                        kaiming_weights = torch.zeros((1, len(new_neuron[1])))
+                        torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
+                        append_to_end_weights.append(kaiming_weights.tolist()[0])  # New weights are random
 
                         # Modify new_param  bias to split.
                         new_layer_biases[j] = old_neuron[0]
-                        append_to_end_biases.append(0)  # New bias is 0
+
+                        kaiming_bias = torch.zeros((1))
+                        torch.nn.init.kaiming_uniform_(kaiming_bias, mode='fan_in', nonlinearity='leaky_relu')
+                        append_to_end_biases.append(kaiming_bias)  # New bias is 0
 
                 # Append the split weights and biases to end of layer
                 new_layer_weights.extend(append_to_end_weights)
@@ -284,7 +294,7 @@ class DENTrainer:
                     prev_neurons = active_neurons
 
                 elif 'bias' in module_name:
-                    raise NotImplementedError # What's active neurons suppose to be?
+                    raise NotImplementedError  # What's active neurons suppose to be?
 
                     biases[dict_key].append(param.data)
                     hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))

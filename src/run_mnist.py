@@ -92,24 +92,8 @@ def error_function(model, batch_loader, classes_trained):
     Do not modify params. Abstract method for all experiments.
     """
 
-    # More insights
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, device)
-
-    print("Confusion matrix:")
-    print(confusion_matrix)
-
-    print("Per class accuracy:")
     class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
-    print(class_acc)
-
-    accuracy = calculate_accuracy(confusion_matrix)
-    print("Accuracy:")
-    print(accuracy)
-
-    # Must return one global param on performance
-    auroc = calc_avg_AE_AUROC(model, batch_loader, number_of_tasks, len(classes_trained), device)
-    print("Auroc:")
-    print(auroc)
 
     score = 0
     for i in classes_trained:

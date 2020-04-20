@@ -46,7 +46,7 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
             action_output = action_output[:, tasks]
             action_target = action_target[:, tasks]
 
-            # encoder_loss = torch.nn.MSELoss()
+            # encoder_loss = torch.nn.BCELoss()
             # generate_loss = encoder_loss(generate_output, generate_targets)
             action_loss = criterion(action_output, action_target)
 

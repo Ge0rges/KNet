@@ -101,10 +101,16 @@ class ActionEncoder(nn.Module):
             weights = layer.weight.data
 
             if input != weights.shape[1]:
-                weights = torch.cat([weights, torch.rand(weights.shape[0], input - weights.shape[1])], dim=1)
+                kaiming_weights = torch.rand(weights.shape[0], input - weights.shape[1])
+                torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
+
+                weights = torch.cat([weights, kaiming_weights], dim=1)
 
             if output != weights.shape[0]:
-                weights = torch.cat([weights, torch.rand(output - weights.shape[0], input)], dim=0)
+                kaiming_weights = torch.rand(output - weights.shape[0], input)
+                torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
+
+                weights = torch.cat([weights, kaiming_weights], dim=0)
 
             # Set
             layer.weight = nn.Parameter(weights)
@@ -127,7 +133,12 @@ class ActionEncoder(nn.Module):
 
             # Padding
             biases = layer.bias.data
-            biases = torch.cat([biases, torch.rand(output - biases.shape[0])], dim=0)
+
+            if output != biases.shape[0]:
+                kaiming_weights = torch.rand(output - biases.shape[0])
+                torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
+
+                biases = torch.cat([biases, kaiming_weights], dim=0)
 
             # Set
             layer.bias = nn.Parameter(biases)
