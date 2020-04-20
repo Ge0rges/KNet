@@ -67,7 +67,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 60
+    epochs = 5
     learning_rate = 1
     momentum = 0
     expand_by_k = 10
@@ -99,7 +99,8 @@ def error_function(model, batch_loader, classes_trained):
     print(confusion_matrix)
 
     print("Per class accuracy:")
-    print(confusion_matrix.diag() / confusion_matrix.sum(1))
+    class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
+    print(class_acc)
 
     accuracy = calculate_accuracy(confusion_matrix)
     print("Accuracy:")
@@ -110,7 +111,12 @@ def error_function(model, batch_loader, classes_trained):
     print("Auroc:")
     print(auroc)
 
-    return accuracy
+    score = 0
+    for i in classes_trained:
+        score += class_acc[i]
+    score /= len(classes_trained)
+
+    return score
 
 
 def prepare_experiment():
