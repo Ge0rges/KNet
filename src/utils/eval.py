@@ -58,7 +58,7 @@ def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, classes, device):
         target = target.to(device)
 
         target = target[:, - number_of_tasks:]
-        target = label_binarize(target, number_of_tasks)
+        target = label_binarize(target, range(number_of_tasks))
         model.phase = "ACTION"
         output = model(input).data
 

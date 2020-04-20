@@ -21,16 +21,18 @@ from src.utils.misc import DataloaderWrapper, DataloaderManager
 # Global experiment params
 device = torch.device("cpu")  # Change to "cuda" to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
-number_of_tasks = range(10)  # Dataset specific, list of classification classes
+number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0, old_model=None)  # Penalty for all
 
 dataloader_manager = DataloaderManager()
 
 data_loaders = []
-for i in number_of_tasks:
+for i in range(number_of_tasks):
     data_loader = []
     for j in ["train", "valid", "test"]:
-        data_loader.append(DataloaderWrapper(dataloader_manager, mnist_proportional_class_loader, range(10), j, batch_size=256, num_workers=0))
+        data_loader.append(
+            DataloaderWrapper(dataloader_manager, mnist_proportional_class_loader, range(10), j, batch_size=256,
+                              num_workers=0))
     data_loaders.append(tuple(data_loader))
 
 # Set the seed
@@ -48,7 +50,7 @@ def find_hypers():
     Runs hyper_optimizer to find the best ML params.
     """
     # Net shape
-    encoder_in = 28*28
+    encoder_in = 28 * 28
     hidden_encoder_layers = 1
     hidden_action_layers = 1
     action_out = 10
@@ -69,11 +71,11 @@ def train_model():
     learning_rate = 1
     momentum = 0
     expand_by_k = 10
-    sizes = {"encoder": [28*28, 312, 128, 10],
+    sizes = {"encoder": [28 * 28, 312, 128, 10],
              "action": [10, 10]}
 
-
-    trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device, error_function)
+    trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
+                         error_function)
 
     results = trainer.train_all_tasks_sequentially(epochs)
 
@@ -104,7 +106,7 @@ def error_function(model, batch_loader, classes_trained):
     print(accuracy)
 
     # Must return one global param on performance
-    auroc = calc_avg_AE_AUROC(model, batch_loader, number_of_tasks, classes_trained, device)
+    auroc = calc_avg_AE_AUROC(model, batch_loader, number_of_tasks, len(classes_trained), device)
     print("Auroc:")
     print(auroc)
 
