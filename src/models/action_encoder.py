@@ -12,8 +12,12 @@ class ActionEncoder(nn.Module):
             sizes["action"][0] = sizes["encoder"][-1]
 
         # Ensure proper autoencoder size
-        sizes["decoder"][0] = sizes["encoder"][-1]
-        sizes["decoder"][-1] = sizes["encoder"][0]
+        if "decoder" in sizes.keys:
+            sizes["decoder"][0] = sizes["encoder"][-1]
+            sizes["decoder"][-1] = sizes["encoder"][0]
+
+        else:
+            sizes["decoder"] = list(reversed(sized["encoder"]))
 
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
