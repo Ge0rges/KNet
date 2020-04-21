@@ -141,7 +141,6 @@ class DENTrainer:
 
     # DEN Functions
     def split_saturated_neurons(self, model_copy: torch.nn.Module, loader: DataloaderWrapper, tasks: [int]):
-        # TODO: Simplify this function, no need for so many loops anymore
         print("Splitting...")
         total_neurons_added = 0
 
@@ -150,6 +149,7 @@ class DENTrainer:
         old_modules = get_modules(model_copy)
         new_modules = get_modules(self.model)
 
+        # For each module (encoder, decoder, action...)
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
             number_of_neurons_split = 0
