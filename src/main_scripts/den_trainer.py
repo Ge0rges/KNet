@@ -153,7 +153,7 @@ class DENTrainer:
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
             number_of_neurons_split = 0
-            sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
+            sizes[dict_key], weights[dict_key], biases[dict_key] = [sizes[dict_key][0]], [], []
 
             # Biases needed before going through weights
             old_biases = []
@@ -182,14 +182,9 @@ class DENTrainer:
                     old_weights = old_param.data[j]
 
                     new_bias = new_biases[biases_index].data[j]
-                    new_weights = new_weights
 
                     # Increment layer size
                     new_layer_size += 1
-
-                    # Need input size
-                    if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(len(new_weights))
 
                     # Check drift
                     diff = old_weights - new_weights
@@ -209,7 +204,7 @@ class DENTrainer:
                     else:
                         # Add existing neuron back
                         new_layer_weights.append(new_weights)
-                        new_layer_biases.append(new_module)
+                        new_layer_biases.append(new_bias)
 
                 # Update dicts
                 weights[dict_key].append(new_layer_weights)
