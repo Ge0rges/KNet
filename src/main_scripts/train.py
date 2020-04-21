@@ -47,12 +47,8 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
             action_target = action_target[:, tasks]
 
             # encoder_loss = torch.nn.BCELoss()
-            # generate_loss = encoder_loss(generate_output, generate_targets)
-            action_loss = criterion(action_output, action_target)
-
-            if penalty is not None:
-                # generate_loss = generate_loss + penalty(model)
-                action_loss = action_loss + penalty(model)
+            # generate_loss = encoder_loss(generate_output, generate_targets) + penalty(model)
+            action_loss = criterion(action_output, action_target) + penalty(model)
 
             total_loss = action_loss #+ generate_loss  # TODO: add back gen in phases
 

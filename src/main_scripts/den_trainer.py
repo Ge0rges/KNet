@@ -147,18 +147,20 @@ class DENTrainer:
         return hooks
 
     def split_saturated_neurons(self, model_copy: torch.nn.Module, loader: DataloaderWrapper, tasks: [int]):
-        sizes, weights, biases, hooks = {}, {}, {}, []
+        print("Splitting...")
+        total_neurons_added = 0
 
-        suma = 0
+        sizes, weights, biases, hooks = {}, {}, {}, []
 
         old_modules = get_modules(model_copy)
         new_modules = get_modules(self.model)
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
+            neurons_added_in_layer = 0
             sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
             # Make  per layer bias/weight pairs
-            old_layers = []  # "{action0": [(bias, weights), ...], ...}
+            old_layers = []  # "[[(bias, weights), ...], ...]
             new_layers = []
 
             old_biases = []
@@ -181,19 +183,21 @@ class DENTrainer:
 
                     for j, new_weights in enumerate(new_param.data):
                         old_layers[weight_index].append(
-                            (old_biases[weight_index].data[j], old_param.data[j], old_param, old_biases[weight_index]))
+                            (old_biases[weight_index].data[j], old_param.data[j]))  #, old_param, old_biases[weight_index]))
                         new_layers[weight_index].append(
-                            (new_biases[weight_index].data[j], new_weights, new_param, new_biases[weight_index]))
+                            (new_biases[weight_index].data[j], new_weights))  #, new_param, new_biases[weight_index]))
                     weight_index += 1
+
+            del old_biases
+            del new_biases
 
             prev_neurons = None
             # For each layer, rebuild the weight and bias tensors.
             for i, (old_neurons, new_neurons) in enumerate(zip(old_layers, new_layers)):
                 new_layer_weights = []
                 new_layer_biases = []
+
                 new_layer_size = 0
-                append_to_end_weights = []
-                append_to_end_biases = []
 
                 # For each neuron add the weights and biases back, check drift.
                 for j, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
@@ -213,57 +217,50 @@ class DENTrainer:
                     drift = diff.norm(2)
 
                     if drift > self.drift_threshold:
-                        suma += 1
+                        neurons_added_in_layer += 1
                         new_layer_size += 1  # Increment again because added neuron
 
-                        # Modify new_param weight to split
+                        # Set neuron to old state
                         new_layer_weights[j] = old_neuron[1].tolist()
-
-                        kaiming_weights = torch.zeros((1, len(new_neuron[1])))
-                        torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
-                        append_to_end_weights.append(kaiming_weights.tolist()[0])  # New weights are random
-
-                        # Modify new_param  bias to split.
                         new_layer_biases[j] = old_neuron[0]
 
-                        rand_bias = torch.rand((1))
-                        append_to_end_biases.append(rand_bias)  # New bias is 0
-
-                # Append the split weights and biases to end of layer
-                if i < len(new_layers) - 1:
-                    new_layer_weights.extend(append_to_end_weights)
-                    new_layer_biases.extend(append_to_end_biases)
 
                 # Update dicts
                 weights[dict_key].append(new_layer_weights)
                 biases[dict_key].append(new_layer_biases)
                 sizes[dict_key].append(new_layer_size)
 
-                # Register hook to freeze param
-                active_weights = [False] * (len(new_layer_weights) - len(append_to_end_weights))
-                active_weights.extend([True] * len(append_to_end_weights))
-
-                if prev_neurons is None:
-                    prev_neurons = [True] * new_neurons[0][2].shape[1]
-
-                hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))  # All neurons belong to same param.
-                hooks.append(hook)
-                hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
-                hooks.append(hook)
-
-                # Push current layer to next.
-                prev_neurons = active_weights
+                # TODO: All this is wrong because the params don't contain new weights + will be overwritten
+                # # Register hook to freeze param
+                # active_weights = [False] * (len(new_layer_weights) - neurons_added_in_layer)
+                # active_weights.extend([True] * neurons_added_in_layer)
+                #
+                # if prev_neurons is None:
+                #     prev_neurons = [True] * new_neurons[0][2].shape[1]
+                #
+                # # All neurons belong to same param.
+                # hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))
+                # hooks.append(hook)
+                # hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
+                # hooks.append(hook)
+                #
+                # # Push current layer to next.
+                # prev_neurons = active_weights
 
                 if dict_key in sizes.keys() and len(sizes[dict_key]) > 0 and i == len(new_layers) - 1:
-                    sizes[dict_key][-1] -= len(append_to_end_weights)
+                    sizes[dict_key][-1] -= neurons_added_in_layer
+
+                total_neurons_added += neurons_added_in_layer
 
         # Be efficient
-        if suma == 0:
+        if total_neurons_added == 0:
             return self.model
 
         return self.train_new_neurons(new_modules, sizes, weights, biases, hooks, loader, tasks)
 
     def dynamically_expand(self, loader: DataloaderWrapper, tasks: [int]):
+        print("Expanding...")
+
         sizes, weights, biases, hooks = {}, {}, {}, []
         modules = get_modules(self.model)
 
