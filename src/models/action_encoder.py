@@ -10,7 +10,10 @@ class ActionEncoder(nn.Module):
         if ff:
             sizes["encoder"][-1] = sizes["action"][-1]
             sizes["action"][0] = sizes["encoder"][-1]
-        sizes["decoder"] = list(reversed(sizes["encoder"]))
+
+        # Ensure proper autoencoder size
+        sizes["decoder"][0] = sizes["encoder"][-1]
+        sizes["decoder"][-1] = sizes["encoder"][0]
 
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
