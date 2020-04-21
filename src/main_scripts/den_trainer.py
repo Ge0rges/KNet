@@ -95,6 +95,9 @@ class DENTrainer:
                 loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
                 self.prune_zero_nodes()
 
+            # Post-DEN error
+            err = self.error_function(self.model, train_loader, tasks)
+
             # Reset for next task
             if hasattr(self.penalty, 'old_model'):
                 self.penalty.old_model = None
