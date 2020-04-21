@@ -256,7 +256,10 @@ class DENTrainer:
         if total_neurons_added == 0:
             return self.model
 
-        return self.train_new_neurons(new_modules, sizes, weights, biases, hooks, loader, tasks)
+        # TODO: Register hooks on new model
+        self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
+
+        return self.train_tasks_and_prune(new_modules, sizes, hooks, loader, tasks)
 
     def dynamically_expand(self, loader: DataloaderWrapper, tasks: [int]):
         print("Expanding...")
@@ -302,13 +305,12 @@ class DENTrainer:
             if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
                 sizes[dict_key][-1] -= self.expand_by_k
 
-        # From here, everything taken from DE. #
-        return self.train_new_neurons(modules, sizes, weights, biases, hooks, loader, tasks)
-
-    def train_new_neurons(self, modules: list, sizes: dict, weights: dict, biases: dict, hooks: list, loader: DataloaderWrapper, tasks: [int]):
-        # TODO: Fix hooks
+        # TODO: Register hooks on new model
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
+        return self.train_tasks_and_prune(modules, sizes, hooks, loader, tasks)
+
+    def train_tasks_and_prune(self, modules: list, sizes: dict, hooks: list, loader: DataloaderWrapper, tasks: [int]):
         # l1l2penalty is initlaized elsewhere, but we must set the old_model
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
