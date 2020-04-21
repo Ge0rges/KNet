@@ -88,12 +88,18 @@ class DENTrainer:
 
         # Do DEN.
         if (len(tasks) > 1 or tasks[0] > 0) and with_den:
+            raise NotImplementedError
+            # TODO: Fix these calls once function is implemented
             # Desaturate saturated neurons
-            loss, err = self.split_saturated_neurons(model_copy, train_loader, tasks)
+            something = self.split_saturated_neurons(model_copy, train_loader, tasks)
+            loss, err = self.train_new_neurons(something)
+            err = self.prune_zero_nodes(tasks)
 
             # If loss is still above a certain threshold, add capacity.
             if loss > self.loss_threshold:
                 loss, err = self.dynamically_expand(train_loader, tasks)
+                loss, err = self.train_new_neurons(something, tasks)
+                err = self.prune_zero_nodes(tasks)
 
             # Reset for next task
             if hasattr(self.penalty, 'old_model'):
@@ -134,19 +140,8 @@ class DENTrainer:
             return loss, err
 
     # DEN Functions
-    def select_neurons(self):
-        modules = get_modules(self.model)
-
-        prev_active = [True] * self.number_of_tasks
-        prev_active[self.task] = False
-
-        action_hooks, prev_active = gen_hooks(modules['action'], self.zero_threshold, prev_active)
-        encoder_hooks, _ = gen_hooks(modules['encoder'], self.zero_threshold, prev_active)
-
-        hooks = action_hooks + encoder_hooks
-        return hooks
-
     def split_saturated_neurons(self, model_copy: torch.nn.Module, loader: DataloaderWrapper, tasks: [int]):
+        # TODO: Simplify this function, no need for so many loops anymore
         print("Splitting...")
         total_neurons_added = 0
 
@@ -231,6 +226,7 @@ class DENTrainer:
                 sizes[dict_key].append(new_layer_size)
 
                 # TODO: All this is wrong because the params don't contain new weights + will be overwritten
+                raise NotImplementedError
                 # # Register hook to freeze param
                 # active_weights = [False] * (len(new_layer_weights) - neurons_added_in_layer)
                 # active_weights.extend([True] * neurons_added_in_layer)
@@ -257,9 +253,11 @@ class DENTrainer:
             return self.model
 
         # TODO: Register hooks on new model
+        raise NotImplementedError
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
-        return self.train_tasks_and_prune(new_modules, sizes, hooks, loader, tasks)
+        # TODO: Remove hook logic from here. Return only needed info for parenty function to call train_new_neurons
+        raise NotImplementedError
 
     def dynamically_expand(self, loader: DataloaderWrapper, tasks: [int]):
         print("Expanding...")
@@ -305,22 +303,42 @@ class DENTrainer:
             if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
                 sizes[dict_key][-1] -= self.expand_by_k
 
-        # TODO: Register hooks on new model
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
-        return self.train_tasks_and_prune(modules, sizes, hooks, loader, tasks)
+        # TODO: Remove hook logic from here. Return only needed info for parenty function to call train_new_neurons
+        raise NotImplementedError
 
-    def train_tasks_and_prune(self, modules: list, sizes: dict, hooks: list, loader: DataloaderWrapper, tasks: [int]):
-        # l1l2penalty is initlaized elsewhere, but we must set the old_model
-        if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
-            self.penalty.old_model = self.model
+    def train_new_neurons(self, neurons_added_by_layer, tasks):
+        # TODO: Freeze the old neurons in each layer except outpu/input
+        raise NotImplementedError
+
+        # Train
+        # l1l2penalty old_model should be set
+        assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is None
 
         loss, err = self.train_tasks(tasks, self.__epochs_to_train, with_den=False)
 
-        # Remove hooks. Hooks still needed?
+        # Remove hooks
         for hook in hooks:
             hook.remove()
 
+        # Return loss, err
+        return loss, err
+
+    # TODO: Delete this function. Currently not called
+    # def select_neurons(self):
+    #     modules = get_modules(self.model)
+    #
+    #     prev_active = [True] * self.number_of_tasks
+    #     prev_active[self.task] = False
+    #
+    #     action_hooks, prev_active = gen_hooks(modules['action'], self.zero_threshold, prev_active)
+    #     encoder_hooks, _ = gen_hooks(modules['encoder'], self.zero_threshold, prev_active)
+    #
+    #     hooks = action_hooks + encoder_hooks
+    #     return hooks
+
+    def prune_zero_nodes(self, modules: list, sizes: dict, loader: DataloaderWrapper, tasks: [int]):
         # Removes 0 weights then create new model
         new_modules = get_modules(self.model)
         new_biases = {}
@@ -383,7 +401,7 @@ class DENTrainer:
         # Create new model without 0 weights
         self.model = ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
         err = self.error_function(self.model, loader, tasks)
-        return loss, err
+        return err
 
     # Misc
     def save_model(self, model_name: str):
