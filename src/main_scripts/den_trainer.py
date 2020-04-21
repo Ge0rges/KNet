@@ -188,7 +188,7 @@ class DENTrainer:
 
             prev_neurons = None
             # For each layer, rebuild the weight and bias tensors.
-            for old_neurons, new_neurons in zip(old_layers, new_layers):
+            for i, (old_neurons, new_neurons) in enumerate(zip(old_layers, new_layers)):
                 new_layer_weights = []
                 new_layer_biases = []
                 new_layer_size = 0
@@ -230,8 +230,9 @@ class DENTrainer:
                         append_to_end_biases.append(rand_bias)  # New bias is 0
 
                 # Append the split weights and biases to end of layer
-                new_layer_weights.extend(append_to_end_weights)
-                new_layer_biases.extend(append_to_end_biases)
+                if i < len(new_layers) - 1:
+                    new_layer_weights.extend(append_to_end_weights)
+                    new_layer_biases.extend(append_to_end_biases)
 
                 # Update dicts
                 weights[dict_key].append(new_layer_weights)
@@ -245,8 +246,7 @@ class DENTrainer:
                 if prev_neurons is None:
                     prev_neurons = [True] * new_neurons[0][2].shape[1]
 
-                hook = new_neurons[0][2].register_hook(
-                    freeze_hook(prev_neurons, active_weights))  # All neurons belong to same param.
+                hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))  # All neurons belong to same param.
                 hooks.append(hook)
                 hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
                 hooks.append(hook)
@@ -254,7 +254,7 @@ class DENTrainer:
                 # Push current layer to next.
                 prev_neurons = active_weights
 
-                if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
+                if dict_key in sizes.keys() and len(sizes[dict_key]) > 0 and i == len(new_layers) - 1:
                     sizes[dict_key][-1] -= len(append_to_end_weights)
 
         # Be efficient
