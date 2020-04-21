@@ -14,15 +14,15 @@ import numpy as np
 from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import l1l2_penalty
-from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
+from src.utils.eval import build_confusion_matrix
 from src.utils.data_loading import mnist_proportional_class_loader
 from src.utils.misc import DataloaderWrapper, DataloaderManager
 
 # Global experiment params
-device = torch.device("cpu")  # Change to "cuda" to use CUDA
+device = torch.device("gpu") if torch.cuda.is_available() else torch.device("cpu")
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0, old_model=None)  # Penalty for all
+penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 
 dataloader_manager = DataloaderManager()
 
@@ -31,8 +31,8 @@ for i in range(number_of_tasks):
     data_loader = []
     for j in ["train", "valid", "test"]:
         data_loader.append(
-            DataloaderWrapper(dataloader_manager, mnist_proportional_class_loader, range(10), j, batch_size=256,
-                              num_workers=0))
+            DataloaderWrapper(dataloader_manager, mnist_proportional_class_loader, range(number_of_tasks), j,
+                              batch_size=256, num_workers=4))
     data_loaders.append(tuple(data_loader))
 
 # Set the seed
