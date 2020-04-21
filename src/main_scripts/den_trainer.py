@@ -421,7 +421,7 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
 
     for name, layer in layers:
         if 'bias' in name:
-            h = layer.register_hook(active_grads_hook(prev_active, None, bias=True))
+            h = layer.register_hook(ActiveGradsHook(prev_active, None, bias=True))
             hooks.append(h)
             continue
 
@@ -442,25 +442,23 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
                     # mark connected neuron as active
                     active[y] = False
 
-        h = layer.register_hook(active_grads_hook(prev_active, active))
+        h = layer.register_hook(ActiveGradsHook(prev_active, active))
 
         hooks.append(h)
         prev_active = active
 
         selected.append((y_size - sum(active), y_size))
 
-
     return hooks, prev_active
 
 
-class freeze_hook(object):
+class FreezeHook:
     def __init__(self, previous_neurons, active_neurons, bias=False):
         self.previous_neurons = previous_neurons
         self.active_neurons = active_neurons
         self.bias = bias
 
     def __call__(self, grad):
-
         grad_clone = grad.clone().detach()
 
         if self.bias:
@@ -475,7 +473,7 @@ class freeze_hook(object):
         return grad_clone
 
 
-class active_grads_hook(object):
+class ActiveGradsHook:
 
     def __init__(self, mask1, mask2, bias=False):
         self.__name__ = "why do i use this"
