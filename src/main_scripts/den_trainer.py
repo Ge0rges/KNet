@@ -168,7 +168,7 @@ class DENTrainer:
 
             # Go through per node/weights
             biases_index = 0
-            new_layer_size = 0  # Needed here, to make last layer fixed size.
+            added_last_layer = 0  # Needed here, to make last layer fixed size.
 
             for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
                 # Skip biases params
@@ -182,6 +182,7 @@ class DENTrainer:
                 new_layer_weights = []
                 new_layer_biases = []
                 new_layer_size = 0
+                added_last_layer = 0
 
                 # For each node's weights
                 for j, new_weights in enumerate(new_param.detach()):
@@ -198,9 +199,10 @@ class DENTrainer:
                         # Split 1 neuron into 2
                         new_layer_size += 2
                         total_neurons_added += 1
+                        added_last_layer += 1
 
                         # Add old neuron
-                        new_layer_weights.append(old_weights)
+                        new_layer_weights.append(old_weights.tolist())
                         new_layer_biases.append(old_bias)
 
                     else:
@@ -208,7 +210,7 @@ class DENTrainer:
                         new_layer_size += 1
 
                         # Add existing neuron back
-                        new_layer_weights.append(new_weights)
+                        new_layer_weights.append(new_weights.tolist())
                         new_layer_biases.append(new_bias)
 
                 # Update dicts
@@ -219,7 +221,7 @@ class DENTrainer:
                 biases_index += 1
 
             # Output must remain constant
-            sizes[dict_key][-1] -= new_layer_size
+            sizes[dict_key][-1] -= added_last_layer
 
         # Be efficient
         old_sizes = self.model.sizes
