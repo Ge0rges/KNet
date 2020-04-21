@@ -149,110 +149,101 @@ class DENTrainer:
 
         old_modules = get_modules(model_copy)
         new_modules = get_modules(self.model)
+
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
-            neurons_added_in_layer = 0
+            number_of_neurons_split = 0
             sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
-            # Make  per layer bias/weight pairs
-            old_layers = []  # "[[(bias, weights), ...], ...]
-            new_layers = []
-
+            # Biases needed before going through weights
             old_biases = []
             new_biases = []
 
             # First get all biases.
             for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
-
-                # Construct the neurons
                 if "bias" in new_param_name:
                     new_biases.append(new_param)
                     old_biases.append(old_param)
 
-            # Then match with weights.
-            weight_index = 0
+            # Go through per node/weights
+            biases_index = 0
             for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
-                if "bias" not in new_param_name:
-                    old_layers.append([])
-                    new_layers.append([])
+                # Skip biases params
+                if "bias" in new_param_name:
+                    continue
 
-                    for j, new_weights in enumerate(new_param.data):
-                        old_layers[weight_index].append(
-                            (old_biases[weight_index].data[j], old_param.data[j]))  #, old_param, old_biases[weight_index]))
-                        new_layers[weight_index].append(
-                            (new_biases[weight_index].data[j], new_weights))  #, new_param, new_biases[weight_index]))
-                    weight_index += 1
-
-            del old_biases
-            del new_biases
-
-            prev_neurons = None
-            # For each layer, rebuild the weight and bias tensors.
-            for i, (old_neurons, new_neurons) in enumerate(zip(old_layers, new_layers)):
                 new_layer_weights = []
                 new_layer_biases = []
-
                 new_layer_size = 0
 
-                # For each neuron add the weights and biases back, check drift.
-                for j, (old_neuron, new_neuron) in enumerate(zip(old_neurons, new_neurons)):  # For each neuron
-                    # Add existing neuron back
-                    new_layer_weights.append(new_neuron[1].tolist())
-                    new_layer_biases.append(new_neuron[0])
+                # For each node's weights
+                for j, new_weights in enumerate(new_param.data):
+                    old_bias = old_biases[biases_index].data[j]
+                    old_weights = old_param.data[j]
+
+                    new_bias = new_biases[biases_index].data[j]
+                    new_weights = new_weights
 
                     # Increment layer size
                     new_layer_size += 1
 
                     # Need input size
                     if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(len(new_neuron[1]))
+                        sizes[dict_key].append(len(new_weights))
 
                     # Check drift
-                    diff = old_neuron[1] - new_neuron[1]
+                    diff = old_weights - new_weights
                     drift = diff.norm(2)
 
                     if drift > self.drift_threshold:
-                        neurons_added_in_layer += 1
+                        # How many new neurons added
+                        number_of_neurons_split += 1
+
+                        # Add a new neuron in this layer
                         new_layer_size += 1  # Increment again because added neuron
 
-                        # Set neuron to old state
-                        new_layer_weights[j] = old_neuron[1].tolist()
-                        new_layer_biases[j] = old_neuron[0]
+                        # Add old neuron
+                        new_layer_weights.append(old_weights.tolist())
+                        new_layer_biases.append(old_bias)
 
+                    else:
+                        # Add existing neuron back
+                        new_layer_weights.append(new_weights)
+                        new_layer_biases.append(new_module)
 
                 # Update dicts
                 weights[dict_key].append(new_layer_weights)
                 biases[dict_key].append(new_layer_biases)
                 sizes[dict_key].append(new_layer_size)
 
-                # TODO: All this is wrong because the params don't contain new weights + will be overwritten
-                raise NotImplementedError
-                # # Register hook to freeze param
-                # active_weights = [False] * (len(new_layer_weights) - neurons_added_in_layer)
-                # active_weights.extend([True] * neurons_added_in_layer)
-                #
-                # if prev_neurons is None:
-                #     prev_neurons = [True] * new_neurons[0][2].shape[1]
-                #
-                # # All neurons belong to same param.
-                # hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))
-                # hooks.append(hook)
-                # hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
-                # hooks.append(hook)
-                #
-                # # Push current layer to next.
-                # prev_neurons = active_weights
+                biases_index += 1
 
-                if dict_key in sizes.keys() and len(sizes[dict_key]) > 0 and i == len(new_layers) - 1:
-                    sizes[dict_key][-1] -= neurons_added_in_layer
+            if len(sizes[dict_key]) > 0:
+                sizes[dict_key][-1] -= number_of_neurons_split
 
-                total_neurons_added += neurons_added_in_layer
+            total_neurons_added += number_of_neurons_split
 
         # Be efficient
         if total_neurons_added == 0:
             return self.model
 
         # TODO: Register hooks on new model
+        # TODO: All this is wrong because the params don't contain new weights + will be overwritten
+        # # Register hook to freeze param
+        # active_weights = [False] * (len(new_layer_weights) - number_of_neurons_split)
+        # active_weights.extend([True] * number_of_neurons_split)
+        #
+        # if prev_neurons is None:
+        #     prev_neurons = [True] * new_neurons[0][2].shape[1]
+        #
+        # # All neurons belong to same param.
+        # hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))
+        # hooks.append(hook)
+        # hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
+        # hooks.append(hook)
+        #
+        # # Push current layer to next.
+        # prev_neurons = active_weights
         raise NotImplementedError
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
