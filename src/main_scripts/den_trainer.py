@@ -53,8 +53,13 @@ class DENTrainer:
         for i in range(self.number_of_tasks):
             print("Task: [{}/{}]".format(i+1, self.number_of_tasks))
 
-            loss, err = self.train_tasks([i], epochs, with_den)
-            errs.append(err)
+            if i == 0:  # Never with DEN.
+                loss, err = self.train_tasks([i], epochs, False)
+                errs.append(err)
+
+            else:
+                loss, err = self.train_tasks([i], epochs, with_den)
+                errs.append(err)
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
@@ -83,7 +88,7 @@ class DENTrainer:
                 break
 
         # Do DEN.
-        if (len(tasks) > 1 or tasks[0] > 0) and with_den:
+        if with_den:
             # Desaturate saturated neurons
             old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
             loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
