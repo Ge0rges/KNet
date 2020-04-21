@@ -487,7 +487,7 @@ class active_grads_hook(object):
 
     def __call__(self, grad):
         with torch.autograd.detect_anomaly():
-            grad_clone = grad.clone().detach()
+            grad_clone = grad.detach()
 
         if self.bias:
             if self.mask1.size:
