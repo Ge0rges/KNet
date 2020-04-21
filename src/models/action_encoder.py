@@ -24,20 +24,21 @@ class ActionEncoder(nn.Module):
         self.connected = connected
         self.ff = ff
 
+        self.sizes = sizes
         self.input_size = sizes["encoder"][0]
 
         # Encoder
-        encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        encoder_layers = self.set_module('encoder', oldWeights=oldWeights, oldBiases=oldBiases)
         encoder_layers.append(nn.Sigmoid())  # Must be non-linear
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
-        decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        decoder_layers = self.set_module('decoder', oldWeights=oldWeights, oldBiases=oldBiases)
         decoder_layers.append(nn.Sigmoid())  # Must be non-linear
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
-        action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        action_layers = self.set_module('action', oldWeights=oldWeights, oldBiases=oldBiases)
         action_layers.append(nn.Sigmoid())  # Domain [0,1] for BCELoss .
         self.action = nn.Sequential(*action_layers)
 
@@ -69,8 +70,8 @@ class ActionEncoder(nn.Module):
 
         raise ReferenceError
 
-    def set_module(self, label, sizes, oldWeights=None, oldBiases=None):
-        sizes = sizes[label]
+    def set_module(self, label, oldWeights=None, oldBiases=None):
+        sizes = self.sizes[label]
 
         if oldWeights:
             oldWeights = oldWeights[label]

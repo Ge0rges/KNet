@@ -76,30 +76,24 @@ class DENTrainer:
         model_copy = copy.deepcopy(self.model) if with_den else None
         train_loader = self.train_loaders[tasks[0]]  # Give the data loader of the first task only.
 
-        # Set l2 old_model before training
-        if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
-            self.penalty.old_model = self.model
-
         loss, err = None, None
         for i in range(epochs):
-            loss, err = self.train_one_epoch(train_loader, tasks)  # DEN requires selective training. We do this from t=0.
+            loss, err = self.train_one_epoch(train_loader, tasks)  # Selective retraining from t=0.
             if err >= self.err_stop_threshold:
                 break
 
         # Do DEN.
         if (len(tasks) > 1 or tasks[0] > 0) and with_den:
-            raise NotImplementedError
-            # TODO: Fix these calls once function is implemented
             # Desaturate saturated neurons
-            something = self.split_saturated_neurons(model_copy, train_loader, tasks)
-            loss, err = self.train_new_neurons(something)
-            err = self.prune_zero_nodes(tasks)
+            old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
+            loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
+            self.prune_zero_nodes() # TODO: Fix this call.
 
             # If loss is still above a certain threshold, add capacity.
             if loss > self.loss_threshold:
-                something = self.dynamically_expand(train_loader, tasks)
-                loss, err = self.train_new_neurons(something, tasks)
-                err = self.prune_zero_nodes(tasks)
+                old_sizes, new_sizes = self.dynamically_expand()
+                loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
+                self.prune_zero_nodes()
 
             # Reset for next task
             if hasattr(self.penalty, 'old_model'):
@@ -140,11 +134,11 @@ class DENTrainer:
             return loss, err
 
     # DEN Functions
-    def split_saturated_neurons(self, model_copy: torch.nn.Module, loader: DataloaderWrapper, tasks: [int]):
+    def split_saturated_neurons(self, model_copy: torch.nn.Module):
         print("Splitting...")
         total_neurons_added = 0
 
-        sizes, weights, biases, hooks = {}, {}, {}, []
+        sizes, weights, biases = {}, {}, {}
 
         old_modules = get_modules(model_copy)
         new_modules = get_modules(self.model)
@@ -202,7 +196,7 @@ class DENTrainer:
                         new_layer_biases.append(old_bias)
 
                     else:
-                        # One neuro not split
+                        # One neuron not split
                         new_layer_size += 1
 
                         # Add existing neuron back
@@ -220,26 +214,21 @@ class DENTrainer:
             sizes[dict_key][-1] -= new_layer_size
 
         # Be efficient
-        if total_neurons_added == 0:
-            return self.model
+        old_sizes = self.model.sizes
+        if total_neurons_added > 0:
+            self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
-        self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
+        return old_sizes, self.model.sizes
 
-        # TODO: Return only needed info for parenty function to call train_new_neurons
-        raise NotImplementedError
-
-    def dynamically_expand(self, loader: DataloaderWrapper, tasks: [int]):
+    def dynamically_expand(self):
         print("Expanding...")
 
-        # TODO: Remove hooks
-        sizes, weights, biases, hooks = {}, {}, {}, []
+        sizes, weights, biases = {}, {}, {}
         modules = get_modules(self.model)
 
         for dict_key, module in modules.items():
             sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
-            # TODO: Remove this
-            # prev_neurons = None
             for module_name, param in module:
                 if 'bias' not in module_name:
                     if len(sizes[dict_key]) == 0:
@@ -248,43 +237,25 @@ class DENTrainer:
                     weights[dict_key].append(param.detach())
                     sizes[dict_key].append(param.shape[0] + self.expand_by_k)
 
-                    # TODO: Remove this
-                    # # Register hook to freeze param
-                    # active_neurons = [False] * (param.shape[0] - self.expand_by_k)
-                    # active_neurons.extend([True] * self.expand_by_k)
-                    #
-                    # if prev_neurons is None:
-                    #     prev_neurons = [True] * param.shape[0]
-                    #
-                    # hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
-                    # hooks.append(hook)
-                    #
-                    # # Pushes current set of neurons to next.
-                    # prev_neurons = active_neurons
-
                 elif 'bias' in module_name:
                     raise NotImplementedError  # What's active neurons suppose to be?
 
                     biases[dict_key].append(param.detach())
 
-                    # TODO: Remove this
-                    # hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
-                    # hooks.append(hook)
-
             # Output must remain constant
             sizes[dict_key][-1] -= self.expand_by_k
 
+        old_sizes = self.model.sizes
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
-        # TODO: Remove hook logic from here. Return only needed info for parenty function to call train_new_neurons
-        raise NotImplementedError
+        return old_sizes, self.model.sizes
 
-    def train_new_neurons(self, neurons_added_by_layer, tasks):
+    def train_new_neurons(self, old_sizes, new_sizes, tasks):
         # TODO: Freeze the old neurons in each layer except outpu/input
         raise NotImplementedError
 
-        # From split
         # TODO: All this is wrong because the params don't contain new weights + will be overwritten
+        # From split
         # # Register hook to freeze param
         # active_weights = [False] * (len(new_layer_weights) - number_of_neurons_split)
         # active_weights.extend([True] * number_of_neurons_split)
@@ -300,6 +271,24 @@ class DENTrainer:
         #
         # # Push current layer to next.
         # prev_neurons = active_weights
+
+        # From DE: Weights
+        # # Register hook to freeze param
+        # active_neurons = [False] * (param.shape[0] - self.expand_by_k)
+        # active_neurons.extend([True] * self.expand_by_k)
+        #
+        # if prev_neurons is None:
+        #     prev_neurons = [True] * param.shape[0]
+        #
+        # hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
+        # hooks.append(hook)
+        #
+        # # Pushes current set of neurons to next.
+        # prev_neurons = active_neurons
+
+        # From DE: Biases
+        # hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
+        # hooks.append(hook)
 
         # Train
         # l1l2penalty old_model should be set
@@ -327,7 +316,7 @@ class DENTrainer:
     #     hooks = action_hooks + encoder_hooks
     #     return hooks
 
-    def prune_zero_nodes(self, modules: list, sizes: dict, loader: DataloaderWrapper, tasks: [int]):
+    def prune_zero_nodes(self, modules: list, sizes: dict):
         # Removes 0 weights then create new model
         new_modules = get_modules(self.model)
         new_biases = {}
@@ -390,9 +379,10 @@ class DENTrainer:
                 new_sizes[name2].append(sizes[name2][i + 1] + len(added_weights))
 
         # Create new model without 0 weights
+        old_sizes = self.model.sizes
         self.model = ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
-        err = self.error_function(self.model, loader, tasks)
-        return err
+
+        return old_sizes, self.model.sizes
 
     # Misc
     def save_model(self, model_name: str):
