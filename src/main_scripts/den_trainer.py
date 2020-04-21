@@ -412,7 +412,7 @@ def get_modules(model):
 
     return modules
 
-
+# TODO: Delete this function. Currently not called
 def gen_hooks(layers, zero_threshold, prev_active=None):
     hooks = []
     selected = []
