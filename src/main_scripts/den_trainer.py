@@ -152,8 +152,7 @@ class DENTrainer:
         # For each module (encoder, decoder, action...)
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
-            number_of_neurons_split = 0
-            sizes[dict_key], weights[dict_key], biases[dict_key] = [sizes[dict_key][0]], [], []
+            sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
             # Biases needed before going through weights
             old_biases = []
@@ -167,6 +166,8 @@ class DENTrainer:
 
             # Go through per node/weights
             biases_index = 0
+            new_layer_size = 0  # Needed here, to make last layer fixed size.
+
             for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
                 # Skip biases params
                 if "bias" in new_param_name:
@@ -186,19 +187,23 @@ class DENTrainer:
                     # Increment layer size
                     new_layer_size += 1
 
+                    # Need input size
+                    if len(sizes[dict_key]) == 0:
+                        sizes[dict_key].append(len(new_weights))
+
                     # Check drift
                     diff = old_weights - new_weights
                     drift = diff.norm(2)
 
                     if drift > self.drift_threshold:
                         # How many new neurons added
-                        number_of_neurons_split += 1
+                        total_neurons_added += 1
 
                         # Add a new neuron in this layer
                         new_layer_size += 1  # Increment again because added neuron
 
                         # Add old neuron
-                        new_layer_weights.append(old_weights.tolist())
+                        new_layer_weights.append(old_weights)
                         new_layer_biases.append(old_bias)
 
                     else:
@@ -213,10 +218,7 @@ class DENTrainer:
 
                 biases_index += 1
 
-            if len(sizes[dict_key]) > 0:
-                sizes[dict_key][-1] -= number_of_neurons_split
-
-            total_neurons_added += number_of_neurons_split
+            sizes[dict_key][-1] -= new_layer_size
 
         # Be efficient
         if total_neurons_added == 0:
