@@ -103,6 +103,7 @@ class l1l2_penalty:
 
     def l2(self, new_model):
         assert self.old_model is not None
+
         penalty = 0
         for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
             if 'bias' in name1:
@@ -118,14 +119,23 @@ class l1l2_penalty:
 
 
 class ResourceConstrainingPenalty:
-    def __init__(self, coeff=1, bytes_available=3 * 1000000000):
+    def __init__(self, coeff, resources_available, exponent=2):
+        assert resources_available > 0
+        assert exponent >= 2
+
         self.coeff = coeff
-        self.resources = bytes_available
+        self.resources_available = resources_available
+        self.exponent = exponent
 
     def __call__(self, model):
         penalty = 0
         for name, param in model.named_parameters():
             if param.requires_grad and 'bias' not in name:
                 resources_used = param.detach().numpy().nbytes
-                penalty += -np.abs(1/resources_used) + self.resources
+
+                numerator = np.power((resources_used-self.resources_available), self.exponent)
+                denominator = np.power(self.resources_available, self.exponent-1)
+
+                penalty += np.divide(numerator, denominator)
+
         return self.coeff * penalty
