@@ -97,7 +97,7 @@ class DENTrainer:
 
             # If loss is still above a certain threshold, add capacity.
             if loss > self.loss_threshold:
-                loss, err = self.dynamically_expand(train_loader, tasks)
+                something = self.dynamically_expand(train_loader, tasks)
                 loss, err = self.train_new_neurons(something, tasks)
                 err = self.prune_zero_nodes(tasks)
 
@@ -159,7 +159,7 @@ class DENTrainer:
             new_biases = []
 
             # First get all biases.
-            for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
+            for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
                 if "bias" in new_param_name:
                     new_biases.append(new_param)
                     old_biases.append(old_param)
@@ -168,7 +168,7 @@ class DENTrainer:
             biases_index = 0
             new_layer_size = 0  # Needed here, to make last layer fixed size.
 
-            for (old_param_name, old_param), (new_param_name, new_param) in zip(old_module, new_module):
+            for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
                 # Skip biases params
                 if "bias" in new_param_name:
                     continue
@@ -188,25 +188,23 @@ class DENTrainer:
 
                     new_bias = new_biases[biases_index].detach()[j]
 
-                    # Increment layer size
-                    new_layer_size += 1
-
                     # Check drift
                     diff = old_weights - new_weights
                     drift = diff.norm(2)
 
                     if drift > self.drift_threshold:
-                        # How many new neurons added
+                        # Split 1 neuron into 2
+                        new_layer_size += 2
                         total_neurons_added += 1
-
-                        # Add a new neuron in this layer
-                        new_layer_size += 1  # Increment again because added neuron
 
                         # Add old neuron
                         new_layer_weights.append(old_weights)
                         new_layer_biases.append(old_bias)
 
                     else:
+                        # One neuro not split
+                        new_layer_size += 1
+
                         # Add existing neuron back
                         new_layer_weights.append(new_weights)
                         new_layer_biases.append(new_bias)
@@ -218,6 +216,7 @@ class DENTrainer:
 
                 biases_index += 1
 
+            # Output must remain constant
             sizes[dict_key][-1] -= new_layer_size
 
         # Be efficient
@@ -232,13 +231,15 @@ class DENTrainer:
     def dynamically_expand(self, loader: DataloaderWrapper, tasks: [int]):
         print("Expanding...")
 
+        # TODO: Remove hooks
         sizes, weights, biases, hooks = {}, {}, {}, []
         modules = get_modules(self.model)
 
         for dict_key, module in modules.items():
             sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
-            prev_neurons = None
+            # TODO: Remove this
+            # prev_neurons = None
             for module_name, param in module:
                 if 'bias' not in module_name:
                     if len(sizes[dict_key]) == 0:
@@ -247,31 +248,31 @@ class DENTrainer:
                     weights[dict_key].append(param.detach())
                     sizes[dict_key].append(param.shape[0] + self.expand_by_k)
 
-                    # Register hook to freeze param
-                    active_neurons = [False] * (param.shape[0] - self.expand_by_k)
-                    active_neurons.extend([True] * self.expand_by_k)
-
-                    if prev_neurons is None:
-                        prev_neurons = [True] * param.shape[0]
-
-                    hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
-                    hooks.append(hook)
-
-                    # Pushes current set of neurons to next.
-                    prev_neurons = active_neurons
+                    # TODO: Remove this
+                    # # Register hook to freeze param
+                    # active_neurons = [False] * (param.shape[0] - self.expand_by_k)
+                    # active_neurons.extend([True] * self.expand_by_k)
+                    #
+                    # if prev_neurons is None:
+                    #     prev_neurons = [True] * param.shape[0]
+                    #
+                    # hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
+                    # hooks.append(hook)
+                    #
+                    # # Pushes current set of neurons to next.
+                    # prev_neurons = active_neurons
 
                 elif 'bias' in module_name:
                     raise NotImplementedError  # What's active neurons suppose to be?
 
                     biases[dict_key].append(param.detach())
-                    hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
-                    hooks.append(hook)
 
-                else:
-                    raise LookupError()
+                    # TODO: Remove this
+                    # hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
+                    # hooks.append(hook)
 
-            if dict_key in sizes.keys() and len(sizes[dict_key]) > 0:
-                sizes[dict_key][-1] -= self.expand_by_k
+            # Output must remain constant
+            sizes[dict_key][-1] -= self.expand_by_k
 
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
