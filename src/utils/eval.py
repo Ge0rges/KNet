@@ -33,7 +33,7 @@ def calc_avg_AUROC(model, batchloader, number_of_tasks, classes, device):
         input = input.to(device)
         target = target.to(device)
 
-        outputs = model(inputs).data
+        outputs = model(inputs)
 
         sum_targets = torch.cat((sum_targets, targets), 0)
         sum_outputs = torch.cat((sum_outputs, outputs), 0)
@@ -60,7 +60,7 @@ def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, number_of_tasks_train
         target = target[:, - number_of_tasks:]
         target = label_binarize(target, range(number_of_tasks))
         model.phase = "ACTION"
-        output = model(input).data
+        output = model(input)
 
         target = torch.LongTensor(target).to(device)
         sum_targets = torch.cat((sum_targets, target), 0)
@@ -112,7 +112,7 @@ def calc_avg_AE_band_error(model, batchloader, device):
         target = target.numpy()
 
         model.phase = "ACTION"
-        output = model(input).data.numpy()
+        output = model(input).numpy()
 
         errors.extend(np.abs((target - output)/target))
 
@@ -143,7 +143,7 @@ def build_confusion_matrix(model, dataloader, number_of_tasks, device):
         model.phase = "ACTION"
         outputs = model(inputs)
 
-        _, preds = torch.max(outputs.data, 1)
+        _, preds = torch.max(outputs, 1)
 
         for t, p in zip(classes_b.view(-1), preds.view(-1)):
             confusion_matrix[p, t] += 1
@@ -165,7 +165,7 @@ def build_multilabel_confusion_matrix(model, dataloader, number_of_tasks, device
         model.phase = "ACTION"
         outputs = model(inputs)
 
-        predictions = np.where(outputs.data > 0.5, 1, 0)
+        predictions = np.where(outputs > 0.5, 1, 0)
 
         if all_targets is None:
             all_targets = np.asarray(targets)

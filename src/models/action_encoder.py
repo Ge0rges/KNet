@@ -51,7 +51,7 @@ class ActionEncoder(nn.Module):
             ci = x
         else:
             ci = torch.zeros(x.shape)
-            ci.data = x.data.clone().detach()
+            ci.data = x.detach()
 
         y = self.action(ci)
 
@@ -108,7 +108,7 @@ class ActionEncoder(nn.Module):
                 layer.weight = weights
 
             # Padding
-            weights = layer.weight.data
+            weights = layer.weight.detach()
 
             if input != weights.shape[1]:
                 kaiming_weights = torch.rand(weights.shape[0], input - weights.shape[1])
@@ -142,7 +142,7 @@ class ActionEncoder(nn.Module):
                 layer.bias = biases
 
             # Padding
-            biases = layer.bias.data
+            biases = layer.bias.detach()
 
             if output != biases.shape[0]:
                 rand_biases = torch.rand(output - biases.shape[0])
@@ -152,6 +152,6 @@ class ActionEncoder(nn.Module):
             layer.bias = nn.Parameter(biases)
 
             # Update the oldBiases to include padding
-            init_biases[index] = layer.bias.data
+            init_biases[index] = layer.bias.detach()
 
         return layer

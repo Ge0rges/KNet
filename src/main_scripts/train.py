@@ -108,10 +108,10 @@ class l1l2_penalty:
             if 'bias' in name1:
                 continue
 
-            for i in range(param1.data.shape[0], param2.data.shape[0]):
-                row = torch.zeros(param2.data.shape[1])
-                for j in range(param2.data.shape[1]):
-                    row[j] = param2.data[i, j]
+            for i in range(param1.shape[0], param2.shape[0]):
+                row = torch.zeros(param2.shape[1])
+                for j in range(param2.shape[1]):
+                    row[j] = param2.detach()[i, j]
                 penalty += row.norm(2)
 
         return self.l2_coeff * penalty

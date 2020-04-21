@@ -427,7 +427,7 @@ def gen_hooks(layers, zero_threshold, prev_active=None):
         x_size, y_size = layer.size()
 
         active = [True] * y_size
-        data = layer.data
+        data = layer.detach()
 
         for x in range(x_size):
             # we skip the weight if connected neuron wasn't selected
