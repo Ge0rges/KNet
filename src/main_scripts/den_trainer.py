@@ -173,23 +173,23 @@ class DENTrainer:
                 if "bias" in new_param_name:
                     continue
 
+                # Need input size
+                if len(sizes[dict_key]) == 0:
+                    sizes[dict_key].append(new_param.shape[1])
+
                 new_layer_weights = []
                 new_layer_biases = []
                 new_layer_size = 0
 
                 # For each node's weights
-                for j, new_weights in enumerate(new_param.data):
-                    old_bias = old_biases[biases_index].data[j]
-                    old_weights = old_param.data[j]
+                for j, new_weights in enumerate(new_param.detach()):
+                    old_bias = old_biases[biases_index].detach()[j]
+                    old_weights = old_param.detach()[j]
 
-                    new_bias = new_biases[biases_index].data[j]
+                    new_bias = new_biases[biases_index].detach()[j]
 
                     # Increment layer size
                     new_layer_size += 1
-
-                    # Need input size
-                    if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(len(new_weights))
 
                     # Check drift
                     diff = old_weights - new_weights
@@ -224,27 +224,9 @@ class DENTrainer:
         if total_neurons_added == 0:
             return self.model
 
-        # TODO: Register hooks on new model
-        # TODO: All this is wrong because the params don't contain new weights + will be overwritten
-        # # Register hook to freeze param
-        # active_weights = [False] * (len(new_layer_weights) - number_of_neurons_split)
-        # active_weights.extend([True] * number_of_neurons_split)
-        #
-        # if prev_neurons is None:
-        #     prev_neurons = [True] * new_neurons[0][2].shape[1]
-        #
-        # # All neurons belong to same param.
-        # hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))
-        # hooks.append(hook)
-        # hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
-        # hooks.append(hook)
-        #
-        # # Push current layer to next.
-        # prev_neurons = active_weights
-        raise NotImplementedError
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
 
-        # TODO: Remove hook logic from here. Return only needed info for parenty function to call train_new_neurons
+        # TODO: Return only needed info for parenty function to call train_new_neurons
         raise NotImplementedError
 
     def dynamically_expand(self, loader: DataloaderWrapper, tasks: [int]):
@@ -260,17 +242,17 @@ class DENTrainer:
             for module_name, param in module:
                 if 'bias' not in module_name:
                     if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(param.data.shape[1])
+                        sizes[dict_key].append(paramshape[1])
 
-                    weights[dict_key].append(param.data)
-                    sizes[dict_key].append(param.data.shape[0] + self.expand_by_k)
+                    weights[dict_key].append(param.detach())
+                    sizes[dict_key].append(param.shape[0] + self.expand_by_k)
 
                     # Register hook to freeze param
-                    active_neurons = [False] * (param.data.shape[0] - self.expand_by_k)
+                    active_neurons = [False] * (param.shape[0] - self.expand_by_k)
                     active_neurons.extend([True] * self.expand_by_k)
 
                     if prev_neurons is None:
-                        prev_neurons = [True] * param.data.shape[0]
+                        prev_neurons = [True] * param.shape[0]
 
                     hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
                     hooks.append(hook)
@@ -281,7 +263,7 @@ class DENTrainer:
                 elif 'bias' in module_name:
                     raise NotImplementedError  # What's active neurons suppose to be?
 
-                    biases[dict_key].append(param.data)
+                    biases[dict_key].append(param.detach())
                     hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
                     hooks.append(hook)
 
@@ -299,6 +281,24 @@ class DENTrainer:
     def train_new_neurons(self, neurons_added_by_layer, tasks):
         # TODO: Freeze the old neurons in each layer except outpu/input
         raise NotImplementedError
+
+        # From split
+        # TODO: All this is wrong because the params don't contain new weights + will be overwritten
+        # # Register hook to freeze param
+        # active_weights = [False] * (len(new_layer_weights) - number_of_neurons_split)
+        # active_weights.extend([True] * number_of_neurons_split)
+        #
+        # if prev_neurons is None:
+        #     prev_neurons = [True] * new_neurons[0][2].shape[1]
+        #
+        # # All neurons belong to same param.
+        # hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))
+        # hooks.append(hook)
+        # hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
+        # hooks.append(hook)
+        #
+        # # Push current layer to next.
+        # prev_neurons = active_weights
 
         # Train
         # l1l2penalty old_model should be set
@@ -339,17 +339,19 @@ class DENTrainer:
             new_weights[name2] = []
             new_sizes[name2] = []
             for ((label1, param1), (label2, param2)) in zip(layers1, layers2):
+                param2_detached = param2.detach()
+
                 if 'bias' in label1:
                     new_layer = []
 
                     # Copy over old bias
-                    for i in range(param1.data.shape[0]):
-                        new_layer.append(float(param2.data[i]))
+                    for i in range(param1.shape[0]):
+                        new_layer.append(float(param2_detached[i]))
 
                     # Copy over incoming bias for new neuron for previous existing
-                    for i in range(param1.data.shape[0], param2.data.shape[0]):
+                    for i in range(param1.shape[0], param2.shape[0]):
                         if float(param2[i].norm(1)) > self.zero_threshold:
-                            new_layer.append(float(param2.data[i]))
+                            new_layer.append(float(param2_detached[i]))
 
                     new_biases[name2].append(new_layer)
 
@@ -357,26 +359,26 @@ class DENTrainer:
                     new_layer = []
 
                     # Copy over old neurons
-                    for i in range(param1.data.shape[0]):
+                    for i in range(param1.shape[0]):
                         row = []
-                        for j in range(param1.data.shape[1]):
-                            row.append(float(param2.data[i, j]))
+                        for j in range(param1.shape[1]):
+                            row.append(float(param2_detached[i, j]))
                         new_layer.append(row)
 
                     # Copy over output weights for new neuron for previous existing neuron in the next layer
-                    for j in range(param1.data.shape[1], param2.data.shape[1]):
-                        for i in range(param1.data.shape[0]):
+                    for j in range(param1.shape[1], param2.shape[1]):
+                        for i in range(param1.shape[0]):
                             if j in weight_indexes:
-                                new_layer[i].append(float(param2.data[i, j]))
+                                new_layer[i].append(float(param2_detached[i, j]))
 
                     # Copy over incoming weights for new neuron for previous existing
                     weight_indexes = []  # Marks neurons with none zero incoming weights
-                    for i in range(param1.data.shape[0], param2.data.shape[0]):
+                    for i in range(param1.shape[0], param2.shape[0]):
                         row = []
                         if float(param2[i].norm(1)) > self.zero_threshold:
                             weight_indexes.append(i)
-                            for j in range(param2.data.shape[1]):
-                                row.append(float(param2.data[i, j]))
+                            for j in range(param2.shape[1]):
+                                row.append(float(param2_detached[i, j]))
                         new_layer.append(row)
 
                     new_weights[name2].append(new_layer)
