@@ -129,28 +129,46 @@ def calculate_accuracy(confusion_matrix):
     return confusion_matrix.diag().sum()/confusion_matrix.sum()
 
 
-def build_confusion_matrix(model, dataloader, number_of_tasks, device):
+def build_confusion_matrix(model, dataloader, number_of_tasks, tasks, device):
+    untrained_tasks = list(range(number_of_tasks))
+    for t in tasks:
+        untrained_tasks.remove(t)
 
-    confusion_matrix = torch.zeros(number_of_tasks, number_of_tasks).to(device)
+    matrix_size = number_of_tasks if len(untrained_tasks) == 0 else len(tasks) + 1
 
-    for i, (inputs, classes) in enumerate(dataloader):
+    confusion_matrix = torch.zeros(matrix_size, matrix_size).to(device)
+
+    for i, (inputs, targets) in enumerate(dataloader):
         inputs = inputs.to(device)
-        classes = classes.to(device)
-
-        _, classes_b = torch.max(classes, 1)
+        targets = targets.to(device)
 
         model.phase = "ACTION"
         outputs = model(inputs)
 
-        _, preds = torch.max(outputs, 1)
+        # Go from probabilities to classification
+        _, indices = torch.max(outputs, 1)
+        binary_outputs = torch.nn.functional.one_hot(indices, num_classes=number_of_tasks)
+        binary_targets = targets
 
-        for t, p in zip(classes_b.view(-1), preds.view(-1)):
-            confusion_matrix[p, t] += 1
+        # Create the column for all untrained tasks if necessary
+        if len(untrained_tasks) > 0:
+            trained_outputs = binary_outputs[:, tasks]
+            trained_targets = binary_targets[:, tasks]
+
+            untrained_outputs = torch.sum(binary_outputs[:, untrained_tasks], dim=1).unsqueeze(dim=1)
+            untrained_targets = torch.sum(binary_targets[:, untrained_tasks], dim=1).unsqueeze(dim=1)
+
+            binary_outputs = torch.cat([trained_outputs, untrained_outputs], dim=1)
+            binary_targets = torch.cat([trained_targets, untrained_targets], dim=1)
+
+        for t, p in zip(binary_targets.view(-1), binary_outputs.view(-1)):
+            confusion_matrix[p.long(), t.long()] += 1
 
     return confusion_matrix
 
 
-def build_multilabel_confusion_matrix(model, dataloader, number_of_tasks, device):
+def build_multilabel_confusion_matrix(model, dataloader, tasks, device):
+    raise NotImplementedError
 
     all_targets = None
     all_predictions = None

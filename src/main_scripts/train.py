@@ -5,7 +5,6 @@ import numpy as np
 from torch.utils.data import DataLoader
 from progress.bar import Bar
 from src.utils.misc import AverageMeter
-from src.utils.misc import DataloaderWrapper, one_vs_all_one_hot
 
 
 def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int]):
@@ -23,34 +22,22 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
     data_time = AverageMeter()
     losses = AverageMeter()
     end = time.time()
-    one_hot_time = AverageMeter()
 
     for batch_idx, (inputs, action_target) in enumerate(batch_loader):
-        # measure data loading time
+        # Measure data loading time
         data_time.update(time.time() - end)
 
         inputs = inputs.to(device)
-        # collapse the extra dimensions into one
-
         action_target = action_target.to(device)
 
         # compute output
         with torch.autograd.detect_anomaly():
             # model.phase = "GENERATE"
             # generate_output = model(inputs)
+            # generate_targets = inputs according to Lucas
 
             model.phase = "ACTION"
             action_output = model(inputs)
-
-            # we now reconstruct the actual AE targets while training.
-            start = time.time()
-            # action_target = one_vs_all_one_hot(action_target, tasks, range(len(action_output)), device)
-            one_hot_time.update(time.time() - start)
-
-            # the generate targets just the inputs so just use inputs where you'd use generate_targets
-
-            # calculate loss
-            optimizer.zero_grad()
 
             action_output = action_output[:, tasks]
             action_target = action_target[:, tasks]
@@ -65,11 +52,12 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
             losses.update(total_loss.item(), inputs.size(0))
 
             if not testing:
-                # compute gradient and do SGD step
+                # Compute gradient and do SGD step
+                optimizer.zero_grad()
                 total_loss.backward()
                 optimizer.step()
 
-        # measure elapsed time
+        # Measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
@@ -90,7 +78,7 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
     return losses.avg
 
 
-class l1l2_penalty:
+class L1L2Penalty:
     """
     Does not account biases. See paper.
     """
@@ -121,7 +109,7 @@ class l1l2_penalty:
             for i in range(param1.shape[0], param2.shape[0]):
                 row = torch.zeros(param2.shape[1])
                 for j in range(param2.shape[1]):
-                    row[j] = param2.data[i, j]
+                    row[j] = param2[i, j]
                 penalty += row.norm(2)
 
         return self.l2_coeff * penalty

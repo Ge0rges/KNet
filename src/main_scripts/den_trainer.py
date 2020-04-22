@@ -2,9 +2,8 @@ import copy
 import torch
 import os
 import torch.optim as optim
-from torch.utils.data import DataLoader
 
-from src.utils.misc import DataloaderWrapper
+from torch.utils.data import DataLoader
 from src.models import ActionEncoder
 from src.main_scripts.train import train
 
@@ -114,26 +113,26 @@ class DENTrainer:
         return loss, err
 
     # Eval Function
-    def eval_model(self, task=None):
-        return self.__loss_for_loader_in_eval(self.valid_loader, task)
+    def eval_model(self, tasks=None):
+        return self.__loss_for_loader_in_eval(self.valid_loader, tasks)
 
     # Test function
-    def test_model(self, task=None):
-        return self.__loss_for_loader_in_eval(self.test_loader, task)
+    def test_model(self, tasks=None):
+        return self.__loss_for_loader_in_eval(self.test_loader, tasks)
 
-    def __loss_for_loader_in_eval(self, loader, task=None):
-        if task is None:
+    def __loss_for_loader_in_eval(self, loader, tasks=None):
+        if tasks is None:
             losses = []
             for i in range(self.number_of_tasks):
                 loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, [i])
-                err = self.error_function(self.model, loader, i)
+                err = self.error_function(self.model, loader, range(i))
                 losses.append((loss, err))
 
             return losses
 
         else:
-            loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, [task])
-            err = self.error_function(self.model, loader, task)
+            loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, [tasks])
+            err = self.error_function(self.model, loader, tasks)
             return loss, err
 
     # DEN Functions

@@ -6,7 +6,7 @@ import os
 
 from torch.utils.data import DataLoader, ConcatDataset, TensorDataset, RandomSampler, SubsetRandomSampler
 from sklearn.preprocessing import normalize
-from src.utils.misc import GaussianNoise, AESampler, one_hot, BananaCarImageDataset, one_vs_all_one_hot
+from src.utils.misc import one_hot
 
 
 ### Banana Cars
@@ -531,174 +531,7 @@ def simple_math_equations_loader(batch_size=256, num_workers=0):
     return (trainloader, validloader, testloader)
 
 ##### MNIST
-
-
-def mnist_class_loader(task, batch_size=256, num_workers=0):
-    assert task in list(range(10))
-    cls = task
-
-    train, test = get_mnist_dataset()
-
-    traindata = torch.zeros((len(train), 28*28))
-    for i in range(0, len(train)):
-        traindata[i] = train[i][0].view((28*28))
-
-    trainclass_labels = list(i[1] for i in train)
-
-    traintensor_class_labels = torch.Tensor(trainclass_labels)
-    traintensor_class_labels = one_vs_all_one_hot(traintensor_class_labels, cls, range(10))
-
-    traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
-
-    traindataset = TensorDataset(traindata, traintensor_labels)
-
-    trainlabels = [i[1] for i in traindataset]
-
-    trainsampler = AESampler(trainlabels, start_from=0)
-    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
-
-    testdata = torch.zeros(len(test), 28*28)
-    for i in range(0, len(test)):
-        testdata[i] = test[i][0].view((28*28))
-
-    testclass_labels = list(i[1] for i in test)
-
-    testtensor_class_labels = torch.Tensor(testclass_labels)
-    testtensor_class_labels = one_vs_all_one_hot(testtensor_class_labels, cls, range(10))
-
-    testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
-
-    testdataset = TensorDataset(testdata, testtensor_labels)
-
-    testlabels = [i[1] for i in testdataset]
-
-    l = len(testlabels)
-
-    validsampler = AESampler(testlabels, start_from=0, amount=int(l * 0.2))
-    validloader = DataLoader(testdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
-
-    testsampler = AESampler(testlabels, start_from=int(l * 0.2))
-    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
-
-    return trainloader, validloader, testloader
-
-
-def mnist_proportional_class_loader(tasks, batch_size=256, num_workers=0, pin_memory=False):
-    assert 0 < len(tasks) <= 10
-    for task in tasks:
-        assert task in list(range(10))
-
-    # setting the proportions for each dataset, the proportions represent how much data is going to be taking for each
-    # class w.r.t to the smallest dataset in the datasets. Default is equal proportion of labeled data and zeroed out
-    # data
-    k = len(tasks)
-    if k == 10:
-        proportions = [1]*10
-    elif k >= 5:
-        p = float(10 - k)/float(k)
-        proportions = [1]*10
-        for task in tasks:
-            proportions[task] = p
-    else:
-        p = float(k)/float(10 - k)
-        proportions = [p]*10
-        for task in tasks:
-            proportions[task] = 1
-
-    train, test = get_mnist_dataset()
-
-    cls_count = [0]*10
-    for i in train:
-        cls_count[i[1]] += 1
-    min_cls = np.min(cls_count)
-
-    classes_count = []
-    for p in proportions:
-        classes_count.append(int(p*min_cls))
-
-    traindata = torch.zeros((sum(classes_count), 28*28))
-    trainclass_labels = []
-    inp_idx = 0
-    data_idx = 0
-    while np.sum(classes_count) > 0:
-        inp = train[inp_idx]
-        if classes_count[inp[1]] > 0:
-            traindata[data_idx] = inp[0].view((28*28))
-            trainclass_labels.append(inp[1])
-            data_idx += 1
-            classes_count[inp[1]] -= 1
-        inp_idx += 1
-
-    traintensor_class_labels = torch.Tensor(trainclass_labels)
-    traintensor_class_labels = one_vs_all_one_hot(traintensor_class_labels, tasks, range(10))
-
-    traintensor_labels = torch.cat([traindata, traintensor_class_labels], 1)
-
-    traindataset = TensorDataset(traindata, traintensor_labels)
-
-    trainlabels = [i[1] for i in traindataset]
-
-    trainsampler = AESampler(trainlabels, start_from=0)
-    trainloader = DataLoader(traindataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers, pin_memory=pin_memory)
-
-    cls_count = [0] * 10
-    for i in test:
-        cls_count[i[1]] += 1
-    min_cls = np.min(cls_count)
-
-    classes_count = []
-    for p in proportions:
-        classes_count.append(int(p*min_cls))
-
-    testdata = torch.zeros((sum(classes_count), 28 * 28))
-    testclass_labels = []
-    inp_idx = 0
-    data_idx = 0
-    while np.sum(classes_count) > 0:
-        inp = test[inp_idx]
-        if classes_count[inp[1]] > 0:
-            testdata[data_idx] = inp[0].view((28 * 28))
-            testclass_labels.append(inp[1])
-            data_idx += 1
-            classes_count[inp[1]] -= 1
-        inp_idx += 1
-
-    testtensor_class_labels = torch.Tensor(testclass_labels)
-    testtensor_class_labels = one_vs_all_one_hot(testtensor_class_labels, tasks, range(10))
-
-    testtensor_labels = torch.cat([testdata, testtensor_class_labels], 1)
-
-    testdataset = TensorDataset(testdata, testtensor_labels)
-
-    testlabels = [i[1] for i in testdataset]
-
-    l = len(testlabels)
-
-    validsampler = AESampler(testlabels, start_from=0, amount=int(l * 0.2))
-    validloader = DataLoader(testdataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers, pin_memory=pin_memory)
-
-    testsampler = AESampler(testlabels, start_from=int(l * 0.2))
-    testloader = DataLoader(testdataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers, pin_memory=pin_memory)
-
-    return trainloader, validloader, testloader
-
-
-def get_mnist_dataset():
-    dataset = datasets.MNIST
-
-    transform_all = transforms.Compose([
-        transforms.RandomRotation(180),
-        transforms.ToTensor(),
-        GaussianNoise(0, 0.2)
-    ])
-
-    trainset = dataset(root="../data/MNIST/", train=True, download=True, transform=transform_all)
-    testset = dataset(root="../data/MNIST/", train=False, download=False, transform=transform_all)
-
-    return trainset, testset
-
-
-def mnist_loader(category, batch_size=256, num_workers=0, pin_memory=False):
+def mnist_loader(train, batch_size=256, num_workers=0, pin_memory=False):
     def one_hot_mnist(targets):
         targets_onehot = torch.zeros(10)
         targets_onehot[targets] = 1
@@ -706,49 +539,26 @@ def mnist_loader(category, batch_size=256, num_workers=0, pin_memory=False):
 
     dataset = datasets.MNIST
 
-    collapse = lambda a: a.view(-1)
-
     transform_all = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.1307,), (0.3081,)),
-        transforms.Lambda(collapse)
+        transforms.Lambda(lambda a: a.view(-1))
     ])
-    if category == "train":
-        trainset = dataset(root="../data/MNIST/", train=True, download=True, transform=transform_all)
-        trainset.target_transform = one_hot_mnist
 
-        sampler = RandomSampler(trainset, replacement=False)
-        trainloader = DataLoader(trainset, sampler=sampler, batch_size=batch_size, num_workers=num_workers,
-                                 pin_memory=pin_memory)
-        return trainloader
+    dataset = dataset(root="../data/MNIST/", train=train, download=True, transform=transform_all)
+    dataset.target_transform = one_hot_mnist
 
-    elif category == "test":
-        testset = dataset(root="../data/MNIST/", train=False, download=False, transform=transform_all)
-        testset.target_transform = one_hot_mnist
-
-
-        length = len(testset)
-        indices = list(range(int(length*0.8)))
-
-        sampler = SubsetRandomSampler(indices)
-        testloader = DataLoader(testset, sampler=sampler, batch_size=batch_size, num_workers=num_workers,
-                                pin_memory=pin_memory)
-        return testloader
-
-    elif category == "valid":
-        testset = dataset(root="../data/MNIST/", train=False, download=False, transform=transform_all)
-        testset.target_transform = one_hot_mnist
-
-        length = len(testset)
-        indices = list(range(int(length*0.8), length))
-
-        sampler = SubsetRandomSampler(indices)
-        validloader = DataLoader(testset, sampler=sampler, batch_size=batch_size, num_workers=num_workers,
-                                 pin_memory=pin_memory)
-        return validloader
+    if train:
+        sampler = RandomSampler(dataset)
 
     else:
-        raise NameError
+        length = len(dataset)
+        indices = list(range(int(length * 0.8)))
+        sampler = SubsetRandomSampler(indices)
+
+    loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+    return loader
 
 
 
