@@ -74,7 +74,7 @@ def train_model():
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, 10)
 
-    results = trainer.train_all_tasks_sequentially(epochs, with_den=False)
+    results = trainer.train_all_tasks_sequentially(epochs)
 
     print("Done training with results from error function:" + str(results))
 
@@ -101,8 +101,6 @@ def error_function(model, batch_loader, tasks):
 
 
 if __name__ == "__main__":
-    train_model()
-
     coeffs = [1e-10, 1e-5, 1e-2, 1, 10, 100, 1000, 1000000]
     resources = [0.1, 10, 100, 1000, 10000, 1000000000]
     exps = [2, 3, 4, 5, 6]
