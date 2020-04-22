@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix
 from sklearn.preprocessing import label_binarize
 from torch.autograd import Variable
+from src.utils.misc import one_vs_all_one_hot
 
 
 def accuracy(output, target, topk=(1,)):
@@ -136,8 +137,6 @@ def build_confusion_matrix(model, dataloader, number_of_tasks, device):
         inputs = inputs.to(device)
         classes = classes.to(device)
 
-        # Classes contains the targets for gen phase as well
-        classes = classes[:, classes.size()[1] - number_of_tasks:]
         _, classes_b = torch.max(classes, 1)
 
         model.phase = "ACTION"
@@ -158,9 +157,6 @@ def build_multilabel_confusion_matrix(model, dataloader, number_of_tasks, device
     for i, (inputs, targets) in enumerate(dataloader):
         inputs = inputs.to(device)
         targets = targets.to(device)
-
-        # Classes contains the targets for gen phase as well
-        targets = targets[:, targets.size()[1] - number_of_tasks:]
 
         model.phase = "ACTION"
         outputs = model(inputs)

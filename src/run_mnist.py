@@ -15,25 +15,25 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import l1l2_penalty
 from src.utils.eval import calc_avg_AE_AUROC, build_confusion_matrix, calculate_accuracy
-from src.utils.data_loading import mnist_proportional_class_loader
+from src.utils.data_loading import mnist_loader
 from src.utils.misc import DataloaderWrapper, DataloaderManager
 
 # Global experiment params
-device = torch.device("cpu")  # Change to "cuda" to use CUDA
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Change to "cuda" to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0, old_model=None)  # Penalty for all
 
-dataloader_manager = DataloaderManager()
+if device.type == "cuda":
+    pin_memory = True
+else:
+    pin_memory = False
 
-data_loaders = []
-for i in range(number_of_tasks):
-    data_loader = []
-    for j in ["train", "valid", "test"]:
-        data_loader.append(
-            DataloaderWrapper(dataloader_manager, mnist_proportional_class_loader, range(10), j, batch_size=256,
-                              num_workers=0))
-    data_loaders.append(tuple(data_loader))
+num_workers = 4
+
+data_loaders = (mnist_loader("train", batch_size=256, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader("valid", batch_size=256, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader("test", batch_size=256, num_workers=num_workers, pin_memory=pin_memory))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.
@@ -75,9 +75,9 @@ def train_model():
              "action": [10, 10]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
-                         error_function)
+                         error_function, 10)
 
-    results = trainer.train_all_tasks_sequentially(epochs)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=False)
 
     print("Done training with results from error function:" + str(results))
 

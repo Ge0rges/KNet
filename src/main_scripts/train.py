@@ -2,12 +2,13 @@ import time
 import torch
 import numpy as np
 
+from torch.utils.data import DataLoader
 from progress.bar import Bar
 from src.utils.misc import AverageMeter
-from src.utils.misc import DataloaderWrapper
+from src.utils.misc import DataloaderWrapper, one_vs_all_one_hot
 
 
-def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int]):
+def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int]):
 
     # switch to train or evaluate mode
     if testing:
@@ -22,13 +23,16 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
     data_time = AverageMeter()
     losses = AverageMeter()
     end = time.time()
+    one_hot_time = AverageMeter()
 
-    for batch_idx, (inputs, targets) in enumerate(batch_loader):
+    for batch_idx, (inputs, action_target) in enumerate(batch_loader):
         # measure data loading time
         data_time.update(time.time() - end)
 
         inputs = inputs.to(device)
-        targets = targets.to(device)
+        # collapse the extra dimensions into one
+
+        action_target = action_target.to(device)
 
         # compute output
         with torch.autograd.detect_anomaly():
@@ -37,8 +41,13 @@ def train(batch_loader: DataloaderWrapper, model: torch.nn.Module, criterion, op
 
             model.phase = "ACTION"
             action_output = model(inputs)
-            generate_targets = targets[:, :model.input_size]
-            action_target = targets[:, model.input_size:]
+
+            # we now reconstruct the actual AE targets while training.
+            start = time.time()
+            # action_target = one_vs_all_one_hot(action_target, tasks, range(len(action_output)), device)
+            one_hot_time.update(time.time() - start)
+
+            # the generate targets just the inputs so just use inputs where you'd use generate_targets
 
             # calculate loss
             optimizer.zero_grad()
