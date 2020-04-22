@@ -10,29 +10,40 @@ class ActionEncoder(nn.Module):
         if ff:
             sizes["encoder"][-1] = sizes["action"][-1]
             sizes["action"][0] = sizes["encoder"][-1]
-        sizes["decoder"] = list(reversed(sizes["encoder"]))
+
+        # Ensure proper autoencoder size
+        if "decoder" in sizes.keys():
+            sizes["decoder"][0] = sizes["encoder"][-1]
+            sizes["decoder"][-1] = sizes["encoder"][0]
+
+        else:
+            sizes["decoder"] = list(reversed(sizes["encoder"]))
 
         super(ActionEncoder, self).__init__()
         self.phase = 'ACTION'
         self.connected = connected
         self.ff = ff
 
+        self.sizes = sizes
         self.input_size = sizes["encoder"][0]
 
         # Encoder
-        encoder_layers = self.set_module('encoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        encoder_layers = self.set_module('encoder', oldWeights=oldWeights, oldBiases=oldBiases)
         encoder_layers.append(nn.Sigmoid())  # Must be non-linear
         self.encoder = nn.Sequential(*encoder_layers)
 
         # Decoder
-        decoder_layers = self.set_module('decoder', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        decoder_layers = self.set_module('decoder', oldWeights=oldWeights, oldBiases=oldBiases)
         decoder_layers.append(nn.Sigmoid())  # Must be non-linear
         self.decoder = nn.Sequential(*decoder_layers)
 
         # Action
-        action_layers = self.set_module('action', sizes=sizes, oldWeights=oldWeights, oldBiases=oldBiases)
+        action_layers = self.set_module('action', oldWeights=oldWeights, oldBiases=oldBiases)
         action_layers.append(nn.Sigmoid())  # Domain [0,1] for BCELoss .
         self.action = nn.Sequential(*action_layers)
+
+        # Make float
+        self.float()
 
     def forward(self, x):
         x = self.encoder(x)
@@ -41,7 +52,7 @@ class ActionEncoder(nn.Module):
             ci = x
         else:
             ci = torch.zeros(x.shape)
-            ci.data = x.data.clone().detach()
+            ci.data = x.detach()
 
         y = self.action(ci)
 
@@ -59,8 +70,8 @@ class ActionEncoder(nn.Module):
 
         raise ReferenceError
 
-    def set_module(self, label, sizes, oldWeights=None, oldBiases=None):
-        sizes = sizes[label]
+    def set_module(self, label, oldWeights=None, oldBiases=None):
+        sizes = self.sizes[label]
 
         if oldWeights:
             oldWeights = oldWeights[label]
@@ -98,19 +109,19 @@ class ActionEncoder(nn.Module):
                 layer.weight = weights
 
             # Padding
-            weights = layer.weight.data
+            weights = layer.weight.detach()
 
             if input != weights.shape[1]:
                 kaiming_weights = torch.rand(weights.shape[0], input - weights.shape[1])
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
 
-                weights = torch.cat([weights, kaiming_weights], dim=1)
+                weights = torch.cat([weights.float(), kaiming_weights.float()], dim=1)
 
             if output != weights.shape[0]:
                 kaiming_weights = torch.rand(output - weights.shape[0], input)
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
 
-                weights = torch.cat([weights, kaiming_weights], dim=0)
+                weights = torch.cat([weights.float(), kaiming_weights.float()], dim=0)
 
             # Set
             layer.weight = nn.Parameter(weights)
@@ -132,16 +143,16 @@ class ActionEncoder(nn.Module):
                 layer.bias = biases
 
             # Padding
-            biases = layer.bias.data
+            biases = layer.bias.detach()
 
             if output != biases.shape[0]:
                 rand_biases = torch.rand(output - biases.shape[0])
-                biases = torch.cat([biases, rand_biases], dim=0)
+                biases = torch.cat([biases.float(), rand_biases.float()], dim=0)
 
             # Set
             layer.bias = nn.Parameter(biases)
 
             # Update the oldBiases to include padding
-            init_biases[index] = layer.bias.data
+            init_biases[index] = layer.bias.detach()
 
         return layer

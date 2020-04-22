@@ -22,7 +22,7 @@ from src.utils.misc import DataloaderWrapper, DataloaderManager
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # Change to "cuda" to use CUDA
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0, old_model=None)  # Penalty for all
+penalty = l1l2_penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 
 if device.type == "cuda":
     pin_memory = True

@@ -56,12 +56,8 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
             action_target = action_target[:, tasks]
 
             # encoder_loss = torch.nn.BCELoss()
-            # generate_loss = encoder_loss(generate_output, generate_targets)
-            action_loss = criterion(action_output, action_target)
-
-            if penalty is not None:
-                # generate_loss = generate_loss + penalty(model)
-                action_loss = action_loss + penalty(model)
+            # generate_loss = encoder_loss(generate_output, generate_targets) + penalty(model)
+            action_loss = criterion(action_output, action_target) + penalty(model)
 
             total_loss = action_loss #+ generate_loss  # TODO: add back gen in phases
 
@@ -98,10 +94,10 @@ class l1l2_penalty:
     """
     Does not account biases. See paper.
     """
-    def __init__(self, l1_coeff, l2_coeff, old_model):
+    def __init__(self, l1_coeff, l2_coeff):
         self.l1_coeff = l1_coeff
         self.l2_coeff = l2_coeff
-        self.old_model = old_model
+        self.old_model = None
 
     def __call__(self, new_model):
         return self.l1(new_model) + self.l2(new_model)
@@ -116,14 +112,15 @@ class l1l2_penalty:
 
     def l2(self, new_model):
         assert self.old_model is not None
+
         penalty = 0
         for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
             if 'bias' in name1:
                 continue
 
-            for i in range(param1.data.shape[0], param2.data.shape[0]):
-                row = torch.zeros(param2.data.shape[1])
-                for j in range(param2.data.shape[1]):
+            for i in range(param1.shape[0], param2.shape[0]):
+                row = torch.zeros(param2.shape[1])
+                for j in range(param2.shape[1]):
                     row[j] = param2.data[i, j]
                 penalty += row.norm(2)
 
@@ -131,13 +128,23 @@ class l1l2_penalty:
 
 
 class ResourceConstrainingPenalty:
-    def __init__(self, coeff=1, bytes_available=16000000000):
+    def __init__(self, coeff, resources_available, exponent=2):
+        assert resources_available > 0
+        assert exponent >= 2
+
         self.coeff = coeff
-        self.resources = bytes_available
+        self.resources_available = resources_available
+        self.exponent = exponent
 
     def __call__(self, model):
         penalty = 0
         for name, param in model.named_parameters():
             if param.requires_grad and 'bias' not in name:
-                penalty += -np.abs(1/param) + self.resources
+                resources_used = param.detach().numpy().nbytes
+
+                numerator = np.power((resources_used-self.resources_available), self.exponent)
+                denominator = np.power(self.resources_available, self.exponent-1)
+
+                penalty += np.divide(numerator, denominator)
+
         return self.coeff * penalty
