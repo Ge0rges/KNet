@@ -555,7 +555,6 @@ def mnist_loader(train, batch_size=256, num_workers=0, pin_memory=False):
         length = len(dataset)
         indices = list(range(int(length * 0.8)))
         sampler = SubsetRandomSampler(indices)
-
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     return loader

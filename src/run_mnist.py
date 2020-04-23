@@ -28,9 +28,9 @@ number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 batch_size = 256
 
-data_loaders = (mnist_loader(True, batch_size=256, num_workers=batch_size, pin_memory=pin_memory),
-                mnist_loader(False, batch_size=256, num_workers=batch_size, pin_memory=pin_memory),
-                mnist_loader(False, batch_size=256, num_workers=batch_size, pin_memory=pin_memory))
+data_loaders = (mnist_loader(True, batch_size=256, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader(False, batch_size=256, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader(False, batch_size=256, num_workers=num_workers, pin_memory=pin_memory))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.
@@ -101,16 +101,4 @@ def error_function(model, batch_loader, tasks):
 
 
 if __name__ == "__main__":
-    coeffs = [1e-10, 1e-5, 1e-2, 1, 10, 100, 1000, 1000000]
-    resources = [0.1, 10, 100, 1000, 10000, 1000000000]
-    exps = [2, 3, 4, 5, 6]
-    str = []
-    for c in coeffs:
-        for r in resources:
-            for e in exps:
-                penalty = ResourceConstrainingPenalty(coeff=c, resources_available=r, exponent=e)
-                _, results = train_model()
-
-                str.append("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(c, r, e, results[0], results[1], results[2], results[3], results[4], results[5], results[6], results[7], results[8], results[9]))
-
-    print(str)
+    train_model()
