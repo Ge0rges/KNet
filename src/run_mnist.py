@@ -28,10 +28,9 @@ number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 batch_size = 256
 
-
-data_loaders = (mnist_loader("train", batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
-                mnist_loader("valid", batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
-                mnist_loader("test", batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory))
+data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.

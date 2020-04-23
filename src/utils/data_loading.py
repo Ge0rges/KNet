@@ -551,15 +551,17 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
         transforms.Lambda(lambda a: a.view(-1))
     ])
 
-    dataset = dataset(root="../data/MNIST/", train=(True if type == "train" else False), download=True, transform=transform_all)
+    is_train = (True if type == DatasetType.train else False)
+
+    dataset = dataset(root="../data/MNIST/", train=is_train, download=True, transform=transform_all)
     dataset.target_transform = one_hot_mnist
 
-    if type == "train":
+    if is_train:
         sampler = RandomSampler(dataset)
 
     else:
-        index = int(len(dataset) * 0.2) if (type == "valid") else int(len(dataset) * 0.8)
-        indices = list(range(index)) if (type == "valid") else list(range(index, len(dataset)))
+        index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
+        indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
         sampler = SubsetRandomSampler(indices)
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
