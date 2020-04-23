@@ -15,7 +15,7 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty, ResourceConstrainingPenalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import mnist_loader
+from src.utils.data_loading import mnist_loader, DatasetType
 
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -28,9 +28,9 @@ number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 batch_size = 256
 
-data_loaders = (mnist_loader(True, batch_size=256, num_workers=batch_size, pin_memory=pin_memory),
-                mnist_loader(False, batch_size=256, num_workers=batch_size, pin_memory=pin_memory),
-                mnist_loader(False, batch_size=256, num_workers=batch_size, pin_memory=pin_memory))
+data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
+                mnist_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.

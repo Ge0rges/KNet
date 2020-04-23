@@ -9,6 +9,11 @@ from sklearn.preprocessing import normalize
 from src.utils.misc import one_hot
 
 
+class DatasetType:
+    train = 0
+    eval = 1
+    test = 2
+
 ### Banana Cars
 BANANA_LABEL = 0
 CAR_LABEL = 1
@@ -531,7 +536,7 @@ def simple_math_equations_loader(batch_size=256, num_workers=0):
     return (trainloader, validloader, testloader)
 
 ##### MNIST
-def mnist_loader(train, batch_size=256, num_workers=0, pin_memory=False):
+def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
     def one_hot_mnist(targets):
         targets_onehot = torch.zeros(10)
         targets_onehot[targets] = 1
@@ -545,15 +550,15 @@ def mnist_loader(train, batch_size=256, num_workers=0, pin_memory=False):
         transforms.Lambda(lambda a: a.view(-1))
     ])
 
-    dataset = dataset(root="../data/MNIST/", train=train, download=True, transform=transform_all)
+    dataset = dataset(root="../data/MNIST/", train=(type == DatasetType.train), download=True, transform=transform_all)
     dataset.target_transform = one_hot_mnist
 
-    if train:
+    if (type == DatasetType.train):
         sampler = RandomSampler(dataset)
 
     else:
-        length = len(dataset)
-        indices = list(range(int(length * 0.8)))
+        max_index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
+        indices = list(range(max_index))
         sampler = SubsetRandomSampler(indices)
 
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
