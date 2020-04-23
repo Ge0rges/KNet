@@ -553,8 +553,8 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
 
     is_train = (True if type == DatasetType.train else False)
 
-    dataset = dataset(root="../data/MNIST/", train=is_train, download=True, transform=transform_all)
-    dataset.target_transform = one_hot_mnist
+    dataset = dataset(root="../data/MNIST/", train=is_train, download=True, transform=transform_all,
+                      target_transform=one_hot_mnist)
 
     if is_train:
         sampler = RandomSampler(dataset)
@@ -563,6 +563,38 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
         index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
         indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
         sampler = SubsetRandomSampler(indices)
+    loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+    return loader
+
+
+##### BANANA_CAR
+def banana_car_loader(type, size=(300, 230), batch_size=256, num_workers=0, pin_memory=False):
+
+    def one_hot_bc(targets):
+        targets_onehot = torch.zeros(2)
+        targets_onehot[targets] = 1
+        return targets_onehot
+
+    transform_all = transforms.Compose([
+        transforms.Resize(size),
+        transforms.ToTensor(),
+        transforms.Lambda(lambda a: a.view(-1))
+    ])
+
+    dataset = datasets.ImageFolder(root="../data/banana_car", transform=transform_all, target_transform=one_hot_bc)
+
+    indices = np.array(list(range(len(dataset))))
+    np.random.shuffle(indices)
+
+    if type == DatasetType.train:
+        indices = indices[:int(len(dataset)*0.7)]
+    elif type == DatasetType.eval:
+        indices = indices[int(len(dataset)*0.7):int(len(dataset)*0.8)]
+    else:
+        indices = indices[int(len(dataset)*0.8):]
+
+    sampler = SubsetRandomSampler(indices)
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     return loader

@@ -48,6 +48,9 @@ class DENTrainer:
         for i in range(self.number_of_tasks):
             print("Task: [{}/{}]".format(i+1, self.number_of_tasks))
 
+            if self.device.type == "cuda":
+                torch.cuda.empty_cache()
+
             if i == 0:  # Never with DEN.
                 loss, err = self.train_tasks([i], epochs, False)
                 errs.append(err)
