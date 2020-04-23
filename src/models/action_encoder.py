@@ -1,6 +1,8 @@
 import torch.nn as nn
 import torch
 import numpy as np
+from torch.utils.checkpoint import checkpoint_sequential, checkpoint
+from src.utils.misc import ModuleWrapperIgnores2ndArg
 
 
 class ActionEncoder(nn.Module):
@@ -42,11 +44,19 @@ class ActionEncoder(nn.Module):
         action_layers.append(nn.Sigmoid())  # Domain [0,1] for BCELoss .
         self.action = nn.Sequential(*action_layers)
 
+        self.dummy_tensor = torch.ones(1, requires_grad=True)
+
+        self.action = ModuleWrapperIgnores2ndArg(self.action)
+        self.encoder = ModuleWrapperIgnores2ndArg(self.encoder)
+        self.decoder = ModuleWrapperIgnores2ndArg(self.decoder)
+
         # Make float
         self.float()
 
     def forward(self, x):
-        x = self.encoder(x)
+        checkpoints = False
+
+        x = (checkpoint(self.encoder, x, self.dummy_tensor) if checkpoints else self.encoder(x, self.dummy_tensor))
 
         if self.connected:
             ci = x
@@ -54,14 +64,15 @@ class ActionEncoder(nn.Module):
             ci = torch.zeros(x.shape)
             ci.data = x.detach()
 
-        y = self.action(ci)
+        y = (checkpoint(self.action, ci, self.dummy_tensor) if checkpoints else self.action(ci, self.dummy_tensor))
 
         if self.phase is 'ACTION':
             if self.ff:
                 return x
             return y
 
-        x = self.decoder(x)
+        x = (checkpoint(self.decoder, x, self.dummy_tensor) if checkpoints else self.decoder(x, self.dummy_tensor))
+
         if self.phase is 'GENERATE':
             return x
 

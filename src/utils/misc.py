@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+from torch import nn
 
 
 def one_hot(targets, cl):
@@ -91,3 +92,14 @@ class Band:
     Theta = 1
     Alpha = 2
     Beta = 3
+
+
+class ModuleWrapperIgnores2ndArg(nn.Module):
+    def __init__(self, module):
+        super(ModuleWrapperIgnores2ndArg, self).__init__()
+        self.module = module
+
+    def forward(self, x, dummy_arg=None):
+        assert dummy_arg is not None
+        x = self.module(x)
+        return x

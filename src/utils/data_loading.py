@@ -579,7 +579,7 @@ def banana_car_loader(type, size=(300, 230), batch_size=256, num_workers=0, pin_
     transform_all = transforms.Compose([
         transforms.Resize(size),
         transforms.ToTensor(),
-        transforms.Lambda(lambda a: a.view(-1))
+        transforms.Lambda(lambda a: a.view(-1)),
     ])
 
     dataset = datasets.ImageFolder(root="../data/banana_car", transform=transform_all, target_transform=one_hot_bc)
