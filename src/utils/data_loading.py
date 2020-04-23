@@ -535,6 +535,7 @@ def simple_math_equations_loader(batch_size=256, num_workers=0):
 
     return (trainloader, validloader, testloader)
 
+
 ##### MNIST
 def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
     def one_hot_mnist(targets):
@@ -550,15 +551,15 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
         transforms.Lambda(lambda a: a.view(-1))
     ])
 
-    dataset = dataset(root="../data/MNIST/", train=(type == DatasetType.train), download=True, transform=transform_all)
+    dataset = dataset(root="../data/MNIST/", train=(True if type == "train" else False), download=True, transform=transform_all)
     dataset.target_transform = one_hot_mnist
 
-    if (type == DatasetType.train):
+    if type == "train":
         sampler = RandomSampler(dataset)
 
     else:
-        max_index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
-        indices = list(range(max_index))
+        index = int(len(dataset) * 0.2) if (type == "valid") else int(len(dataset) * 0.8)
+        indices = list(range(index)) if (type == "valid") else list(range(index, len(dataset)))
         sampler = SubsetRandomSampler(indices)
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
