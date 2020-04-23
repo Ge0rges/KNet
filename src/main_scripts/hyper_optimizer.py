@@ -81,8 +81,8 @@ class OptimizerController:
     Exposes our layer sizes constructor function.
     """
 
-    def __init__(self, device, data_loaders, criterion, penalty,
-                 error_function, encoder_in, hidden_encoder_layers, hidden_action_layers, action_out, core_invariant_size=None):
+    def __init__(self, device, data_loaders, criterion, penalty, error_function, number_of_tasks, encoder_in,
+                 hidden_encoder_layers, hidden_action_layers, action_out, core_invariant_size=None):
         """
         Creates a controller object.
         """
@@ -102,14 +102,24 @@ class OptimizerController:
         sizes = self.construct_network_sizes()
 
         # Setup trainer. LR, Momentum, expand_by_k will be replaced.
-        self.trainer = DENTrainer(data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function)
+        self.trainer = DENTrainer(data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function, number_of_tasks)
 
     def __call__(self):
         ray.init()
 
+        # Default config
+        config = {
+                "lr": np.random.uniform(0.001, 1),
+                "momentum": np.random.uniform(0, 1),
+                "DENTrainer": self.trainer,
+                "expand_by_k": int(np.random.uniform(1, 20)),
+                "l1_coeff": np.random.uniform(1e-20, 0),
+                "l2_coeff": np.random.uniform(1e-20, 0)
+            }
+
         # check if PytorchTrainable will save/restore correctly before execution
-        validate_save_restore(PytorchTrainable)
-        validate_save_restore(PytorchTrainable, use_object_store=True)
+        validate_save_restore(PytorchTrainable, config=config)
+        validate_save_restore(PytorchTrainable, config=config, use_object_store=True)
 
         # PBT Params
         scheduler = PopulationBasedTraining(
@@ -154,14 +164,7 @@ class OptimizerController:
             checkpoint_freq=5,
             keep_checkpoints_num=4,
             num_samples=4,
-            config={
-                "lr": tune.uniform(0.001, 1),
-                "momentum": tune.uniform(0, 1),
-                "DENTrainer": self.trainer,
-                "expand_by_k": int(tune.uniform(1, 20)),
-                "l1_coeff": np.random.uniform(1e-20, 0),
-                "l2_coeff": np.random.uniform(1e-20, 0)
-            })
+            config=config)
 
         # Retrieve results
         best_trial = analysis.get_best_trial("mean_accuracy")

@@ -13,7 +13,7 @@ import numpy as np
 
 from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
-from src.main_scripts.train import L1L2Penalty, ResourceConstrainingPenalty
+from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
 from src.utils.data_loading import mnist_loader, DatasetType
 
@@ -53,8 +53,9 @@ def find_hyperparameters():
     action_out = 10
     core_invariant_size = 405  # None is PCA
 
-    pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, encoder_in,
-                                         hidden_encoder_layers, hidden_action_layers, action_out, core_invariant_size)
+    pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
+                                         encoder_in, hidden_encoder_layers, hidden_action_layers, action_out,
+                                         core_invariant_size)
 
     return pbt_controller()
 
@@ -72,7 +73,7 @@ def train_model():
              "action": [10, 10]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
-                         error_function, 10)
+                         error_function, number_of_tasks)
 
     results = trainer.train_all_tasks_sequentially(epochs)
 
@@ -101,16 +102,4 @@ def error_function(model, batch_loader, tasks):
 
 
 if __name__ == "__main__":
-    coeffs = [1e-10, 1e-5, 1e-2, 1, 10, 100, 1000, 1000000]
-    resources = [0.1, 10, 100, 1000, 10000, 1000000000]
-    exps = [2, 3, 4, 5, 6]
-    str = []
-    for c in coeffs:
-        for r in resources:
-            for e in exps:
-                penalty = ResourceConstrainingPenalty(coeff=c, resources_available=r, exponent=e)
-                _, results = train_model()
-
-                str.append("{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}".format(c, r, e, results[0], results[1], results[2], results[3], results[4], results[5], results[6], results[7], results[8], results[9]))
-
-    print(str)
+    train_model()
