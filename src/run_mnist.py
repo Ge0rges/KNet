@@ -13,9 +13,9 @@ import numpy as np
 
 from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
-from src.main_scripts.train import L1L2Penalty, ResourceConstrainingPenalty
+from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import mnist_loader
+from src.utils.data_loading import mnist_loader, DatasetType
 
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,6 +27,7 @@ criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 batch_size = 256
+
 
 data_loaders = (mnist_loader(True, batch_size=256, num_workers=num_workers, pin_memory=pin_memory),
                 mnist_loader(False, batch_size=256, num_workers=num_workers, pin_memory=pin_memory),
@@ -53,8 +54,9 @@ def find_hyperparameters():
     action_out = 10
     core_invariant_size = 405  # None is PCA
 
-    pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, encoder_in,
-                                         hidden_encoder_layers, hidden_action_layers, action_out, core_invariant_size)
+    pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
+                                         encoder_in, hidden_encoder_layers, hidden_action_layers, action_out,
+                                         core_invariant_size)
 
     return pbt_controller()
 
@@ -72,7 +74,7 @@ def train_model():
              "action": [10, 10]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
-                         error_function, 10)
+                         error_function, number_of_tasks)
 
     results = trainer.train_all_tasks_sequentially(epochs)
 
@@ -102,3 +104,4 @@ def error_function(model, batch_loader, tasks):
 
 if __name__ == "__main__":
     train_model()
+
