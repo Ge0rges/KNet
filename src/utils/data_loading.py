@@ -2,7 +2,6 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torch
 import numpy as np
-import os
 
 from torch.utils.data import DataLoader, ConcatDataset, TensorDataset, RandomSampler, SubsetRandomSampler
 from sklearn.preprocessing import normalize
@@ -13,117 +12,6 @@ class DatasetType:
     train = 0
     eval = 1
     test = 2
-
-### Banana Cars
-BANANA_LABEL = 0
-CAR_LABEL = 1
-ALL_BANANA_CAR_LABELS = [BANANA_LABEL, CAR_LABEL]
-
-
-def bc_loader(task, batch_size=256, num_workers=0):
-    """Loader to be used only for the car, banana and banana_car datasets"""
-
-    if task == 0:
-        name = "banana"
-        label = BANANA_LABEL
-        directory = "../data/banana_car/banana/resized/"
-    elif task == 1:
-        name = "car"
-        label = CAR_LABEL
-        directory = "../data/banana_car/car/resized/"
-    elif task == 2:
-        name = "bananacar"
-        label = [0.5, 0.5]
-        directory = "../data/banana_car/bananacar/resized/"
-    else:
-        print("Given task {} not in the available tasks for this loader".format(task))
-        raise AssertionError
-
-    # proportions: can be modified depending on what is required
-    if name == "bananacar":
-        proportions = [0, 0, 1]
-    else:
-        proportions = [0.7, 0.5, 0.25]
-    dataset = BananaCarImageDataset(directory, name, label, ALL_BANANA_CAR_LABELS)
-
-    num_samples = len(dataset)
-    labels = [label]*num_samples
-
-    train_size = int(num_samples*proportions[0])
-    trainsampler = AESampler(labels, start_from=0, amount=train_size)
-    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
-
-    valid_size = int(num_samples*proportions[1])
-    validsampler = AESampler(labels, start_from=train_size, amount=valid_size)
-    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
-
-    testsampler = AESampler(labels, start_from=(train_size + valid_size))
-    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
-
-    print("Done preparing {} AE dataloader".format(name))
-
-    return (trainloader, validloader, testloader)
-
-
-# Not useful anymore for our new implementation but keeping it in case it becomes useful/relevant again
-# Do not use as is, would need modifications to be usable in the new architecture
-def all_bc_loader(args, batch_size=256, num_workers=0):
-    """Dirs must be of the shape: [[train, valid, test], [train,valid,test]]"""
-    # first we do the train dataloader
-    assert len(args) == 3
-    dirs = args[0]
-    names = args[1]
-    labels = args[2]
-    print("loading training set")
-
-    datasets = []
-    for i in range(len(dirs)):
-        name = names[i]
-        label = labels[i]
-        assert os.path.isdir(dirs[i][0])
-
-        d = BananaCarImageDataset(dirs[i][0], name, label, ALL_BANANA_CAR_LABELS)
-        datasets.append(d)
-    dataset = ConcatDataset(datasets)
-    labels = [i[1] for i in dataset]
-
-    trainsampler = AESampler(labels, start_from=0)
-    trainloader = DataLoader(dataset, batch_size=batch_size, sampler=trainsampler, num_workers=num_workers)
-
-    print("loading validation set")
-    # valid loader
-    datasets = []
-    for i in range(len(dirs)):
-        name = names[i]
-        label = labels[i]
-        assert os.path.isdir(dirs[i][1])
-
-        d = BananaCarImageDataset(dirs[i][1], name, label,ALL_BANANA_CAR_LABELS)
-        datasets.append(d)
-    dataset = ConcatDataset(datasets)
-    labels = [i[1] for i in dataset]
-
-    validsampler = AESampler(labels, start_from=0)
-    validloader = DataLoader(dataset, batch_size=batch_size, sampler=validsampler, num_workers=num_workers)
-
-    print("loading test set")
-    # test loader
-    datasets = []
-    for i in range(len(dirs)):
-        name = names[i]
-        label = labels[i]
-        assert os.path.isdir(dirs[i][2])
-
-        d = BananaCarImageDataset(dirs[i][2], name, label, ALL_BANANA_CAR_LABELS)
-        datasets.append(d)
-    dataset = ConcatDataset(datasets)
-    labels = [i[1] for i in dataset]
-
-    testsampler = AESampler(labels, start_from=0)
-    testloader = DataLoader(dataset, batch_size=batch_size, sampler=testsampler, num_workers=num_workers)
-
-    return (trainloader, validloader, testloader)
-
 
 ###### EEG
 def eeg_task_to_task_loader(batch_size=256, num_workers=0):

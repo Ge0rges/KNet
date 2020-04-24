@@ -1,6 +1,5 @@
 import time
 import torch
-import numpy as np
 
 from torch.utils.data import DataLoader
 from progress.bar import Bar
@@ -114,25 +113,3 @@ class L1L2Penalty:
 
         return self.l2_coeff * penalty
 
-
-class ResourceConstrainingPenalty:
-    def __init__(self, coeff, resources_available, exponent=2):
-        assert resources_available > 0
-        assert exponent >= 2
-
-        self.coeff = coeff
-        self.resources_available = resources_available
-        self.exponent = exponent
-
-    def __call__(self, model):
-        penalty = 0
-        for name, param in model.named_parameters():
-            if param.requires_grad and 'bias' not in name:
-                resources_used = param.detach().numpy().nbytes
-
-                numerator = np.power((resources_used-self.resources_available), self.exponent)
-                denominator = np.power(self.resources_available, self.exponent-1)
-
-                penalty += np.divide(numerator, denominator)
-
-        return self.coeff * penalty
