@@ -80,7 +80,9 @@ class DENTrainer:
 
         loss, err = None, None
         for i in range(epochs):
-            loss, err = self.train_one_epoch(self.train_loader, tasks)   # Selective retraining from t=0.
+            loss, err = self.train_one_epoch(self.train_loader, self.valid_loader, tasks)
+            print(err)
+            # Selective retraining from t=0.
             if err >= self.err_stop_threshold:
                 break
 
@@ -98,21 +100,23 @@ class DENTrainer:
                 self.prune_zero_nodes()
 
             # Post-DEN error
-            err = self.error_function(self.model, self.train_loader, tasks)
+            err = self.error_function(self.model, self.valid_loader, tasks)
 
             # Reset for next task
             if hasattr(self.penalty, 'old_model'):
                 self.penalty.old_model = None
 
+        # testing the model with the test set
+        err = self.error_function(self.model, self.test_loader, tasks)
         return loss, err
 
-    def train_one_epoch(self, loader: DataLoader, tasks) -> (float, float):
+    def train_one_epoch(self, trainloader: DataLoader, validloader: DataLoader, tasks) -> (float, float):
         # This should be already set unless absolutely only training one epoch
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
 
-        loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
-        err = self.error_function(self.model, loader, tasks)
+        loss = train(trainloader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
+        err = self.error_function(self.model, validloader, tasks)
         return loss, err
 
     # Eval Function

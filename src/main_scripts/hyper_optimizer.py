@@ -41,7 +41,7 @@ class PytorchTrainable(tune.Trainable):
     def _train(self):
         # Do one epoch for all tasks
         for i in range(self.trainer.number_of_tasks):
-            self.trainer.train_tasks([i], 5, True)
+            self.trainer.train_tasks([i], 5, False)
 
         err = self.trainer.test_model(task=self.trainer.task)
         return {"mean_accuracy": err}
@@ -93,10 +93,11 @@ class OptimizerController:
         self.hidden_action = hidden_action_layers
         self.action_out = action_out
         self.core_invariant_size = core_invariant_size
+        self.device = device
 
         # Get the CI size
         if core_invariant_size is None:
-            self.core_invariant_size = self.pca_dataset(data_loaders, threshold=0.9)
+            self.core_invariant_size = self.pca_dataset(data_loaders, threshold=0.96)
 
         # Build the network arch
         sizes = self.construct_network_sizes()
@@ -105,7 +106,8 @@ class OptimizerController:
         self.trainer = DENTrainer(data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function, number_of_tasks)
 
     def __call__(self):
-        ray.init()
+        num_gpus = (1 if self.device.type == "cuda" else 0)
+        ray.init(num_gpus=num_gpus)
 
         # Default config
         config = {
@@ -213,10 +215,11 @@ class OptimizerController:
 
         return sizes
 
-    def pca_dataset(self, data_loader, threshold=0.9):
+    def pca_dataset(self, data_loader, threshold=0.96):
 
         # Most of the time, the datasets are too big to run PCA on it all, so we're going to get a random subset
         # that hopefully will be representative
+        print("Doing PCA")
         train, valid, test = data_loader
         train_data = []
         for i, (input, target) in enumerate(train):
@@ -238,6 +241,8 @@ class OptimizerController:
                 break
             else:
                 n_comp += 1
+
+        print("Done with PCA, got:", n_comp)
 
         return n_comp
 

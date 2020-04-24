@@ -19,7 +19,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
 # device = torch.device("cpu")
 # pin_memory = False
-num_workers = 4
+num_workers = 8
 
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
@@ -27,7 +27,7 @@ number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 batch_size = 256
 
-img_size = (300, 230)
+img_size = (280, 190)
 
 data_loaders = (banana_car_loader(DatasetType.train, size=img_size, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
                 banana_car_loader(DatasetType.eval, size=img_size, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -42,8 +42,8 @@ def find_hyperparameters():
     encoder_in = img_size[0] * img_size[1] * 3
     hidden_encoder_layers = 1
     hidden_action_layers = 1
-    action_out = 10
-    core_invariant_size = 405  # None is PCA
+    action_out = 2
+    core_invariant_size = 522  # None is PCA
 
     pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
                                          encoder_in, hidden_encoder_layers, hidden_action_layers, action_out,
@@ -56,17 +56,17 @@ def train_model():
     """
     Trains a CIANet model on the following params.
     """
-    epochs = 5
-    learning_rate = 1
+    epochs = 60
+    learning_rate = 0.002
     momentum = 0
     expand_by_k = 10
-    sizes = {"encoder": [img_size[0] * img_size[1] * 3, 1000, 405],
-             "action": [405, 80, 2]}
+    sizes = {"encoder": [img_size[0] * img_size[1] * 3, 1000, 522],
+             "action": [522, 80, 2]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks)
 
-    results = trainer.train_all_tasks_sequentially(epochs)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=False)
 
     print("Done training with results from error function:" + str(results))
 
