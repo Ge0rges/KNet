@@ -305,7 +305,7 @@ class DENTrainer:
                     previously_active = active_weights
 
         # Train: l1l2penalty old_model should be set
-        assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is None
+        assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is not None
         loss, err = self.train_tasks(tasks, self.__epochs_to_train, with_den=False)
 
         # Remove hooks
@@ -315,7 +315,7 @@ class DENTrainer:
         return loss, err
 
     def prune_zero_nodes(self) -> (dict, dict):
-        # TODO: Fix. We just want to remove any zero nodes 
+        # TODO: Fix. We just want to remove any zero nodes
         # Removes 0 weights then create new model
         new_modules = get_modules(self.model)
         new_biases = {}
