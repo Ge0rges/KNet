@@ -2,6 +2,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torch
 import numpy as np
+import os
 
 from torch.utils.data import DataLoader, ConcatDataset, TensorDataset, RandomSampler, SubsetRandomSampler
 from sklearn.preprocessing import normalize
@@ -441,7 +442,8 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
 
     is_train = (True if type == DatasetType.train else False)
 
-    dataset = dataset(root="../data/MNIST/", train=is_train, download=True, transform=transform_all,
+    root = os.path.join(os.path.dirname(__file__), "../../data/MNIST")
+    dataset = dataset(root=root, train=is_train, download=True, transform=transform_all,
                       target_transform=one_hot_mnist)
 
     if is_train:
@@ -470,7 +472,8 @@ def banana_car_loader(type, size=(300, 230), batch_size=256, num_workers=0, pin_
         transforms.Lambda(lambda a: a.view(-1)),
     ])
 
-    dataset = datasets.ImageFolder(root="../data/banana_car", transform=transform_all, target_transform=one_hot_bc)
+    root = os.path.join(os.path.dirname(__file__), "../../data/banana_car")
+    dataset = datasets.ImageFolder(root=root, transform=transform_all, target_transform=one_hot_bc)
 
     indices = np.array(list(range(len(dataset))))
     np.random.shuffle(indices)
