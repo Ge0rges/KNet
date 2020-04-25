@@ -90,7 +90,7 @@ def error_function(model, batch_loader, tasks):
     return score
 
 
-def test_abstraction():
+def test_abstraction(model):
     """
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
@@ -98,15 +98,13 @@ def test_abstraction():
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
-            # inputs = inputs.to(device)
-            # targets = targets.to(device)
-            for img_idx in range(inputs.size()[0]):
-                print(inputs.size())
-                plot_tensor(inputs[img_idx], img_size=(img_size[0], img_size[1], 3), mode="RGB")
-            # outputs = model(inputs)
-            # print(targets, outputs)
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+
+            outputs = model(inputs)
+            print(targets, outputs)
 
 
 if __name__ == "__main__":
-    # model, result = train_model()
-    test_abstraction()
+    model, result = train_model()
+    test_abstraction(model)

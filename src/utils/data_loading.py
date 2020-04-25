@@ -462,14 +462,14 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
 def banana_car_loader(type, size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
 
     def one_hot_bc(targets):
-        targets_onehot = torch.zeros(2)
+        targets_onehot = torch.zeros(3)
         targets_onehot[targets] = 1
         return targets_onehot
 
     transform_all = transforms.Compose([
         transforms.Resize(size),
         transforms.ToTensor(),
-        transforms.Lambda(lambda a: a.view(-1)),
+        transforms.Lambda(lambda a: a.view(-1))
     ])
 
     root = os.path.join(os.path.dirname(__file__), "../../data/banana_car")
@@ -499,8 +499,8 @@ def bananacar_loader(size=(280, 190), batch_size=256, num_workers=0, pin_memory=
 
     transform_all = transforms.Compose([
         transforms.Resize(size),
-        transforms.ToTensor()
-        transforms.Lambda(lambda a: a.view(-1)),
+        transforms.ToTensor(),
+        transforms.Lambda(lambda a: a.view(-1))
     ])
 
     dataset = datasets.ImageFolder(root="../data/abstraction_eval_bananacar", transform=transform_all,
