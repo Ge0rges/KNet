@@ -91,7 +91,7 @@ class DENTrainer:
             # Desaturate saturated neurons
             old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
             loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
-            self.prune_zero_nodes() # TODO: Fix this call.
+            self.prune_zero_nodes()
 
             # If loss is still above a certain threshold, add capacity.
             if loss > self.loss_threshold:
@@ -261,88 +261,76 @@ class DENTrainer:
 
         return old_sizes, self.model.sizes
 
-    def train_new_neurons(self, old_sizes, new_sizes, tasks) -> (float, float):
-        # TODO: Freeze the old neurons in each layer except outpu/input
-        raise NotImplementedError
+    def train_new_neurons(self, old_sizes: dict, new_sizes: dict, tasks: [int]) -> (float, float):
+        # Generate hooks for each layer
+        hooks = []
+        modules = get_modules(self.model)
 
-        # TODO: All this is wrong because the params don't contain new weights + will be overwritten
-        # From split
-        # # Register hook to freeze param
-        # active_weights = [False] * (len(new_layer_weights) - number_of_neurons_split)
-        # active_weights.extend([True] * number_of_neurons_split)
-        #
-        # if prev_neurons is None:
-        #     prev_neurons = [True] * new_neurons[0][2].shape[1]
-        #
-        # # All neurons belong to same param.
-        # hook = new_neurons[0][2].register_hook(freeze_hook(prev_neurons, active_weights))
-        # hooks.append(hook)
-        # hook = new_neurons[0][3].register_hook(freeze_hook(None, active_weights, bias=True))
-        # hooks.append(hook)
-        #
-        # # Push current layer to next.
-        # prev_neurons = active_weights
+        for module_name, parameters in modules.items():
+            previously_active = None
 
-        # From DE: Weights
-        # # Register hook to freeze param
-        # active_neurons = [False] * (param.shape[0] - self.expand_by_k)
-        # active_neurons.extend([True] * self.expand_by_k)
-        #
-        # if prev_neurons is None:
-        #     prev_neurons = [True] * param.shape[0]
-        #
-        # hook = param.register_hook(freeze_hook(prev_neurons, active_neurons))
-        # hooks.append(hook)
-        #
-        # # Pushes current set of neurons to next.
-        # prev_neurons = active_neurons
+            for param_name, param in parameters:
+                split_param_name = param_name.split(".")  # Splits action.0.weights
+                param_index = int(split_param_name[1])
 
-        # From DE: Biases
-        # hook = param.register_hook(freeze_hook(None, active_neurons, bias=True))
-        # hooks.append(hook)
+                # Map every two indices to one
+                param_index -= param_index % 2
+                param_index /= 2
+                param_index = int(param_index)
 
-        # Train
-        # l1l2penalty old_model should be set
-        assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is None
+                old_size = old_sizes[module_name][param_index]
+                new_size = new_sizes[module_name][param_index]
+                neurons_added = new_size - old_size
 
+                # Input/Output must stay the same
+                if param_index == 0 or param_index == len(old_sizes[module_name]) - 1:
+                    assert old_size == new_size
+                    previously_active = [True] * new_size
+
+                    continue
+
+                # Freeze biases/weights
+                if "bias" in param_name:
+                    active_biases = [False] * old_size + [True] * neurons_added
+                    hook = ActiveGradsHook(None, active_biases, bias=True)
+
+                    param.register_hook(hook)
+
+                else:
+                    active_weights = [False] * old_size + [True] * neurons_added
+                    hook = ActiveGradsHook(previously_active, active_weights, bias=True)
+
+                    param.register_hook(hook)
+
+                    previously_active = active_weights
+
+        # Train: l1l2penalty old_model should be set
+        assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is not None
         loss, err = self.train_tasks(tasks, self.__epochs_to_train, with_den=False)
 
         # Remove hooks
         for hook in hooks:
             hook.remove()
 
-        # Return loss, err
         return loss, err
 
-    # TODO: Delete this function. Currently not called
-    # def select_neurons(self, number_of_tasks):
-    #     modules = get_modules(self.model)
-    #
-    #     prev_active = [True] * number_of_tasks
-    #     prev_active[self.task] = False
-    #
-    #     action_hooks, prev_active = gen_hooks(modules['action'], self.zero_threshold, prev_active)
-    #     encoder_hooks, _ = gen_hooks(modules['encoder'], self.zero_threshold, prev_active)
-    #
-    #     hooks = action_hooks + encoder_hooks
-    #     return hooks
-
-    def prune_zero_nodes(self, modules: list, sizes: dict) -> (dict, dict):
+    def prune_zero_nodes(self) -> (dict, dict):
+        # TODO: Fix. We just want to remove any zero nodes
         # Removes 0 weights then create new model
         new_modules = get_modules(self.model)
         new_biases = {}
         new_weights = {}
         new_sizes = {}
-        for ((name1, layers1), (name2, layers2)) in zip(modules.items(), new_modules.items()):
+        for name2, layers2 in new_modules.items():
             weight_indexes = []
             added_neurons = []
             new_biases[name2] = []
             new_weights[name2] = []
             new_sizes[name2] = []
-            for ((label1, param1), (label2, param2)) in zip(layers1, layers2):
+            for label2, param2 in layers2:
                 param2_detached = param2.detach()
 
-                if 'bias' in label1:
+                if 'bias' in label2:
                     new_layer = []
 
                     # Copy over old bias
@@ -402,100 +390,44 @@ class DENTrainer:
         torch.save({'state_dict': self.model.state_dict()}, filepath)
 
 
-def get_modules(model) -> list:
+def get_modules(model: torch.nn.Module) -> dict:
     modules = {}
 
     for name, param in model.named_parameters():
         module = name[0: name.index('.')]
+
         if module not in modules.keys():
             modules[module] = []
+
         modules[module].append((name, param))
 
     return modules
 
 
-# TODO: Delete this function. Currently not called
-def gen_hooks(layers, zero_threshold, prev_active=None) -> (list, list):
-    hooks = []
-    selected = []
-
-    layers = reversed(layers)
-
-    for name, layer in layers:
-        if 'bias' in name:
-            h = layer.register_hook(ActiveGradsHook(prev_active, None, bias=True))
-            hooks.append(h)
-            continue
-
-        x_size, y_size = layer.size()
-
-        active = [True] * y_size
-        data = layer.detach()
-
-        for x in range(x_size):
-            # we skip the weight if connected neuron wasn't selected
-            if prev_active[x]:
-                continue
-
-            for y in range(y_size):
-                weight = data[x, y]
-                # check if weight is active
-                if abs(weight) > zero_threshold:
-                    # mark connected neuron as active
-                    active[y] = False
-
-        h = layer.register_hook(ActiveGradsHook(prev_active, active))
-
-        hooks.append(h)
-        prev_active = active
-
-        selected.append((y_size - sum(active), y_size))
-
-    return hooks, prev_active
-
-
-class FreezeHook:
-    def __init__(self, previous_neurons, active_neurons, bias=False):
-        self.previous_neurons = previous_neurons
-        self.active_neurons = active_neurons
-        self.bias = bias
-
-    def __call__(self, grad):
-        grad_clone = grad.clone().detach()
-
-        if self.bias:
-            for i in range(grad.shape[0]):
-                grad_clone[i] = 0
-        else:
-            for i in range(grad.shape[0]):
-                for j in range(grad.shape[1]):
-                    if not self.active_neurons[i] and not self.previous_neurons[j]:
-                        grad_clone[i, j] = 0
-
-        return grad_clone
-
-
 class ActiveGradsHook:
+    """
+    Resets the gradient according to the passed masks.
+    """
 
-    def __init__(self, mask1, mask2, bias=False):
-        self.__name__ = "why do i use this"
+    def __init__(self, previously_active, currently_active, bias=False):
 
-        self.mask1 = torch.Tensor(mask1).long().nonzero().view(-1).numpy()
-        if mask2 is not None:
-            self.mask2 = torch.Tensor(mask2).long().nonzero().view(-1).numpy()
-        self.bias = bias
+        # Could be None for biases
+        if previously_active is not None:
+            self.previously_active = torch.Tensor(previously_active).long().nonzero().view(-1).numpy()
+
+        # Should never be None
+        self.currently_active = torch.Tensor(currently_active).long().nonzero().view(-1).numpy()
+
+        self.is_bias = bias
 
     def __call__(self, grad):
-        with torch.autograd.detect_anomaly():
-            grad_clone = grad.detach()
+        grad_clone = grad.detach()
 
-        if self.bias:
-            if self.mask1.size:
-                for i in self.mask1:
-                    grad_clone[i] = 0
-            return grad_clone
-        if self.mask1.size:
-            grad_clone[self.mask1, :] = 0
-        if self.mask2.size:
-            grad_clone[:, self.mask2] = 0
+        if self.is_bias:
+            grad_clone[self.currently_active] = 0
+
+        else:
+            grad_clone[self.previously_active, :] = 0
+            grad_clone[:, self.currently_active] = 0
+
         return grad_clone

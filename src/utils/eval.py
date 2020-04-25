@@ -3,8 +3,6 @@ import numpy as np
 
 from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix
 from sklearn.preprocessing import label_binarize
-from torch.autograd import Variable
-from src.utils.misc import one_vs_all_one_hot
 
 
 def accuracy(output, target, topk=(1,)):

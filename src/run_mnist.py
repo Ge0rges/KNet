@@ -103,4 +103,3 @@ def error_function(model, batch_loader, tasks):
 
 if __name__ == "__main__":
     train_model()
-

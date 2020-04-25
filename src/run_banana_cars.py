@@ -6,7 +6,6 @@ Instructions:
     - To train one model run "train_model"
 """
 import torch
-import os
 
 from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
@@ -18,8 +17,6 @@ from src.utils.misc import plot_tensor
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
-# device = torch.device("cpu")
-# pin_memory = False
 num_workers = 8
 
 # Global experiment params
@@ -28,7 +25,7 @@ number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 batch_size = 256
 
-img_size = (280, 190)
+img_size = (280, 190) # Images will be resized correctly
 
 data_loaders = (banana_car_loader(DatasetType.train, size=img_size, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
                 banana_car_loader(DatasetType.eval, size=img_size, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
