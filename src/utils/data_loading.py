@@ -491,11 +491,11 @@ def banana_car_loader(type, size=(280, 190), batch_size=256, num_workers=0, pin_
     return loader
 
 
-def bananacar_loader(size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
+def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
     """Loader for the images containing cars with banana shapes"""
 
     def one_hot_half_half(targets):
-        return torch.Tensor([0.5, 0.5])
+        return torch.Tensor([0.5, 0.5])  # Assumption here may be false.
 
     transform_all = transforms.Compose([
         transforms.Resize(size),
@@ -503,7 +503,7 @@ def bananacar_loader(size=(280, 190), batch_size=256, num_workers=0, pin_memory=
         transforms.Lambda(lambda a: a.view(-1))
     ])
 
-    dataset = datasets.ImageFolder(root="../data/abstraction_eval_bananacar", transform=transform_all,
+    dataset = datasets.ImageFolder(root="../data/banana_car_abstract", transform=transform_all,
                                    target_transform=one_hot_half_half)
 
     sampler = RandomSampler(dataset)

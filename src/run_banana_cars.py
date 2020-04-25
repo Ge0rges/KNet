@@ -11,7 +11,7 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import banana_car_loader, bananacar_loader, DatasetType
+from src.utils.data_loading import banana_car_loader, bananacar_abstract_loader, DatasetType
 from src.utils.misc import plot_tensor
 
 # No need to touch
@@ -94,7 +94,7 @@ def test_abstraction(model):
     """
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
-    testloader = bananacar_loader()
+    testloader = bananacar_abstract_loader()
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
