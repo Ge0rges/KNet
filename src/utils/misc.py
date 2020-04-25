@@ -50,17 +50,17 @@ def mkdir_p(path):
             raise
 
 
-def plot_tensor(tensor, img_format, mode=None):
-    assert np.prod(tensor.size()) == np.prod(img_format)
+def plot_tensor(tensor, img_size, mode=None):
+    assert np.prod(tensor.size()) == np.prod(img_size)
     if mode:
         if mode == "RGB":
             data = tensor.numpy()
-            data = data.reshape(img_format).astype(np.uint8)
+            data = data.reshape(img_size).astype(np.uint8)
 
             plt.imshow(data, interpolation="nearest")
     else:
         data = tensor.numpy()
-        data = data.reshape(img_format)
+        data = data.reshape(img_size)
         imgplot = plt.imshow(data, interpolation="nearest")
         imgplot.set_cmap('gray')
 

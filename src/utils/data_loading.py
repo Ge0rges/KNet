@@ -6,7 +6,7 @@ import os
 
 from torch.utils.data import DataLoader, ConcatDataset, TensorDataset, RandomSampler, SubsetRandomSampler
 from sklearn.preprocessing import normalize
-from src.utils.misc import one_hot
+from src.utils.misc import one_hot, plot_tensor
 
 
 class DatasetType:
@@ -569,7 +569,7 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
 
 
 ##### BANANA_CAR
-def banana_car_loader(type, size=(300, 230), batch_size=256, num_workers=0, pin_memory=False):
+def banana_car_loader(type, size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
 
     def one_hot_bc(targets):
         targets_onehot = torch.zeros(2)
@@ -599,5 +599,25 @@ def banana_car_loader(type, size=(300, 230), batch_size=256, num_workers=0, pin_
 
     return loader
 
+
+def bananacar_loader(size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
+    """Loader for the images containing cars with banana shapes"""
+
+    def one_hot_half_half(targets):
+        return torch.Tensor([0.5, 0.5])
+
+    transform_all = transforms.Compose([
+        transforms.Resize(size),
+        transforms.ToTensor()
+        transforms.Lambda(lambda a: a.view(-1)),
+    ])
+
+    dataset = datasets.ImageFolder(root="../data/abstraction_eval_bananacar", transform=transform_all,
+                                   target_transform=one_hot_half_half)
+
+    sampler = RandomSampler(dataset)
+    loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+    return loader
 
 

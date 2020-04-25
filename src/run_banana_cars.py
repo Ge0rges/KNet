@@ -12,7 +12,8 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import banana_car_loader, DatasetType
+from src.utils.data_loading import banana_car_loader, bananacar_loader, DatasetType
+from src.utils.misc import plot_tensor
 
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -56,7 +57,7 @@ def train_model():
     """
     Trains a CIANet model on the following params.
     """
-    epochs = 60
+    epochs = 30
     learning_rate = 0.002
     momentum = 0
     expand_by_k = 10
@@ -92,20 +93,23 @@ def error_function(model, batch_loader, tasks):
     return score
 
 
-def test_abstraction(model):
+def test_abstraction():
     """
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
-    testloader = data_loaders[2]
+    testloader = bananacar_loader()
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
-            inputs = inputs.to(device)
-            targets = targets.to(device)
-
-            outputs = model(inputs)
-            print(outputs)
+            # inputs = inputs.to(device)
+            # targets = targets.to(device)
+            for img_idx in range(inputs.size()[0]):
+                print(inputs.size())
+                plot_tensor(inputs[img_idx], img_size=(img_size[0], img_size[1], 3), mode="RGB")
+            # outputs = model(inputs)
+            # print(targets, outputs)
 
 
 if __name__ == "__main__":
-    train_model()
+    # model, result = train_model()
+    test_abstraction()
