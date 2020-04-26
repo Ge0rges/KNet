@@ -32,7 +32,7 @@ class DENTrainer:
         self.err_stop_threshold = err_stop_threshold if err_stop_threshold else float("inf")
 
         # DEN Thresholds
-        self.pruning_threshold = 0.15  # Percentage of parameters to prune (lowest)
+        self.pruning_threshold = 0.05  # Percentage of parameters to prune (lowest)
         self.drift_threshold = 0.02
         self.loss_threshold = 1e-2
 
@@ -52,13 +52,9 @@ class DENTrainer:
             if self.device.type == "cuda":
                 torch.cuda.empty_cache()
 
-            if i == 0:  # Never with DEN.
-                loss, err = self.train_tasks([i], epochs, False)
-                errs.append(err)
-
-            else:
-                loss, err = self.train_tasks([i], epochs, with_den)
-                errs.append(err)
+            # DEN on task 0 is ok. 
+            loss, err = self.train_tasks([i], epochs, with_den)
+            errs.append(err)
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
