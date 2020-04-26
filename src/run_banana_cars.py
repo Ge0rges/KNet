@@ -96,13 +96,25 @@ def test_abstraction(model):
     """
     testloader = bananacar_abstract_loader()
 
+    correct = 0
+    sum = 0
+
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
             inputs = inputs.to(device)
             targets = targets.to(device)
 
             outputs = model(inputs)
-            print(targets, outputs)
+
+            rounded_outputs = torch.round(outputs)
+            sum += rounded_outputs.shape[0]
+
+            for i in range(rounded_outputs.shape[1]):
+                if rounded_outputs[0][i] == 1 and rounded_outputs[1][i] == 1:
+                    correct += 1
+
+    accuracy_abstract = correct/sum
+    print(accuracy_abstract)
 
 
 if __name__ == "__main__":

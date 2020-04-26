@@ -295,7 +295,7 @@ class DENTrainer:
 
                 else:
                     active_weights = [False] * old_size + [True] * neurons_added
-                    hook = ActiveGradsHook(previously_active, active_weights, bias=True)
+                    hook = ActiveGradsHook(previously_active, active_weights, bias=False)
 
                     param.register_hook(hook)
 
