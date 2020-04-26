@@ -499,7 +499,7 @@ def bananacar_loader(size=(280, 190), batch_size=256, num_workers=0, pin_memory=
 
     transform_all = transforms.Compose([
         transforms.Resize(size),
-        transforms.ToTensor()
+        transforms.ToTensor(),
         transforms.Lambda(lambda a: a.view(-1)),
     ])
 
