@@ -1,12 +1,14 @@
 import torch.nn as nn
 import torch
 import numpy as np
+import torch.nn.utils.prune as prune
+
 # from torch.utils.checkpoint import checkpoint
 # from src.utils.misc import ModuleWrapperIgnores2ndArg
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes, oldWeights=None, oldBiases=None, connected=False, ff=True):
+    def __init__(self, sizes, pruning_threshold, oldWeights=None, oldBiases=None, connected=False, ff=True):
 
         # Safer
         if ff:
@@ -49,6 +51,27 @@ class ActionEncoder(nn.Module):
         # self.action = ModuleWrapperIgnores2ndArg(self.action)
         # self.encoder = ModuleWrapperIgnores2ndArg(self.encoder)
         # self.decoder = ModuleWrapperIgnores2ndArg(self.decoder)
+
+        # Set the pruning method
+        parameters_to_prune = []
+        for param in encoder_layers:
+            if isinstance(param, nn.Linear):
+                parameters_to_prune.append((param, "weight"))
+
+        for param in decoder_layers:
+            if isinstance(param, nn.Linear):
+                parameters_to_prune.append((param, "weight"))
+
+        for param in action_layers:
+            if isinstance(param, nn.Linear):
+                parameters_to_prune.append((param, "weight"))
+
+        # Create new model without 0 weights
+        prune.global_unstructured(
+            parameters_to_prune,
+            pruning_method=prune.L1Unstructured,
+            amount=pruning_threshold
+        )
 
         # Make float
         self.float()

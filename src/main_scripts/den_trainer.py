@@ -15,7 +15,8 @@ class DENTrainer:
 
     def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader),
                  sizes: dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
-                 device: torch.device, err_func: callable, number_of_tasks: int, err_stop_threshold:float=None) -> None:
+                 device: torch.device, err_func: callable, number_of_tasks: int,
+                 err_stop_threshold: float = None) -> None:
 
         # Get the loaders by task
         self.train_loader = data_loaders[0]
@@ -31,12 +32,12 @@ class DENTrainer:
         self.err_stop_threshold = err_stop_threshold if err_stop_threshold else float("inf")
 
         # DEN Thresholds
-        self.zero_threshold = 1e-05
+        self.pruning_threshold = 0.15  # Percentage of parameters to prune (lowest)
         self.drift_threshold = 0.02
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = number_of_tasks  # experiment specific
-        self.model = ActionEncoder(sizes=sizes).to(device)
+        self.model = ActionEncoder(sizes=sizes, pruning_threshold=self.pruning_threshold).to(device)
 
         self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate, momentum=momentum)
 
@@ -46,7 +47,7 @@ class DENTrainer:
     def train_all_tasks_sequentially(self, epochs: int, with_den=True) -> [float]:
         errs = []
         for i in range(self.number_of_tasks):
-            print("Task: [{}/{}]".format(i+1, self.number_of_tasks))
+            print("Task: [{}/{}]".format(i + 1, self.number_of_tasks))
 
             if self.device.type == "cuda":
                 torch.cuda.empty_cache()
@@ -76,9 +77,7 @@ class DENTrainer:
             self.penalty.old_model = self.model
 
         # Make a copy for split, get train_loader.
-        model_copy = copy.deepcopy(self.model) if with_den else None
-        model_copy.to(self.device)
-        self.model.to(self.device)
+        model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
 
         loss, err = None, None
         for i in range(epochs):
@@ -93,13 +92,11 @@ class DENTrainer:
             # Desaturate saturated neurons
             old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
             loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
-            self.prune_zero_nodes()
 
             # If loss is still above a certain threshold, add capacity.
             if loss > self.loss_threshold:
                 old_sizes, new_sizes = self.dynamically_expand()
                 loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
-                self.prune_zero_nodes()
 
             # Post-DEN error
             err = self.error_function(self.model, self.valid_loader, tasks)
@@ -229,7 +226,8 @@ class DENTrainer:
         # Be efficient
         old_sizes = self.model.sizes
         if total_neurons_added > 0:
-            self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
+            self.model = ActionEncoder(sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
+            self.model = self.model.to(self.device)
 
         return old_sizes, self.model.sizes
 
@@ -257,7 +255,8 @@ class DENTrainer:
             sizes[dict_key][-1] -= self.expand_by_k
 
         old_sizes = self.model.sizes
-        self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
+        self.model = ActionEncoder(sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
+        self.model = self.model.to(self.device)
 
         return old_sizes, self.model.sizes
 
@@ -315,21 +314,6 @@ class DENTrainer:
             hook.remove()
 
         return loss, err
-
-    def prune_zero_nodes(self) -> (dict, dict):
-        modules = get_modules(self.model)
-
-        for module_name, parameters in modules.items():
-
-            for param_name, param in parameters:
-
-
-
-        # Create new model without 0 weights
-        old_sizes = self.model.sizes
-        self.model = ActionEncoder(new_sizes, oldWeights=new_weights, oldBiases=new_biases)
-
-        return old_sizes, self.model.sizes
 
     # Misc
     def save_model(self, model_name: str) -> None:
