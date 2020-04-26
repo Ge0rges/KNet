@@ -77,6 +77,8 @@ class DENTrainer:
 
         # Make a copy for split, get train_loader.
         model_copy = copy.deepcopy(self.model) if with_den else None
+        model_copy.to(self.device)
+        self.model.to(self.device)
 
         loss, err = None, None
         for i in range(epochs):
@@ -243,14 +245,12 @@ class DENTrainer:
             for module_name, param in module:
                 if 'bias' not in module_name:
                     if len(sizes[dict_key]) == 0:
-                        sizes[dict_key].append(paramshape[1])
+                        sizes[dict_key].append(param.shape[1])
 
-                    weights[dict_key].append(param.detach())
                     sizes[dict_key].append(param.shape[0] + self.expand_by_k)
+                    weights[dict_key].append(param.detach())
 
                 elif 'bias' in module_name:
-                    raise NotImplementedError  # What's active neurons suppose to be?
-
                     biases[dict_key].append(param.detach())
 
             # Output must remain constant
@@ -262,6 +262,8 @@ class DENTrainer:
         return old_sizes, self.model.sizes
 
     def train_new_neurons(self, old_sizes: dict, new_sizes: dict, tasks: [int]) -> (float, float):
+        print("Training new neurons...")
+
         # Generate hooks for each layer
         hooks = []
         modules = get_modules(self.model)
@@ -315,67 +317,13 @@ class DENTrainer:
         return loss, err
 
     def prune_zero_nodes(self) -> (dict, dict):
-        # TODO: Fix. We just want to remove any zero nodes
-        # Removes 0 weights then create new model
-        new_modules = get_modules(self.model)
-        new_biases = {}
-        new_weights = {}
-        new_sizes = {}
-        for name2, layers2 in new_modules.items():
-            weight_indexes = []
-            added_neurons = []
-            new_biases[name2] = []
-            new_weights[name2] = []
-            new_sizes[name2] = []
-            for label2, param2 in layers2:
-                param2_detached = param2.detach()
+        modules = get_modules(self.model)
 
-                if 'bias' in label2:
-                    new_layer = []
+        for module_name, parameters in modules.items():
 
-                    # Copy over old bias
-                    for i in range(param1.shape[0]):
-                        new_layer.append(float(param2_detached[i]))
+            for param_name, param in parameters:
 
-                    # Copy over incoming bias for new neuron for previous existing
-                    for i in range(param1.shape[0], param2.shape[0]):
-                        if float(param2[i].norm(1)) > self.zero_threshold:
-                            new_layer.append(float(param2_detached[i]))
 
-                    new_biases[name2].append(new_layer)
-
-                else:
-                    new_layer = []
-
-                    # Copy over old neurons
-                    for i in range(param1.shape[0]):
-                        row = []
-                        for j in range(param1.shape[1]):
-                            row.append(float(param2_detached[i, j]))
-                        new_layer.append(row)
-
-                    # Copy over output weights for new neuron for previous existing neuron in the next layer
-                    for j in range(param1.shape[1], param2.shape[1]):
-                        for i in range(param1.shape[0]):
-                            if j in weight_indexes:
-                                new_layer[i].append(float(param2_detached[i, j]))
-
-                    # Copy over incoming weights for new neuron for previous existing
-                    weight_indexes = []  # Marks neurons with none zero incoming weights
-                    for i in range(param1.shape[0], param2.shape[0]):
-                        row = []
-                        if float(param2[i].norm(1)) > self.zero_threshold:
-                            weight_indexes.append(i)
-                            for j in range(param2.shape[1]):
-                                row.append(float(param2_detached[i, j]))
-                        new_layer.append(row)
-
-                    new_weights[name2].append(new_layer)
-                    added_neurons.append(weight_indexes)
-
-            new_sizes[name2] = [sizes[name2][0]]
-            for i, added_weights in enumerate(added_neurons):
-                new_sizes[name2].append(sizes[name2][i + 1] + len(added_weights))
 
         # Create new model without 0 weights
         old_sizes = self.model.sizes
