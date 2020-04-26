@@ -11,7 +11,7 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import banana_car_loader, bananacar_loader, DatasetType
+from src.utils.data_loading import banana_car_loader, bananacar_abstract_loader, DatasetType
 from src.utils.misc import plot_tensor
 
 # No need to touch
@@ -25,7 +25,7 @@ number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
 batch_size = 256
 
-img_size = (280, 190) # Images will be resized correctly
+img_size = (280, 190)  # Images will be resized correctly
 
 data_loaders = (banana_car_loader(DatasetType.train, size=img_size, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
                 banana_car_loader(DatasetType.eval, size=img_size, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -90,23 +90,21 @@ def error_function(model, batch_loader, tasks):
     return score
 
 
-def test_abstraction():
+def test_abstraction(model):
     """
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
-    testloader = bananacar_loader()
+    testloader = bananacar_abstract_loader()
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
-            # inputs = inputs.to(device)
-            # targets = targets.to(device)
-            for img_idx in range(inputs.size()[0]):
-                print(inputs.size())
-                plot_tensor(inputs[img_idx], img_size=(img_size[0], img_size[1], 3), mode="RGB")
-            # outputs = model(inputs)
-            # print(targets, outputs)
+            inputs = inputs.to(device)
+            targets = targets.to(device)
+
+            outputs = model(inputs)
+            print(targets, outputs)
 
 
 if __name__ == "__main__":
-    # model, result = train_model()
-    test_abstraction()
+    model, result = train_model()
+    test_abstraction(model)
