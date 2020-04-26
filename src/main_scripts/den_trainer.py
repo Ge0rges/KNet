@@ -52,7 +52,7 @@ class DENTrainer:
             if self.device.type == "cuda":
                 torch.cuda.empty_cache()
 
-            # DEN on task 0 is ok. 
+            # DEN on task 0 is ok.
             loss, err = self.train_tasks([i], epochs, with_den)
             errs.append(err)
 
@@ -264,7 +264,7 @@ class DENTrainer:
         modules = get_modules(self.model)
 
         for module_name, parameters in modules.items():
-            previously_active = None
+            previously_active_weights = [False] * new_sizes[module_name][0]
 
             for param_name, param in parameters:
                 split_param_name = param_name.split(".")  # Splits action.0.weights
@@ -275,15 +275,13 @@ class DENTrainer:
                 param_index /= 2
                 param_index = int(param_index)
 
-                old_size = old_sizes[module_name][param_index]
-                new_size = new_sizes[module_name][param_index]
+                old_size = old_sizes[module_name][param_index+1]
+                new_size = new_sizes[module_name][param_index+1]
                 neurons_added = new_size - old_size
 
                 # Input/Output must stay the same
-                if param_index == 0 or param_index == len(old_sizes[module_name]) - 1:
+                if param_index == len(old_sizes[module_name]) - 1:
                     assert old_size == new_size
-                    previously_active = [True] * new_size
-
                     continue
 
                 # Freeze biases/weights
@@ -294,12 +292,13 @@ class DENTrainer:
                     param.register_hook(hook)
 
                 else:
+
                     active_weights = [False] * old_size + [True] * neurons_added
-                    hook = ActiveGradsHook(previously_active, active_weights, bias=False)
+                    hook = ActiveGradsHook(previously_active_weights, active_weights, bias=False)
 
                     param.register_hook(hook)
 
-                    previously_active = active_weights
+                    previously_active_weights = active_weights
 
         # Train: l1l2penalty old_model should be set
         assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is not None
