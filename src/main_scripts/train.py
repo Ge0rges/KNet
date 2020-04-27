@@ -49,7 +49,7 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
 
             total_loss = action_loss #+ generate_loss  # TODO: add back gen in phases
 
-            # record loss
+            # Record loss
             losses.update(total_loss.item(), inputs.size(0))
 
             if not testing:
@@ -120,4 +120,3 @@ class L1L2Penalty:
                 penalty += row.norm(2)
 
         return self.l2_coeff * penalty
-
