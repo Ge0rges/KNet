@@ -336,16 +336,18 @@ class ActiveGradsHook:
     Resets the gradient according to the passed masks.
     """
 
-    def __init__(self, previously_active, currently_active, bias=False):
+    def __init__(self, previously_active: [bool], currently_active: [bool], bias=False):
 
         # Could be None for biases
         if previously_active is not None:
-            self.previously_active = torch.Tensor(previously_active).long().nonzero().view(-1).numpy()
+            self.previously_active = torch.BoolTensor(previously_active).long().nonzero().view(-1).numpy()
 
         # Should never be None
-        self.currently_active = torch.Tensor(currently_active).long().nonzero().view(-1).numpy()
+        self.currently_active = torch.BoolTensor(currently_active).long().nonzero().view(-1).numpy()
 
         self.is_bias = bias
+
+        self.__name__ = None
 
     def __call__(self, grad):
         grad_clone = grad.clone().detach()
@@ -354,7 +356,7 @@ class ActiveGradsHook:
             grad_clone[self.currently_active] = 0
 
         else:
-            grad_clone[self.previously_active, :] = 0
-            grad_clone[:, self.currently_active] = 0
+            grad_clone[self.currently_active, :] = 0
+            grad_clone[:, self.previously_active] = 0
 
         return grad_clone
