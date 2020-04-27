@@ -94,7 +94,7 @@ def error_function(model, batch_loader, tasks):
     class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
 
     score = 0
-    for i in tasks:
+    for i in range(class_acc.shape[0]):
         score += class_acc[i]
     score /= len(tasks)
 
