@@ -91,7 +91,7 @@ class ActionEncoder(nn.Module):
         # y = (checkpoint(self.action, ci, self.dummy_tensor) if checkpoints else self.action(ci, self.dummy_tensor))
         y = self.action(ci)
 
-        if self.phase is 'ACTION':
+        if self.phase == 'ACTION':
             if self.ff:
                 return x
             return y
@@ -99,10 +99,9 @@ class ActionEncoder(nn.Module):
         # x = (checkpoint(self.decoder, x, self.dummy_tensor) if checkpoints else self.decoder(x, self.dummy_tensor))
         x = self.decoder(x)
 
-        if self.phase is 'GENERATE':
             return x
 
-        if self.phase is 'BOTH':
+        if self.phase == 'BOTH':
             return torch.cat([x, y], 1)
 
         raise ReferenceError
