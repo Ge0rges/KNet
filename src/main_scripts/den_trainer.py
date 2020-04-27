@@ -72,12 +72,12 @@ class DENTrainer:
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
 
-        # Make a copy for split, get train_loader.
+        # Make a copy for split
         model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
 
         loss, err = None, None
         for i in range(epochs):
-            loss, err = self.train_one_epoch(self.train_loader, self.valid_loader, tasks)
+            loss, err = self.train_one_epoch(self.train_loader, tasks)
             print(err)
             # Selective retraining from t=0.
             if err >= self.err_stop_threshold:
@@ -94,9 +94,6 @@ class DENTrainer:
                 old_sizes, new_sizes = self.dynamically_expand()
                 loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
 
-            # Post-DEN error
-            err = self.error_function(self.model, self.valid_loader, tasks)
-
             # Reset for next task
             if hasattr(self.penalty, 'old_model'):
                 self.penalty.old_model = None
@@ -105,13 +102,13 @@ class DENTrainer:
         err = self.error_function(self.model, self.test_loader, tasks)
         return loss, err
 
-    def train_one_epoch(self, trainloader: DataLoader, validloader: DataLoader, tasks) -> (float, float):
+    def train_one_epoch(self, trainloader: DataLoader, tasks) -> (float, float):
         # This should be already set unless absolutely only training one epoch
         if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
             self.penalty.old_model = self.model
 
         loss = train(trainloader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
-        err = self.error_function(self.model, validloader, tasks)
+        err = self.error_function(self.model, self.valid_loader, tasks)
         return loss, err
 
     # Eval Function
