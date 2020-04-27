@@ -78,8 +78,6 @@ class DENTrainer:
         loss, err = None, None
         for i in range(epochs):
             loss, err = self.train_one_epoch(self.train_loader, tasks)
-            print(err)
-            # Selective retraining from t=0.
             if err >= self.err_stop_threshold:
                 break
 
@@ -299,7 +297,13 @@ class DENTrainer:
 
         # Train: l1l2penalty old_model should be set
         assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is not None
-        loss, err = self.train_tasks(tasks, self.__epochs_to_train, with_den=False)
+
+        # Train simply
+        loss, err = None, None
+        for i in range(self.__epochs_to_train):
+            loss, err = self.train_one_epoch(self.train_loader, tasks)
+            if err >= self.err_stop_threshold:
+                break
 
         # Remove hooks
         for hook in hooks:
