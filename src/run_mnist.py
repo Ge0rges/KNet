@@ -96,7 +96,7 @@ def error_function(model, batch_loader, tasks):
     score = 0
     for i in range(class_acc.shape[0]):
         score += class_acc[i]
-    score /= len(tasks)
+    score /= class_acc.shape[0]
 
     return score
 
