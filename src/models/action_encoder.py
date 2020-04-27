@@ -53,25 +53,25 @@ class ActionEncoder(nn.Module):
         # self.decoder = ModuleWrapperIgnores2ndArg(self.decoder)
 
         # Set the pruning method
-        parameters_to_prune = []
-        for param in encoder_layers:
-            if isinstance(param, nn.Linear):
-                parameters_to_prune.append((param, "weight"))
-
-        for param in decoder_layers:
-            if isinstance(param, nn.Linear):
-                parameters_to_prune.append((param, "weight"))
-
-        for param in action_layers:
-            if isinstance(param, nn.Linear):
-                parameters_to_prune.append((param, "weight"))
-
-        # Create new model without 0 weights
-        prune.global_unstructured(
-            parameters_to_prune,
-            pruning_method=prune.L1Unstructured,
-            amount=pruning_threshold
-        )
+        # parameters_to_prune = []
+        # for param in encoder_layers:
+        #     if isinstance(param, nn.Linear):
+        #         parameters_to_prune.append((param, "weight"))
+        #
+        # for param in decoder_layers:
+        #     if isinstance(param, nn.Linear):
+        #         parameters_to_prune.append((param, "weight"))
+        #
+        # for param in action_layers:
+        #     if isinstance(param, nn.Linear):
+        #         parameters_to_prune.append((param, "weight"))
+        #
+        # # Create new model without 0 weights
+        # prune.global_unstructured(
+        #     parameters_to_prune,
+        #     pruning_method=prune.L1Unstructured,
+        #     amount=pruning_threshold
+        # )
 
         # Make float
         self.float()
@@ -151,12 +151,16 @@ class ActionEncoder(nn.Module):
             if input != weights.shape[1]:
                 kaiming_weights = torch.rand(weights.shape[0], input - weights.shape[1])
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
+                if weights.device.type == "cuda":
+                    kaiming_weights = kaiming_weights.to(torch.device("cuda"))
 
                 weights = torch.cat([weights.float(), kaiming_weights.float()], dim=1)
 
             if output != weights.shape[0]:
                 kaiming_weights = torch.rand(output - weights.shape[0], input)
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
+                if weights.device.type == "cuda":
+                    kaiming_weights = kaiming_weights.to(torch.device("cuda"))
 
                 weights = torch.cat([weights.float(), kaiming_weights.float()], dim=0)
 
@@ -184,6 +188,9 @@ class ActionEncoder(nn.Module):
 
             if output != biases.shape[0]:
                 rand_biases = torch.rand(output - biases.shape[0])
+                if biases.device.type == "cuda":
+                    rand_biases = rand_biases.to(torch.device("cuda"))
+
                 biases = torch.cat([biases.float(), rand_biases.float()], dim=0)
 
             # Set
