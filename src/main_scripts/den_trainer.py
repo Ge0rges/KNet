@@ -348,7 +348,7 @@ class ActiveGradsHook:
         self.is_bias = bias
 
     def __call__(self, grad):
-        grad_clone = grad.detach()
+        grad_clone = grad.clone().detach()
 
         if self.is_bias:
             grad_clone[self.currently_active] = 0

@@ -86,7 +86,7 @@ class ActionEncoder(nn.Module):
             ci = x
         else:
             ci = torch.zeros(x.shape)
-            ci.data = x.detach()
+            ci.data = x.clone().detach()
 
         # y = (checkpoint(self.action, ci, self.dummy_tensor) if checkpoints else self.action(ci, self.dummy_tensor))
         y = self.action(ci)
@@ -99,6 +99,7 @@ class ActionEncoder(nn.Module):
         # x = (checkpoint(self.decoder, x, self.dummy_tensor) if checkpoints else self.decoder(x, self.dummy_tensor))
         x = self.decoder(x)
 
+        if self.phase == 'GENERATE':
             return x
 
         if self.phase == 'BOTH':
