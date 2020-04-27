@@ -19,13 +19,14 @@ from src.utils.data_loading import mnist_loader, DatasetType
 
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cpu")
 pin_memory = (device.type == "cuda")
 num_workers = 4
 
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
+penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0.001)  # Penalty for all
 batch_size = 256
 
 data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),

@@ -98,7 +98,7 @@ class L1L2Penalty:
         penalty = 0
         for (name, param) in new_model.named_parameters():
             if 'bias' not in name:
-                penalty += param.norm(1)
+                penalty += torch.norm(param, p=1)
 
         return self.l1_coeff * penalty
 
@@ -106,18 +106,21 @@ class L1L2Penalty:
         if self.l2_coeff == 0:  # Be efficient
             return 0
 
-        assert self.old_model is not None
+        # penalty = 0
+        # for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
+        #     if 'bias' in name1:
+        #         continue
+        #
+        #     for i in range(param1.shape[0], param2.shape[0]):
+        #         row = torch.zeros(param2.shape[1])
+        #         for j in range(param2.shape[1]):
+        #             row[j] = param2[i, j]
+        #         penalty += torch.norm(row, p=2)
 
         penalty = 0
-        for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
-            if 'bias' in name1:
-                continue
-
-            for i in range(param1.shape[0], param2.shape[0]):
-                row = torch.zeros(param2.shape[1])
-                for j in range(param2.shape[1]):
-                    row[j] = param2[i, j]
-                penalty += row.norm(2)
+        for (name, param) in new_model.named_parameters():
+            if 'bias' not in name:
+                penalty += torch.norm(param, p=2)
 
         return self.l2_coeff * penalty
 
