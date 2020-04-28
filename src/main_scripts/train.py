@@ -85,11 +85,10 @@ class L1L2Penalty:
     """
     def __init__(self, l1_coeff, l2_coeff):
         self.l1_coeff = l1_coeff
-        self.l2_coeff = l2_coeff
-        self.old_model = None
+        self.l2_coeff = l2_coeff  # Used by DENTrainer to set SGD weight_decay.
 
     def __call__(self, new_model):
-        return self.l1(new_model) + self.l2(new_model)
+        return self.l1(new_model)
 
     def l1(self, new_model):
         if self.l1_coeff == 0:  # Be efficient
@@ -101,25 +100,3 @@ class L1L2Penalty:
                 penalty += torch.norm(param, p=1)
 
         return self.l1_coeff * penalty
-
-    def l2(self, new_model):
-        if self.l2_coeff == 0:  # Be efficient
-            return 0
-
-        # penalty = 0
-        # for ((name1, param1), (name2, param2)) in zip(self.old_model.named_parameters(), new_model.named_parameters()):
-        #     if 'bias' in name1:
-        #         continue
-        #
-        #     for i in range(param1.shape[0], param2.shape[0]):
-        #         row = torch.zeros(param2.shape[1])
-        #         for j in range(param2.shape[1]):
-        #             row[j] = param2[i, j]
-        #         penalty += torch.norm(row, p=2)
-
-        penalty = 0
-        for (name, param) in new_model.named_parameters():
-            if 'bias' not in name:
-                penalty += torch.norm(param, p=2)
-
-        return self.l2_coeff * penalty

@@ -1,24 +1,8 @@
 import torch
 import numpy as np
 
-from sklearn.metrics import roc_curve, auc, multilabel_confusion_matrix
+from sklearn.metrics import roc_curve, auc
 from sklearn.preprocessing import label_binarize
-
-
-def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
-    maxk = max(topk)
-    batch_size = target.size(0)
-
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-    res = []
-    for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0)
-        res.append(correct_k.mul_(100.0 / batch_size))
-    return res
 
 
 def calc_avg_AUROC(model, batchloader, number_of_tasks, classes, device):
@@ -99,29 +83,6 @@ def calc_avg_AE_AUROC(model, batchloader, number_of_tasks, number_of_tasks_train
     return roc_auc
 
 
-def calc_avg_AE_band_error(model, batchloader, device):
-
-    errors = []
-
-    for idx, (input, target) in enumerate(batchloader):
-        input = input.to(device)
-        target = target.to(device)
-
-        target = target[:, target.size()[1] - 2:]
-        target = target.numpy()
-
-        model.phase = "ACTION"
-        output = model(input).numpy()
-
-        errors.extend(np.abs((target - output)/target))
-
-    errors = np.array(errors)
-
-    alpha_error = np.mean(errors[:, 0])
-    beta_error = np.mean(errors[:, 1])
-    return {"alpha_error": alpha_error, "beta_error": beta_error}
-
-
 def calculate_accuracy(confusion_matrix):
     assert confusion_matrix is not None
     return confusion_matrix.diag().sum()/confusion_matrix.sum()
@@ -161,36 +122,6 @@ def build_confusion_matrix(model, dataloader, number_of_tasks, tasks, device):
 
         for t, p in zip(binary_targets.view(-1), binary_outputs.view(-1)):
             confusion_matrix[p.long(), t.long()] += 1
-
-    return confusion_matrix
-
-
-def build_multilabel_confusion_matrix(model, dataloader, tasks, device):
-    raise NotImplementedError
-
-    all_targets = None
-    all_predictions = None
-    for i, (inputs, targets) in enumerate(dataloader):
-        inputs = inputs.to(device)
-        targets = targets.to(device)
-
-        model.phase = "ACTION"
-        outputs = model(inputs)
-
-        predictions = np.where(outputs > 0.5, 1, 0)
-
-        if all_targets is None:
-            all_targets = np.asarray(targets)
-            all_predictions = predictions
-
-        else:
-            # Concatenate by row
-            all_targets = np.concatenate((all_targets, np.asarray(targets)), axis=0)
-            all_predictions = np.concatenate((all_predictions, predictions), axis=0)
-
-    confusion_matrix = multilabel_confusion_matrix(all_targets, all_predictions)
-
-    confusion_matrix = torch.from_numpy(confusion_matrix).to(device)
 
     return confusion_matrix
 

@@ -19,7 +19,6 @@ from src.utils.data_loading import mnist_loader, DatasetType
 
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# device = torch.device("cpu")
 pin_memory = (device.type == "cuda")
 num_workers = 4
 
@@ -76,7 +75,7 @@ def train_model():
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks)
 
-    results = trainer.train_all_tasks_sequentially(epochs)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
 
     print("Done training with results from error function:" + str(results))
 

@@ -23,7 +23,7 @@ class PytorchTrainable(tune.Trainable):
     """
 
     def _setup(self, config):
-        self.trainer = config.get("DENTrainer")
+        self.trainer = config.get("DENTrainer")  # Type: DENTrainer
 
         self.trainer.optimizer = torch.optim.SGD(
             self.trainer.model.parameters(),
@@ -43,7 +43,7 @@ class PytorchTrainable(tune.Trainable):
         for i in range(self.trainer.number_of_tasks):
             self.trainer.train_tasks([i], 5, False)
 
-        err = self.trainer.test_model(task=self.trainer.task)
+        err = self.trainer.test_model(task=range(self.trainer.number_of_tasks))
         return {"mean_accuracy": err}
 
     def _save(self, checkpoint_dir):

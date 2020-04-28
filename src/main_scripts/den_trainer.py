@@ -41,12 +41,14 @@ class DENTrainer:
         self.learning_rate = learning_rate
         self.momentum = momentum
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
+        self.l2_coeff = self.penalty.l2_coeff if hasattr(self.penalty, "l2_coeff") else 0
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.l2_coeff)
 
         self.__epochs_to_train = None
+        self.__current_tasks = None
 
     # Train Functions
-    def train_all_tasks_sequentially(self, epochs: int, with_den=True) -> [float]:
+    def train_all_tasks_sequentially(self, epochs: int, with_den: bool) -> [float]:
         errs = []
         for i in range(self.number_of_tasks):
             print("Task: [{}/{}]".format(i + 1, self.number_of_tasks))
@@ -60,86 +62,73 @@ class DENTrainer:
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
-        # Reset for next train call
-        if hasattr(self.penalty, 'old_model'):
-            self.penalty.old_model = None
-
         return errs
 
-    def train_tasks(self, tasks: [int], epochs: int, with_den=True) -> (float, float):
+    def train_tasks(self, tasks: [int], epochs: int, with_den: bool) -> (float, float):
         # train_new_neurons will need this.
         self.__epochs_to_train = epochs
-
-        # l1l2penalty is initialized elsewhere, but we must set the old_model
-        if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
-            self.penalty.old_model = self.model
+        self.__current_tasks = tasks
 
         # Make a copy for split
         model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
 
-        loss, err = None, None
-        for i in range(epochs):
-            loss, err = self.train_one_epoch(self.train_loader, tasks)
-            if err >= self.err_stop_threshold:
-                break
+        # Train
+        loss, err = self.__train_tasks_for_epochs()
+        print(err)
 
         # Do DEN.
         if with_den:
-            # Desaturate saturated neurons
-            old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
-            loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
+            loss, err = self.__do_den(model_copy, loss)
 
-            # If loss is still above a certain threshold, add capacity.
-            if loss > self.loss_threshold:
-                old_sizes, new_sizes = self.dynamically_expand()
-                loss, err = self.train_new_neurons(old_sizes, new_sizes, tasks)
-
-            # Reset for next task
-            if hasattr(self.penalty, 'old_model'):
-                self.penalty.old_model = None
-
-        # testing the model with the test set
-        err = self.error_function(self.model, self.test_loader, tasks)
-        return loss, err
-
-    def train_one_epoch(self, trainloader: DataLoader, tasks) -> (float, float):
-        # This should be already set unless absolutely only training one epoch
-        if hasattr(self.penalty, 'old_model') and self.penalty.old_model is None:
-            self.penalty.old_model = self.model
-
-        loss = train(trainloader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, tasks)
+        # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
         return loss, err
 
-    # Eval Function
-    def eval_model(self, tasks, sequential=False) -> [(float, float)]:
-        return self.__loss_for_loader_in_eval(self.valid_loader, tasks, sequential)
+    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
+        # Desaturate saturated neurons
+        old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
+        loss, err = self.train_new_neurons(old_sizes, new_sizes, self.__current_tasks)
+        print(err)
 
-    # Test function
-    def test_model(self, tasks, sequential=False) -> [(float, float)]:
-        return self.__loss_for_loader_in_eval(self.test_loader, tasks, sequential)
+        # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
+        loss = starting_loss if loss is None else loss
 
-    def __loss_for_loader_in_eval(self, loader, tasks, sequential) -> [(float, float)]:
-        if sequential:
-            losses = []
-            for t in tasks:
-                loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, [t])
-                err = self.error_function(self.model, loader, range(t))
-                losses.append((loss, err))
+        # If loss is still above a certain threshold, add capacity.
+        if loss > self.loss_threshold:
+            old_sizes, new_sizes = self.dynamically_expand()
+            t_loss, err = self.train_new_neurons(old_sizes, new_sizes, self.__current_tasks)
+            print(err)
 
-            return losses
+            # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
+            loss = loss if t_loss is None else t_loss
 
-        else:
-            loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks)
-            err = self.error_function(self.model, loader, tasks)
-            return [loss, err]
+        return loss, err
+
+    def __train_tasks_for_epochs(self):
+        loss, err = None, None
+        for i in range(self.__epochs_to_train):
+            loss, err = self.__train_one_epoch()
+            if err is not None and err >= self.err_stop_threshold:
+                break
+
+        return loss, err
+
+    def __train_one_epoch(self) -> (float, float):
+        loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, self.__current_tasks)
+
+        # Compute the error if we need early stopping
+        err = None
+        if True or self.err_stop_threshold != float("inf"):
+            err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
+
+        return loss, err
 
     # DEN Functions
     def split_saturated_neurons(self, model_copy: torch.nn.Module) -> (dict, dict):
         print("Splitting...")
         total_neurons_added = 0
 
-        sizes, weights, biases = {}, {}, {}
+        new_sizes, weights, biases = {}, {}, {}
 
         old_modules = get_modules(model_copy)
         new_modules = get_modules(self.model)
@@ -147,7 +136,7 @@ class DENTrainer:
         # For each module (encoder, decoder, action...)
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
-            sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
+            new_sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
             # Biases needed before going through weights
             old_biases = []
@@ -169,8 +158,8 @@ class DENTrainer:
                     continue
 
                 # Need input size
-                if len(sizes[dict_key]) == 0:
-                    sizes[dict_key].append(new_param.shape[1])
+                if len(new_sizes[dict_key]) == 0:
+                    new_sizes[dict_key].append(new_param.shape[1])
 
                 new_layer_weights = []
                 new_layer_biases = []
@@ -209,19 +198,20 @@ class DENTrainer:
                 # Update dicts
                 weights[dict_key].append(new_layer_weights)
                 biases[dict_key].append(new_layer_biases)
-                sizes[dict_key].append(new_layer_size)
+                new_sizes[dict_key].append(new_layer_size)
 
                 biases_index += 1
 
             # Output must remain constant
-            sizes[dict_key][-1] -= added_last_layer
+            new_sizes[dict_key][-1] -= added_last_layer
 
         # Be efficient
         old_sizes = self.model.sizes
         if total_neurons_added > 0:
-            self.model = ActionEncoder(sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
+            self.model = ActionEncoder(new_sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
-            self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
+            self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
+                                       weight_decay=self.l2_coeff)
 
         return old_sizes, self.model.sizes
 
@@ -251,11 +241,16 @@ class DENTrainer:
         old_sizes = self.model.sizes
         self.model = ActionEncoder(sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
         self.model = self.model.to(self.device)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
+                                   weight_decay=self.l2_coeff)
 
         return old_sizes, self.model.sizes
 
     def train_new_neurons(self, old_sizes: dict, new_sizes: dict, tasks: [int]) -> (float, float):
+        if old_sizes == new_sizes:
+            print("No new neurons to train.")
+            return (None, None)
+
         print("Training new neurons...")
 
         # Generate hooks for each layer
@@ -288,26 +283,21 @@ class DENTrainer:
                     active_biases = [False] * old_size + [True] * neurons_added
                     hook = ActiveGradsHook(None, active_biases, bias=True)
 
-                    param.register_hook(hook)
+                    hook = param.register_hook(hook)
+                    hooks.append(hook)
 
                 else:
 
                     active_weights = [False] * old_size + [True] * neurons_added
                     hook = ActiveGradsHook(previously_active_weights, active_weights, bias=False)
 
-                    param.register_hook(hook)
+                    hook = param.register_hook(hook)
+                    hooks.append(hook)
 
                     previously_active_weights = active_weights
 
-        # Train: l1l2penalty old_model should be set
-        assert not hasattr(self.penalty, 'old_model') or self.penalty.old_model is not None
-
         # Train simply
-        loss, err = None, None
-        for i in range(self.__epochs_to_train):
-            loss, err = self.train_one_epoch(self.train_loader, tasks)
-            if err >= self.err_stop_threshold:
-                break
+        loss, err = self.__train_tasks_for_epochs()
 
         # Remove hooks
         for hook in hooks:
@@ -315,11 +305,45 @@ class DENTrainer:
 
         return loss, err
 
+    # Eval Function
+    def eval_model(self, tasks, sequential=False) -> [(float, float)]:
+        return self.__loss_for_loader_in_eval(self.valid_loader, tasks, sequential)
+
+    # Test function
+    def test_model(self, tasks, sequential=False) -> [(float, float)]:
+        return self.__loss_for_loader_in_eval(self.test_loader, tasks, sequential)
+
+    def __loss_for_loader_in_eval(self, loader, tasks, sequential) -> [(float, float)]:
+        if sequential:
+            losses = []
+            for t in tasks:
+                loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device,
+                             [t])
+                err = self.error_function(self.model, loader, range(t))
+                losses.append((loss, err))
+
+            return losses
+
+        else:
+            loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks)
+            err = self.error_function(self.model, loader, tasks)
+            return [loss, err]
+
     # Misc
+    def load_model(self, model_name: str) -> bool:
+        filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
+        filepath = os.path.join(filepath, model_name)
+
+        self.model = ActionEncoder(self.model.sizes, self.pruning_threshold)
+        self.model.load_state_dict(torch.load(filepath))
+        self.model.to(self.device)
+
+        return isinstance(self.model, ActionEncoder)
+
     def save_model(self, model_name: str) -> None:
         filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
         filepath = os.path.join(filepath, model_name)
-        torch.save({'state_dict': self.model.state_dict()}, filepath)
+        torch.save(self.model.state_dict(), filepath)
 
 
 def get_modules(model: torch.nn.Module) -> dict:
