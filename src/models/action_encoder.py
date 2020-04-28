@@ -149,18 +149,14 @@ class ActionEncoder(nn.Module):
             weights = layer.weight.detach()
 
             if input != weights.shape[1]:
-                kaiming_weights = torch.rand(weights.shape[0], input - weights.shape[1])
+                kaiming_weights = torch.rand(weights.shape[0], input - weights.shape[1]).to(weights.device)
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
-                if weights.device.type == "cuda":
-                    kaiming_weights = kaiming_weights.to(torch.device("cuda"))
 
                 weights = torch.cat([weights.float(), kaiming_weights.float()], dim=1)
 
             if output != weights.shape[0]:
-                kaiming_weights = torch.rand(output - weights.shape[0], input)
+                kaiming_weights = torch.rand(output - weights.shape[0], input).to(weights.device)
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
-                if weights.device.type == "cuda":
-                    kaiming_weights = kaiming_weights.to(torch.device("cuda"))
 
                 weights = torch.cat([weights.float(), kaiming_weights.float()], dim=0)
 
@@ -187,9 +183,7 @@ class ActionEncoder(nn.Module):
             biases = layer.bias.detach()
 
             if output != biases.shape[0]:
-                rand_biases = torch.rand(output - biases.shape[0])
-                if biases.device.type == "cuda":
-                    rand_biases = rand_biases.to(torch.device("cuda"))
+                rand_biases = torch.rand(output - biases.shape[0]).to(biases.device)
 
                 biases = torch.cat([biases.float(), rand_biases.float()], dim=0)
 

@@ -68,6 +68,7 @@ def train_model():
 
     print("Done training with results from error function:" + str(results))
 
+    trainer.save_model("banana_car.pt")
     return trainer.model, results
 
 
@@ -94,6 +95,8 @@ def test_abstraction(model):
     """
     Tests to see whether the network having learned bananas and cars, can recognize a banana car.
     """
+    model.eval()
+
     testloader = bananacar_abstract_loader()
 
     correct = 0
@@ -114,7 +117,7 @@ def test_abstraction(model):
                     correct += 1
 
     accuracy_abstract = correct/sum
-    print(accuracy_abstract)
+    print(accuracy_abstract*100)
 
 
 if __name__ == "__main__":
