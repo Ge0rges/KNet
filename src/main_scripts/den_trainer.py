@@ -38,8 +38,10 @@ class DENTrainer:
 
         self.number_of_tasks = number_of_tasks  # experiment specific
         self.model = ActionEncoder(sizes=sizes, pruning_threshold=self.pruning_threshold).to(device)
+        self.learning_rate = learning_rate
+        self.momentum = momentum
 
-        self.optimizer = optim.SGD(self.model.parameters(), lr=learning_rate, momentum=momentum)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
         self.__epochs_to_train = None
 
@@ -219,6 +221,7 @@ class DENTrainer:
         if total_neurons_added > 0:
             self.model = ActionEncoder(sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
+            self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
         return old_sizes, self.model.sizes
 
@@ -248,6 +251,7 @@ class DENTrainer:
         old_sizes = self.model.sizes
         self.model = ActionEncoder(sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
         self.model = self.model.to(self.device)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
         return old_sizes, self.model.sizes
 
