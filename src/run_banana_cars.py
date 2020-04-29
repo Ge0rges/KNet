@@ -24,6 +24,7 @@ num_workers = 8
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0.00001)  # Penalty for all
+drift_threshold = 0.02  # Drift threshold for split in DEN
 batch_size = 256
 
 img_size = (280, 190)  # Images will be resized correctly
@@ -45,8 +46,8 @@ def find_hyperparameters():
     core_invariant_size = 522  # None is PCA
 
     pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
-                                         encoder_in, hidden_encoder_layers, hidden_action_layers, action_out,
-                                         core_invariant_size)
+                                         drift_threshold, encoder_in, hidden_encoder_layers, hidden_action_layers,
+                                         action_out, core_invariant_size)
 
     return pbt_controller()
 
@@ -63,9 +64,11 @@ def train_model():
              "action": [522, 80, 2]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
-                         error_function, number_of_tasks)
+                         error_function, number_of_tasks, drift_threshold)
+
     print(trainer.model.sizes)
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
+
 
     print("Done training with results from error function:" + str(results))
 

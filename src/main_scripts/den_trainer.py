@@ -16,7 +16,7 @@ class DENTrainer:
 
     def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader),
                  sizes: dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
-                 device: torch.device, err_func: callable, number_of_tasks: int,
+                 device: torch.device, err_func: callable, number_of_tasks: int, drift_threshold: float,
                  err_stop_threshold: float = None) -> None:
 
         # Get the loaders by task
@@ -34,7 +34,8 @@ class DENTrainer:
 
         # DEN Thresholds
         self.pruning_threshold = 0.05  # Percentage of parameters to prune (lowest)
-        self.drift_threshold = 0.0013  #0.03 for mnist ; 0.0015 for bananacar
+        self.drift_threshold = drift_threshold
+
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = number_of_tasks  # experiment specific
@@ -58,8 +59,13 @@ class DENTrainer:
                 torch.cuda.empty_cache()
 
             # DEN on task 0 is ok.
-            loss, err = self.train_tasks([i], epochs, with_den)
-            errs.append(err)
+            if i == 0:
+                loss, err = self.train_tasks([i], epochs, False)
+                errs.append(err)
+
+            else:
+                loss, err = self.train_tasks([i], epochs, True)
+                errs.append(err)
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
@@ -85,26 +91,6 @@ class DENTrainer:
         err = self.error_function(self.model, self.valid_loader, tasks)
         return loss, err
 
-    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
-        # Desaturate saturated neurons
-        old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
-        loss, err = self.train_new_neurons(old_sizes, new_sizes, self.__current_tasks)
-        print(err)
-
-        # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
-        loss = starting_loss if loss is None else loss
-
-        # If loss is still above a certain threshold, add capacity.
-        if loss > self.loss_threshold:
-            old_sizes, new_sizes = self.dynamically_expand()
-            t_loss, err = self.train_new_neurons(old_sizes, new_sizes, self.__current_tasks)
-            print(err)
-
-            # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
-            loss = loss if t_loss is None else t_loss
-
-        return loss, err
-
     def __train_tasks_for_epochs(self):
         loss, err = None, None
         for i in range(self.__epochs_to_train):
@@ -123,6 +109,27 @@ class DENTrainer:
             err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
 
         return loss, err
+
+    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
+        # Desaturate saturated neurons
+        old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
+        loss, err = self.train_new_neurons(old_sizes, new_sizes)
+        print(err)
+
+        # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
+        loss = starting_loss if loss is None else loss
+
+        # If loss is still above a certain threshold, add capacity.
+        if loss > self.loss_threshold:
+            old_sizes, new_sizes = self.dynamically_expand()
+            t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
+            print(err)
+
+            # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
+            loss = loss if t_loss is None else t_loss
+
+        return loss, err
+
 
     # DEN Functions
     def split_saturated_neurons(self, model_copy: torch.nn.Module) -> (dict, dict):
@@ -155,6 +162,7 @@ class DENTrainer:
             biases_index = 0
             added_last_layer = 0  # Needed here, to make last layer fixed size.
 
+            # For each layer
             for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
                 # Skip biases params
                 if "bias" in new_param_name:
@@ -254,7 +262,7 @@ class DENTrainer:
 
         return old_sizes, self.model.sizes
 
-    def train_new_neurons(self, old_sizes: dict, new_sizes: dict, tasks: [int]) -> (float, float):
+    def train_new_neurons(self, old_sizes: dict, new_sizes: dict) -> (float, float):
         if old_sizes == new_sizes:
             print("No new neurons to train.")
             return (None, None)
@@ -304,14 +312,33 @@ class DENTrainer:
 
                     previously_active_weights = active_weights
 
-        # Train simply
-        loss, err = self.__train_tasks_for_epochs()
+        # Train until validation loss reaches a maximum
+        max_model = self.model
+        max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
 
+        # Initial train
+        for _ in range(2):
+            self.__train_one_epoch()
+        validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
+
+        # Train till validation error stops growing
+        while validation_error > max_validation_err:
+            max_model = self.model
+            max_validation_err = validation_error
+            max_validation_loss = validation_loss
+
+            for _ in range(2):
+                self.__train_one_epoch()
+            validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
+
+        self.model = max_model  # Discard the last two train epochs
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
+                                   weight_decay=self.l2_coeff)
         # Remove hooks
         for hook in hooks:
             hook.remove()
 
-        return loss, err
+        return max_validation_loss, max_validation_err
 
     # Eval Function
     def eval_model(self, tasks, sequential=False) -> [(float, float)]:
@@ -335,7 +362,7 @@ class DENTrainer:
         else:
             loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks)
             err = self.error_function(self.model, loader, tasks)
-            return [loss, err]
+            return [(loss, err)]
 
     # Misc
     def load_model(self, model_name: str) -> bool:
