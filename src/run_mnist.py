@@ -77,6 +77,9 @@ def train_model():
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
 
+    loss, err = trainer.test_model(range(number_of_tasks), False)[0]
+
+    print("Done training with total accuracy:" + str(err))
     print("Done training with results from error function:" + str(results))
 
     return trainer.model, results
