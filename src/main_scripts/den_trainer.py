@@ -152,6 +152,7 @@ class DENTrainer:
             biases_index = 0
             added_last_layer = 0  # Needed here, to make last layer fixed size.
 
+            # For each layer
             for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
                 # Skip biases params
                 if "bias" in new_param_name:
@@ -316,7 +317,8 @@ class DENTrainer:
             validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
         self.model = max_model  # Discard the last two train epochs
-
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
+                                   weight_decay=self.l2_coeff)
         # Remove hooks
         for hook in hooks:
             hook.remove()
