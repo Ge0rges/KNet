@@ -23,7 +23,7 @@ num_workers = 8
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
-drift_threshold = 0.02
+drift_threshold = 0.02  # Drift threshold for split in DEN
 batch_size = 256
 
 img_size = (280, 190)  # Images will be resized correctly
@@ -59,7 +59,6 @@ def train_model():
     learning_rate = 0.002
     momentum = 0
     expand_by_k = 10
-    drift_threshold = 0.02
     sizes = {"encoder": [img_size[0] * img_size[1] * 3, 1000, 522],
              "action": [522, 80, 2]}
 
