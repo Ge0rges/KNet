@@ -24,7 +24,7 @@ num_workers = 8
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0.00001)  # Penalty for all
-drift_threshold = 0.02  # Drift threshold for split in DEN
+drift_threshold = 0.0013  # Drift threshold for split in DEN
 batch_size = 256
 
 img_size = (280, 190)  # Images will be resized correctly
