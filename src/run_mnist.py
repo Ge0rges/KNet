@@ -66,7 +66,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 1
+    epochs = 5
     learning_rate = 1
     momentum = 0
     expand_by_k = 10

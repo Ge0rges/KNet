@@ -106,7 +106,7 @@ class DENTrainer:
         # Compute the error if we need early stopping
         err = None
         if True or self.err_stop_threshold != float("inf"):
-            err = self.error_function(self.model, self.valid_loader, range(self.__current_tasks[0] + 1))
+            err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
 
         return loss, err
 
@@ -317,7 +317,7 @@ class DENTrainer:
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
 
         # Initial train
-        for _ in range(2):
+        for _ in range(3):
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
@@ -327,7 +327,7 @@ class DENTrainer:
             max_validation_err = validation_error
             max_validation_loss = validation_loss
 
-            for _ in range(2):
+            for _ in range(3):
                 self.__train_one_epoch()
             validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
