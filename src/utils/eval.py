@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, confusion_matrix
 from sklearn.preprocessing import label_binarize
 
 
@@ -95,8 +95,8 @@ def build_confusion_matrix(model, dataloader, number_of_tasks, tasks, device):
 
     matrix_size = number_of_tasks if len(untrained_tasks) == 0 else len(tasks) + 1
 
-    confusion_matrix = torch.zeros(matrix_size, matrix_size).to(device)
-
+    all_binary_outputs = None
+    all_binary_targets = None
     for i, (inputs, targets) in enumerate(dataloader):
         inputs = inputs.to(device)
         targets = targets.to(device)
@@ -120,10 +120,18 @@ def build_confusion_matrix(model, dataloader, number_of_tasks, tasks, device):
             binary_outputs = torch.cat([trained_outputs, untrained_outputs], dim=1)
             binary_targets = torch.cat([trained_targets, untrained_targets], dim=1)
 
-        for t, p in zip(binary_targets.view(-1), binary_outputs.view(-1)):
-            confusion_matrix[p.long(), t.long()] += 1
+        if all_binary_outputs is None:
+            all_binary_targets = binary_targets
+            all_binary_outputs = binary_outputs
 
-    return confusion_matrix
+        else:
+            all_binary_targets = torch.cat([all_binary_targets, binary_targets])
+            all_binary_outputs = torch.cat([all_binary_outputs, binary_outputs])
+
+    all_binary_outputs = all_binary_outputs.argmax(1)
+    all_binary_targets = all_binary_targets.argmax(1)
+
+    return torch.Tensor(confusion_matrix(all_binary_targets, all_binary_outputs))
 
 
 def AUROC(scores, targets):

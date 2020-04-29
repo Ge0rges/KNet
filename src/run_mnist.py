@@ -97,7 +97,6 @@ def error_function(model, batch_loader, tasks):
     """
 
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device)
-    print(confusion_matrix)
     class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
 
     score = 0
