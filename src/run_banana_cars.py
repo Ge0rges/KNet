@@ -15,14 +15,15 @@ from src.utils.data_loading import banana_car_loader, bananacar_abstract_loader,
 from src.utils.misc import plot_tensor
 
 # No need to touch
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 pin_memory = (device.type == "cuda")
 num_workers = 8
 
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 2  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0)  # Penalty for all
+penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0.00001)  # Penalty for all
 batch_size = 256
 
 img_size = (280, 190)  # Images will be resized correctly
@@ -54,7 +55,7 @@ def train_model():
     """
     Trains a CIANet model on the following params.
     """
-    epochs = 30
+    epochs = 5
     learning_rate = 0.002
     momentum = 0
     expand_by_k = 10
@@ -63,8 +64,8 @@ def train_model():
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks)
-
-    results = trainer.train_all_tasks_sequentially(epochs, with_den=False)
+    print(trainer.model.sizes)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
 
     print("Done training with results from error function:" + str(results))
 

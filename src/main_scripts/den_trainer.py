@@ -2,6 +2,7 @@ import copy
 import torch
 import os
 import torch.optim as optim
+import numpy as np
 
 from torch.utils.data import DataLoader
 from src.models import ActionEncoder
@@ -33,7 +34,7 @@ class DENTrainer:
 
         # DEN Thresholds
         self.pruning_threshold = 0.05  # Percentage of parameters to prune (lowest)
-        self.drift_threshold = 0.02
+        self.drift_threshold = 0.0013  #0.03 for mnist ; 0.0015 for bananacar
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = number_of_tasks  # experiment specific
@@ -133,6 +134,8 @@ class DENTrainer:
         old_modules = get_modules(model_copy)
         new_modules = get_modules(self.model)
 
+        drifts = []
+
         # For each module (encoder, decoder, action...)
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
@@ -176,6 +179,7 @@ class DENTrainer:
                     # Check drift
                     diff = old_weights - new_weights
                     drift = diff.norm(2)
+                    drifts.append(drift.to(torch.device("cpu")).numpy())
 
                     if drift > self.drift_threshold:
                         # Split 1 neuron into 2
@@ -212,6 +216,8 @@ class DENTrainer:
             self.model = self.model.to(self.device)
             self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
                                        weight_decay=self.l2_coeff)
+        print(self.model.sizes)
+        print("median drift: {} \n mean drift: {}".format(np.median(drifts), np.mean(drifts)))
 
         return old_sizes, self.model.sizes
 
@@ -243,6 +249,8 @@ class DENTrainer:
         self.model = self.model.to(self.device)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
                                    weight_decay=self.l2_coeff)
+
+        print(self.model.sizes)
 
         return old_sizes, self.model.sizes
 
