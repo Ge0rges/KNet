@@ -296,14 +296,32 @@ class DENTrainer:
 
                     previously_active_weights = active_weights
 
-        # Train simply
-        loss, err = self.__train_tasks_for_epochs()
+        # Train until validation loss reaches a maximum
+        max_model = self.model
+        max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
+
+        # Initial train
+        for _ in range(2):
+            self.__train_one_epoch()
+        validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
+
+        # Train till validation error stops growing
+        while validation_error > max_validation_err:
+            max_model = self.model
+            max_validation_err = validation_error
+            max_validation_loss = validation_loss
+
+            for _ in range(2):
+                self.__train_one_epoch()
+            validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
+
+        self.model = max_model  # Discard the last two train epochs
 
         # Remove hooks
         for hook in hooks:
             hook.remove()
 
-        return loss, err
+        return max_validation_loss, max_validation_err
 
     # Eval Function
     def eval_model(self, tasks, sequential=False) -> [(float, float)]:
@@ -327,7 +345,7 @@ class DENTrainer:
         else:
             loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks)
             err = self.error_function(self.model, loader, tasks)
-            return [loss, err]
+            return [(loss, err)]
 
     # Misc
     def load_model(self, model_name: str) -> bool:

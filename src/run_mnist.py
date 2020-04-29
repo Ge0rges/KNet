@@ -87,6 +87,8 @@ def error_function(model, batch_loader, tasks):
     Calculates a metric to judge model. Must return a float.
     Metric is experiment dependent could be AUROC, Accuracy, Error....
 
+    Metric must be "higher is better" (eg. accuracy)
+
     Do not modify params. Abstract method for all experiments.
     """
 
