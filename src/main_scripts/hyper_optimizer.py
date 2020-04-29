@@ -81,7 +81,7 @@ class OptimizerController:
     Exposes our layer sizes constructor function.
     """
 
-    def __init__(self, device, data_loaders, criterion, penalty, error_function, number_of_tasks, encoder_in,
+    def __init__(self, device, data_loaders, criterion, penalty, error_function, number_of_tasks, drift_threshold, encoder_in,
                  hidden_encoder_layers, hidden_action_layers, action_out, core_invariant_size=None):
         """
         Creates a controller object.
@@ -103,7 +103,8 @@ class OptimizerController:
         sizes = self.construct_network_sizes()
 
         # Setup trainer. LR, Momentum, expand_by_k will be replaced.
-        self.trainer = DENTrainer(data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function, number_of_tasks)
+        self.trainer = DENTrainer(data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function,
+                                  number_of_tasks, drift_threshold)
 
     def __call__(self):
         num_gpus = (1 if self.device.type == "cuda" else 0)

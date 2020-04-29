@@ -26,6 +26,7 @@ num_workers = 4
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0.001)  # Penalty for all
+drift_threshold = 0.02
 batch_size = 256
 
 data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -54,8 +55,8 @@ def find_hyperparameters():
     core_invariant_size = 405  # None is PCA
 
     pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
-                                         encoder_in, hidden_encoder_layers, hidden_action_layers, action_out,
-                                         core_invariant_size)
+                                         drift_threshold, encoder_in, hidden_encoder_layers, hidden_action_layers,
+                                         action_out, core_invariant_size)
 
     return pbt_controller()
 
@@ -73,7 +74,7 @@ def train_model():
              "action": [10, 10]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
-                         error_function, number_of_tasks)
+                         error_function, number_of_tasks, drift_threshold)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
 

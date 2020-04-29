@@ -16,7 +16,7 @@ class DENTrainer:
     def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader),
                  sizes: dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
                  device: torch.device, err_func: callable, number_of_tasks: int,
-                 err_stop_threshold: float = None) -> None:
+                 err_stop_threshold: float = None, drift_threshold: float) -> None:
 
         # Get the loaders by task
         self.train_loader = data_loaders[0]
@@ -33,7 +33,7 @@ class DENTrainer:
 
         # DEN Thresholds
         self.pruning_threshold = 0.05  # Percentage of parameters to prune (lowest)
-        self.drift_threshold = 0.02
+        self.drift_threshold = drift_threshold
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = number_of_tasks  # experiment specific
