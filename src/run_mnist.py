@@ -25,8 +25,8 @@ num_workers = 4
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0.00001)  # Penalty for all
-drift_threshold = 0.3  # Drift threshold for split in DEN
+penalty = L1L2Penalty(l1_coeff=1e-5, l2_coeff=0.001)  # Penalty for all
+drift_threshold = 0.5  # Drift threshold for split in DEN
 batch_size = 256
 
 data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -66,7 +66,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 5
+    epochs = 1
     learning_rate = 1
     momentum = 0
     expand_by_k = 10
@@ -76,7 +76,7 @@ def train_model():
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold)
 
-    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=False)
 
     loss, err = trainer.test_model(range(number_of_tasks), False)[0]
 
@@ -97,6 +97,7 @@ def error_function(model, batch_loader, tasks):
     """
 
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device)
+    print(confusion_matrix)
     class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
 
     score = 0

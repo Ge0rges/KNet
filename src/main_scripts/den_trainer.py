@@ -64,7 +64,7 @@ class DENTrainer:
                 errs.append(err)
 
             else:
-                loss, err = self.train_tasks([i], epochs, True)
+                loss, err = self.train_tasks([i], epochs, with_den)
                 errs.append(err)
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
@@ -106,7 +106,7 @@ class DENTrainer:
         # Compute the error if we need early stopping
         err = None
         if True or self.err_stop_threshold != float("inf"):
-            err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
+            err = self.error_function(self.model, self.valid_loader, range(self.__current_tasks[0] + 1))
 
         return loss, err
 
