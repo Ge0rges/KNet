@@ -66,7 +66,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 5
+    epochs = 1
     learning_rate = 1
     momentum = 0
     expand_by_k = 10
@@ -76,11 +76,11 @@ def train_model():
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold)
 
-    results = trainer.train_all_tasks_sequentially(epochs, with_den=False)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
 
     loss, err = trainer.test_model(range(number_of_tasks), False)[0]
 
-    print("Done training with total accuracy:" + str(err))
+    print("Done training with total net accuracy:" + str(err))
     print("Done training with results from error function:" + str(results))
 
     return trainer.model, results

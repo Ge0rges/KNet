@@ -8,7 +8,10 @@ import torch.nn.utils.prune as prune
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes, pruning_threshold, oldWeights=None, oldBiases=None, connected=False, ff=True):
+    def __init__(self, sizes: dict, pruning_threshold: float, oldWeights=None, oldBiases=None, connected=False, ff=True):
+        super(ActionEncoder, self).__init__()
+
+        assert 0 <= pruning_threshold <= 1
 
         # Safer
         if ff:
@@ -23,7 +26,11 @@ class ActionEncoder(nn.Module):
         else:
             sizes["decoder"] = list(reversed(sizes["encoder"]))
 
-        super(ActionEncoder, self).__init__()
+        
+        # Encoder out dictates other inputs
+        sizes["action"][0] = sizes["encoder"][-1]
+        sizes["decoder"][0] = sizes["encoder"][-1]
+
         self.phase = 'ACTION'
         self.connected = connected
         self.ff = ff
@@ -53,25 +60,28 @@ class ActionEncoder(nn.Module):
         # self.decoder = ModuleWrapperIgnores2ndArg(self.decoder)
 
         # Set the pruning method
-        # parameters_to_prune = []
-        # for param in encoder_layers:
-        #     if isinstance(param, nn.Linear):
-        #         parameters_to_prune.append((param, "weight"))
-        #
-        # for param in decoder_layers:
-        #     if isinstance(param, nn.Linear):
-        #         parameters_to_prune.append((param, "weight"))
-        #
-        # for param in action_layers:
-        #     if isinstance(param, nn.Linear):
-        #         parameters_to_prune.append((param, "weight"))
-        #
-        # # Create new model without 0 weights
-        # prune.global_unstructured(
-        #     parameters_to_prune,
-        #     pruning_method=prune.L1Unstructured,
-        #     amount=pruning_threshold
-        # )
+        parameters_to_prune = []
+        for param in encoder_layers:
+            if isinstance(param, nn.Linear):
+                parameters_to_prune.append((param, "weight"))
+
+        for param in decoder_layers:
+            if isinstance(param, nn.Linear):
+                parameters_to_prune.append((param, "weight"))
+
+        for param in action_layers:
+            if isinstance(param, nn.Linear):
+                parameters_to_prune.append((param, "weight"))
+        
+        # Used to restore pruning after copy
+        self.parameters_to_prune = parameters_to_prune
+
+        # Create new model without 0 weights
+        prune.global_unstructured(
+            parameters_to_prune,
+            pruning_method=prune.L1Unstructured,
+            amount=float(pruning_threshold)
+        )
 
         # Make float
         self.float()
@@ -193,4 +203,4 @@ class ActionEncoder(nn.Module):
             # Update the oldBiases to include padding
             init_biases[index] = layer.bias.detach()
 
-        return layer
+        return layer.float()

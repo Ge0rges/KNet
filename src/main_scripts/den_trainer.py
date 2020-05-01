@@ -1,8 +1,10 @@
 import copy
 import torch
 import os
+import traceback
 import torch.optim as optim
 import numpy as np
+import torch.nn.utils.prune as prune
 
 from torch.utils.data import DataLoader
 from src.models import ActionEncoder
@@ -77,7 +79,17 @@ class DENTrainer:
         self.__current_tasks = tasks
 
         # Make a copy for split
-        model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
+        if with_den:
+            # Deep copy doesn't like reparametrization
+            for param, name in self.model.parameters_to_prune:
+                prune.remove(param, name)
+            
+            model_copy = copy.deepcopy(self.model).to(self.device)
+            
+            # Add back prune
+            prune.global_unstructured(model_copy.parameters_to_prune, pruning_method=prune.L1Unstructured, amount=self.pruning_threshold)
+            prune.global_unstructured(self.model.parameters_to_prune, pruning_method=prune.L1Unstructured, amount=self.pruning_threshold)
+
 
         # Train
         loss, err = self.__train_tasks_for_epochs()
@@ -414,13 +426,17 @@ class ActiveGradsHook:
         self.__name__ = None
 
     def __call__(self, grad):
-        grad_clone = grad.clone().detach()
+        try:  # Errors don't get propagated up, this is necessary.
+            grad_clone = grad.clone().detach()
 
-        if self.is_bias:
-            grad_clone[self.currently_active] = 0
+            if self.is_bias:
+                grad_clone[self.currently_active] = 0
 
-        else:
-            grad_clone[self.currently_active, :] = 0
-            grad_clone[:, self.previously_active] = 0
+            else:
+                grad_clone[self.currently_active, :] = 0
+                grad_clone[:, self.previously_active] = 0
 
-        return grad_clone
+            return grad_clone
+
+        except Exception:
+            traceback.print_exc()
