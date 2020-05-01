@@ -52,19 +52,22 @@ class DENTrainer:
     # Train Functions
     def train_all_tasks_sequentially(self, epochs: int, with_den: bool) -> [float]:
         errs = []
+        # tasks = list(range(self.number_of_tasks))
         for i in range(self.number_of_tasks):
             print("Task: [{}/{}]".format(i + 1, self.number_of_tasks))
 
             if self.device.type == "cuda":
                 torch.cuda.empty_cache()
 
+            # tasks.append(i)
+            tasks = [i]
             # DEN on task 0 is ok.
             if i == 0:
-                loss, err = self.train_tasks([i], epochs, False)
+                loss, err = self.train_tasks(tasks, epochs, False)
                 errs.append(err)
 
             else:
-                loss, err = self.train_tasks([i], epochs, with_den)
+                loss, err = self.train_tasks(tasks, epochs, with_den)
                 errs.append(err)
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
@@ -106,7 +109,7 @@ class DENTrainer:
         # Compute the error if we need early stopping
         err = None
         if True or self.err_stop_threshold != float("inf"):
-            err = self.error_function(self.model, self.valid_loader, range(self.__current_tasks[0] + 1))
+            err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
 
         return loss, err
 
@@ -142,7 +145,7 @@ class DENTrainer:
         new_modules = get_modules(self.model)
 
         drifts = []
-
+        count = 0
         # For each module (encoder, decoder, action...)
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
             # Initialize the dicts
@@ -187,7 +190,8 @@ class DENTrainer:
                     # Check drift
                     diff = old_weights - new_weights
                     drift = diff.norm(2)
-                    drifts.append(drift.to(torch.device("cpu")).numpy())
+                    if count == 0:
+                        drifts.append(drift.to(torch.device("cpu")).numpy())
 
                     if drift > self.drift_threshold:
                         # Split 1 neuron into 2
@@ -216,6 +220,7 @@ class DENTrainer:
 
             # Output must remain constant
             new_sizes[dict_key][-1] -= added_last_layer
+            count = 1
 
         # Be efficient
         old_sizes = self.model.sizes
@@ -317,7 +322,7 @@ class DENTrainer:
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
 
         # Initial train
-        for _ in range(2):
+        for _ in range(3):
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
@@ -327,7 +332,7 @@ class DENTrainer:
             max_validation_err = validation_error
             max_validation_loss = validation_loss
 
-            for _ in range(2):
+            for _ in range(3):
                 self.__train_one_epoch()
             validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
