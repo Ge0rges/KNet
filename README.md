@@ -75,14 +75,14 @@ Candidate Networks:
 # Dependencies
 - Python 3.7
 - numpy 1.18.2
-- Pillow 6.2.2 or Pillow-SIMD 6.2.2post1
+- Pillow 7.0.0 or Pillow-SIMD 7.0.0
     - For pillow-simd you will need a SSE4.1 capable CPU and `sudo apt-get install libjpeg-dev zlib1g-dev`
 - progress 1.5
-- torch 1.3.1
-- torchvision 0.4.2
+- torch 1.5.0
+- torchvision 0.6.0
 - sklearn 0.0
 - matplotlib 3.2.1
-- Ray[Tune] (pip install 'ray[tune']) 0.8.4
+- Ray[Tune] 0.8.4 (`pip install 'ray[tune']`)
 
 ## Style Guide
 We use the industry standard [PEP8].
