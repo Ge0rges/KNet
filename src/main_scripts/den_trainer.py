@@ -62,13 +62,8 @@ class DENTrainer:
             tasks = [i]
 
             # No DEN on t=0.
-            if i == 0:
-                loss, err = self.train_tasks(tasks, epochs, False)
-                errs.append(err)
-
-            else:
-                loss, err = self.train_tasks(tasks, epochs, with_den)
-                errs.append(err)
+            loss, err = self.train_tasks(tasks, epochs, (with_den and i > 0))
+            errs.append(err)
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
