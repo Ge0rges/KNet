@@ -37,7 +37,7 @@ class DENTrainer:
         # DEN Thresholds
         self.pruning_threshold = 0.05  # Percentage of parameters to prune (lowest)
         self.drift_threshold = drift_threshold
-
+        self.zero_threshold = 1e-4
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = number_of_tasks  # experiment specific
@@ -93,11 +93,15 @@ class DENTrainer:
             prune.global_unstructured(model_copy.parameters_to_prune, pruning_method=prune.L1Unstructured, amount=self.pruning_threshold)
             prune.global_unstructured(self.model.parameters_to_prune, pruning_method=prune.L1Unstructured, amount=self.pruning_threshold)
 
-
         # Train
+        # if with_den:
+        hooks = self._get_sr_hooks(tasks)
         loss, err = self.__train_tasks_for_epochs()
-        print(err)
 
+        for hook in hooks:
+            hook.remove()
+
+        print(err)
         # Do DEN.
         if with_den:
             loss, err = self.__do_den(model_copy, loss)
@@ -124,6 +128,61 @@ class DENTrainer:
             err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
 
         return loss, err
+
+    def _get_sr_hooks(self, tasks: [int]):
+        modules = get_modules(self.model)
+
+        prev_active = [True] * 10 #TODO: remove hardcoding
+        for task in tasks:
+            prev_active[task] = False
+        hooks = []
+        prev_active, new_hooks = self._select_neurons(modules['action'], prev_active)
+        hooks.extend(new_hooks)
+        prev_active, new_hooks = self._select_neurons(modules['encoder'], prev_active)
+        hooks.extend(new_hooks)
+        return hooks
+
+    def _select_neurons(self, module_layers, prev_active):
+        layers = []
+        for name, param in module_layers:
+            if 'bias' not in name:
+                layers.append(param)
+        layers = reversed(layers)
+
+        hooks = []
+        selected = []
+
+        for layer in layers:
+
+            x_size, y_size = layer.size()
+
+            active = [True] * y_size
+            data = layer.data
+
+            for x in range(x_size):
+
+                # we skip the weight if connected neuron wasn't selected
+                if prev_active[x]:
+                    continue
+
+                for y in range(y_size):
+                    weight = data[x, y]
+                    # check if weight is active
+                    if (weight > self.zero_threshold):
+                        # mark connected neuron as active
+                        active[y] = False
+
+            h = layer.register_hook(ActiveGradsHook(prev_active, active))
+
+            hooks.append(h)
+            prev_active = active
+
+            selected.append((y_size - sum(active), y_size))
+
+        for nr, (sel, neurons) in enumerate(reversed(selected)):
+            print("layer %d: %d / %d" % (nr + 1, sel, neurons))
+
+        return prev_active, hooks
 
     def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
         # Desaturate saturated neurons
