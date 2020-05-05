@@ -30,33 +30,32 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
         action_target = action_target.to(device)
 
         # compute output
-        with torch.autograd.detect_anomaly():
-            # model.phase = "GENERATE"
-            # generate_output = model(inputs)
-            # generate_targets = inputs according to Lucas
+        # model.phase = "GENERATE"
+        # generate_output = model(inputs)
+        # generate_targets = inputs according to Lucas
 
-            model.phase = "ACTION"
-            action_output = model(inputs)
+        model.phase = "ACTION"
+        action_output = model(inputs)
 
-            action_output = action_output[:, tasks]
-            action_target = action_target[:, tasks]
+        action_output = action_output[:, tasks]
+        action_target = action_target[:, tasks]
 
-            # encoder_loss = torch.nn.BCELoss()
-            penalty_val = penalty(model) if penalty else 0
+        # encoder_loss = torch.nn.BCELoss()
+        penalty_val = penalty(model) if penalty else 0
 
-            # generate_loss = encoder_loss(generate_output, generate_targets) + penalty_val
-            action_loss = criterion(action_output, action_target) + penalty_val
+        # generate_loss = encoder_loss(generate_output, generate_targets) + penalty_val
+        action_loss = criterion(action_output, action_target) + penalty_val
 
-            total_loss = action_loss #+ generate_loss  # TODO: add back gen in phases
+        total_loss = action_loss #+ generate_loss  # TODO: add back gen in phases
 
-            # Record loss
-            losses.update(total_loss.item(), inputs.size(0))
+        # Record loss
+        losses.update(total_loss.item(), inputs.size(0))
 
-            if not testing:
-                # Compute gradient and do SGD step
-                optimizer.zero_grad()
-                total_loss.backward()
-                optimizer.step()
+        if not testing:
+            # Compute gradient and do SGD step
+            optimizer.zero_grad()
+            total_loss.backward()
+            optimizer.step()
 
         # Measure elapsed time
         batch_time.update(time.time() - end)

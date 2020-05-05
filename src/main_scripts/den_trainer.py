@@ -83,9 +83,9 @@ class DENTrainer:
         model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
 
         # Train
-        #with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
-        loss, err = self.__train_tasks_for_epochs()
-        print(err)
+        with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+            loss, err = self.__train_tasks_for_epochs()
+            print(err)
 
         # Do DEN.
         if with_den:
