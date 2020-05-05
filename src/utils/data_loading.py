@@ -108,5 +108,3 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     return loader
-
-

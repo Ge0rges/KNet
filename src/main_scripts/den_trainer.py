@@ -359,10 +359,10 @@ class DENTrainer:
 
             return losses
 
-        else:
-            loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks)
-            err = self.error_function(self.model, loader, tasks)
-            return [(loss, err)]
+        # Else, all tasks as once
+        loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks)
+        err = self.error_function(self.model, loader, tasks)
+        return [(loss, err)]
 
     # Misc
     def load_model(self, model_name: str) -> bool:
