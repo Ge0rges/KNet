@@ -4,7 +4,6 @@ import os
 import traceback
 import torch.optim as optim
 import numpy as np
-import torch.nn.utils.prune as prune
 
 from torch.utils.data import DataLoader
 from src.models import ActionEncoder
@@ -35,13 +34,12 @@ class DENTrainer:
         self.err_stop_threshold = err_stop_threshold if err_stop_threshold else float("inf")
 
         # DEN Thresholds
-        self.pruning_threshold = 0.05  # Percentage of parameters to prune (lowest)
         self.drift_threshold = drift_threshold
-
+        self.zero_threshold = 1e-5
         self.loss_threshold = 1e-2
 
         self.number_of_tasks = number_of_tasks  # experiment specific
-        self.model = ActionEncoder(sizes=sizes, pruning_threshold=self.pruning_threshold).to(device)
+        self.model = ActionEncoder(sizes=sizes).to(device)
         self.learning_rate = learning_rate
         self.momentum = momentum
 
@@ -58,12 +56,12 @@ class DENTrainer:
         for i in range(self.number_of_tasks):
             print("Task: [{}/{}]".format(i + 1, self.number_of_tasks))
 
-            if self.device.type == "cuda":
+            if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-            # tasks.append(i)
             tasks = [i]
-            # DEN on task 0 is ok.
+
+            # No DEN on t=0.
             if i == 0:
                 loss, err = self.train_tasks(tasks, epochs, False)
                 errs.append(err)
@@ -82,21 +80,12 @@ class DENTrainer:
         self.__current_tasks = tasks
 
         # Make a copy for split
-        if with_den:
-            # Deep copy doesn't like reparametrization
-            for param, name in self.model.parameters_to_prune:
-                prune.remove(param, name)
-            
-            model_copy = copy.deepcopy(self.model).to(self.device)
-            
-            # Add back prune
-            prune.global_unstructured(model_copy.parameters_to_prune, pruning_method=prune.L1Unstructured, amount=self.pruning_threshold)
-            prune.global_unstructured(self.model.parameters_to_prune, pruning_method=prune.L1Unstructured, amount=self.pruning_threshold)
-
+        model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
 
         # Train
-        loss, err = self.__train_tasks_for_epochs()
-        print(err)
+        with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+            loss, err = self.__train_tasks_for_epochs()
+            print(err)
 
         # Do DEN.
         if with_den:
@@ -144,7 +133,6 @@ class DENTrainer:
             loss = loss if t_loss is None else t_loss
 
         return loss, err
-
 
     # DEN Functions
     def split_saturated_neurons(self, model_copy: torch.nn.Module) -> (dict, dict):
@@ -237,7 +225,7 @@ class DENTrainer:
         # Be efficient
         old_sizes = self.model.sizes
         if total_neurons_added > 0:
-            self.model = ActionEncoder(new_sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
+            self.model = ActionEncoder(new_sizes, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
             self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
                                        weight_decay=self.l2_coeff)
@@ -270,7 +258,7 @@ class DENTrainer:
             sizes[dict_key][-1] -= self.expand_by_k
 
         old_sizes = self.model.sizes
-        self.model = ActionEncoder(sizes, self.pruning_threshold, oldWeights=weights, oldBiases=biases)
+        self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
         self.model = self.model.to(self.device)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
                                    weight_decay=self.l2_coeff)
@@ -384,6 +372,8 @@ class DENTrainer:
     # Misc
     def load_model(self, model_name: str) -> bool:
         filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
+        assert os.path.isdir(filepath)
+
         filepath = os.path.join(filepath, model_name)
 
         self.model = ActionEncoder(self.model.sizes, self.pruning_threshold)
@@ -394,22 +384,84 @@ class DENTrainer:
 
     def save_model(self, model_name: str) -> None:
         filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
+        assert os.path.isdir(filepath)
+
         filepath = os.path.join(filepath, model_name)
+
         torch.save(self.model.state_dict(), filepath)
 
 
-def get_modules(model: torch.nn.Module) -> dict:
-    modules = {}
+class SelectiveRetraining:
+    def __init__(self, model, number_of_tasks, tasks, zero_threshold):
+        self.hooks = None
+        self.model = model
+        self.number_of_tasks = number_of_tasks
+        self.tasks = tasks
+        self.zero_threshold = zero_threshold
 
-    for name, param in model.named_parameters():
-        module = name[0: name.index('.')]
+    def __enter__(self):
+        modules = get_modules(self.model)
 
-        if module not in modules.keys():
-            modules[module] = []
+        prev_active = [True] * self.number_of_tasks
+        for task in self.tasks:
+            prev_active[task] = False
 
-        modules[module].append((name, param))
+        hooks = []
+        prev_active, new_hooks = self._select_neurons(modules['action'], prev_active)
+        hooks.extend(new_hooks)
 
-    return modules
+        prev_active, new_hooks = self._select_neurons(modules['encoder'], prev_active)
+        hooks.extend(new_hooks)
+
+        self.hooks = hooks
+
+        return hooks
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        for hook in self.hooks:
+            hook.remove()
+
+    def _select_neurons(self, module_layers, prev_active):
+        layers = []
+        for name, param in module_layers:
+            if 'bias' not in name:
+                layers.append(param)
+        layers = reversed(layers)
+
+        hooks = []
+        selected = []
+
+        for layer in layers:
+
+            x_size, y_size = layer.size()
+
+            active = [True] * y_size
+            data = layer.data
+
+            for x in range(x_size):
+
+                # we skip the weight if connected neuron wasn't selected
+                if prev_active[x]:
+                    continue
+
+                for y in range(y_size):
+                    weight = data[x, y]
+                    # check if weight is active
+                    if weight > self.zero_threshold:
+                        # mark connected neuron as active
+                        active[y] = False
+
+            h = layer.register_hook(ActiveGradsHook(prev_active, active))
+
+            hooks.append(h)
+            prev_active = active
+
+            selected.append((y_size - sum(active), y_size))
+
+        for nr, (sel, neurons) in enumerate(reversed(selected)):
+            print("layer %d: %d / %d" % (nr + 1, sel, neurons))
+
+        return prev_active, hooks
 
 
 class ActiveGradsHook:
@@ -445,3 +497,17 @@ class ActiveGradsHook:
 
         except Exception:
             traceback.print_exc()
+
+
+def get_modules(model: torch.nn.Module) -> dict:
+    modules = {}
+
+    for name, param in model.named_parameters():
+        module = name[0: name.index('.')]
+
+        if module not in modules.keys():
+            modules[module] = []
+
+        modules[module].append((name, param))
+
+    return modules

@@ -8,10 +8,8 @@ import torch.nn.utils.prune as prune
 
 
 class ActionEncoder(nn.Module):
-    def __init__(self, sizes: dict, pruning_threshold: float, oldWeights=None, oldBiases=None, connected=False, ff=True):
+    def __init__(self, sizes: dict, oldWeights=None, oldBiases=None, connected=False, ff=True):
         super(ActionEncoder, self).__init__()
-
-        assert 0 <= pruning_threshold <= 1
 
         # Safer
         if ff:
@@ -26,7 +24,6 @@ class ActionEncoder(nn.Module):
         else:
             sizes["decoder"] = list(reversed(sizes["encoder"]))
 
-        
         # Encoder out dictates other inputs
         sizes["action"][0] = sizes["encoder"][-1]
         sizes["decoder"][0] = sizes["encoder"][-1]
@@ -53,43 +50,10 @@ class ActionEncoder(nn.Module):
         action_layers.append(nn.Sigmoid())  # Domain [0,1] for BCELoss .
         self.action = nn.Sequential(*action_layers)
 
-        # self.dummy_tensor = torch.ones(1, requires_grad=True)
-        #
-        # self.action = ModuleWrapperIgnores2ndArg(self.action)
-        # self.encoder = ModuleWrapperIgnores2ndArg(self.encoder)
-        # self.decoder = ModuleWrapperIgnores2ndArg(self.decoder)
-
-        # Set the pruning method
-        parameters_to_prune = []
-        for param in encoder_layers:
-            if isinstance(param, nn.Linear):
-                parameters_to_prune.append((param, "weight"))
-
-        for param in decoder_layers:
-            if isinstance(param, nn.Linear):
-                parameters_to_prune.append((param, "weight"))
-
-        for param in action_layers:
-            if isinstance(param, nn.Linear):
-                parameters_to_prune.append((param, "weight"))
-        
-        # Used to restore pruning after copy
-        self.parameters_to_prune = parameters_to_prune
-
-        # Create new model without 0 weights
-        prune.global_unstructured(
-            parameters_to_prune,
-            pruning_method=prune.L1Unstructured,
-            amount=float(pruning_threshold)
-        )
-
         # Make float
         self.float()
 
     def forward(self, x):
-        # checkpoints = False
-        #
-        # x = (checkpoint(self.encoder, x, self.dummy_tensor) if checkpoints else self.encoder(x, self.dummy_tensor))
         x = self.encoder(x)
 
         if self.connected:
@@ -98,7 +62,6 @@ class ActionEncoder(nn.Module):
             ci = torch.zeros(x.shape)
             ci.data = x.clone().detach()
 
-        # y = (checkpoint(self.action, ci, self.dummy_tensor) if checkpoints else self.action(ci, self.dummy_tensor))
         y = self.action(ci)
 
         if self.phase == 'ACTION':
@@ -106,7 +69,6 @@ class ActionEncoder(nn.Module):
                 return x
             return y
 
-        # x = (checkpoint(self.decoder, x, self.dummy_tensor) if checkpoints else self.decoder(x, self.dummy_tensor))
         x = self.decoder(x)
 
         if self.phase == 'GENERATE':
@@ -122,6 +84,7 @@ class ActionEncoder(nn.Module):
 
         if oldWeights:
             oldWeights = oldWeights[label]
+
         if oldBiases:
             oldBiases = oldBiases[label]
 

@@ -1,7 +1,7 @@
 """
 Train CIANet on MNIST.
 
-There is not datapreprocessing required.
+There is no datapreprocessing required.
 
 To find optimal hyper_parameters run find_hypers().
 To train a model, run train_model().
@@ -25,7 +25,7 @@ num_workers = 4
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=0.00001, l2_coeff=0.00001)  # Penalty for all
+penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=0)  # Penalty for all
 drift_threshold = 0.08  # Drift threshold for split in DEN
 batch_size = 256
 
@@ -101,7 +101,7 @@ def error_function(model, batch_loader, tasks):
     """
 
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device).to(torch.device("cpu"))
-    # print(np.round(confusion_matrix.numpy()))
+    print(np.round(confusion_matrix.numpy()))
     class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
 
     score = 0
