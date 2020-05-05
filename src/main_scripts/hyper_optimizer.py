@@ -246,4 +246,3 @@ class OptimizerController:
         print("Done with PCA, got:", n_comp)
 
         return n_comp
-

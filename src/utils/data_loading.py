@@ -30,6 +30,8 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
     is_train = (True if type == DatasetType.train else False)
 
     root = os.path.join(os.path.dirname(__file__), "../../data/MNIST")
+    assert os.path.isdir(root)
+
     dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_mnist)
 
     if is_train:
@@ -45,7 +47,7 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
 
 
 ##### BANANA_CAR
-def banana_car_loader(type, size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
+def banana_car_loader(dataset_type, size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
 
     def one_hot_bc(targets):
         targets_onehot = torch.zeros(2)
@@ -59,17 +61,24 @@ def banana_car_loader(type, size=(280, 190), batch_size=256, num_workers=0, pin_
     ])
 
     root = os.path.join(os.path.dirname(__file__), "../../data/banana_car")
+    assert os.path.isdir(root)
+
     dataset = datasets.ImageFolder(root=root, transform=transform_all, target_transform=one_hot_bc)
 
     indices = np.array(list(range(len(dataset))))
     np.random.shuffle(indices)
 
-    if type == DatasetType.train:
+    if dataset_type == DatasetType.train:
         indices = indices[:int(len(dataset)*0.7)]
-    elif type == DatasetType.eval:
+
+    elif dataset_type == DatasetType.eval:
         indices = indices[int(len(dataset)*0.7):int(len(dataset)*0.8)]
-    else:
+
+    elif dataset_type == DatasetType.test:
         indices = indices[int(len(dataset)*0.8):]
+
+    else:
+        raise ReferenceError
 
     sampler = SubsetRandomSampler(indices)
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
@@ -81,7 +90,7 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
     """Loader for the images containing cars with banana shapes"""
 
     def one_hot_one_one(targets):
-        return torch.Tensor([1, 1])  # Assumption here may be false.
+        return torch.FloatTensor([1, 1])
 
     transform_all = transforms.Compose([
         transforms.Resize(size),
@@ -89,7 +98,10 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
         transforms.Lambda(lambda a: a.view(-1))
     ])
 
-    dataset = datasets.ImageFolder(root="../data/abstraction_eval_bananacar", transform=transform_all,
+    path = "../data/abstraction_eval_bananacar"
+    assert os.path.isdir(path)
+
+    dataset = datasets.ImageFolder(root=path, transform=transform_all,
                                    target_transform=one_hot_one_one)
 
     sampler = RandomSampler(dataset)

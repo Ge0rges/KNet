@@ -69,7 +69,6 @@ def train_model():
     print(trainer.model.sizes)
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
 
-
     print("Done training with results from error function:" + str(results))
 
     trainer.save_model("banana_car.pt")
@@ -104,7 +103,7 @@ def test_abstraction(model):
     testloader = bananacar_abstract_loader()
 
     correct = 0
-    sum = 0
+    sum_a = 0
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(testloader):
@@ -114,13 +113,13 @@ def test_abstraction(model):
             outputs = model(inputs)
 
             rounded_outputs = torch.round(outputs)
-            sum += rounded_outputs.shape[0]
+            sum_a += rounded_outputs.shape[0]
 
             for i in range(rounded_outputs.shape[1]):
                 if rounded_outputs[0][i] == 1 and rounded_outputs[1][i] == 1:
                     correct += 1
 
-    accuracy_abstract = correct/sum
+    accuracy_abstract = correct/sum_a
     print(accuracy_abstract*100)
 
 

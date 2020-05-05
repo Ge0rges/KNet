@@ -70,11 +70,12 @@ def train_model():
     learning_rate = 0.1
     momentum = 0
     expand_by_k = 10
+    err_stop_threshold = 0.99
     sizes = {"encoder": [28 * 28, 50, 50, 10],
              "action": [10, 10]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
-                         error_function, number_of_tasks, drift_threshold)
+                         error_function, number_of_tasks, drift_threshold, err_stop_threshold)
 
     print(trainer.model.sizes)
 
