@@ -104,7 +104,7 @@ class DENTrainer:
 
         # Compute the error if we need early stopping
         err = None
-        if True or self.err_stop_threshold != float("inf"):
+        if self.err_stop_threshold != float("inf"):
             err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
 
         return loss, err
