@@ -101,7 +101,7 @@ def error_function(model, batch_loader, tasks):
     Do not modify params. Abstract method for all experiments.
     """
 
-    confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device).to(torch.device("cpu"))
+    confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, range(number_of_tasks), device).to(torch.device("cpu"))
     print(np.round(confusion_matrix.numpy()))
     class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
 
