@@ -22,6 +22,20 @@ def plot_tensor(tensor, img_size, mode=None):
     plt.show()
 
 
+def get_modules(model: torch.nn.Module) -> dict:
+    modules = {}
+
+    for name, param in model.named_parameters():
+        module = name[0: name.index('.')]
+
+        if module not in modules.keys():
+            modules[module] = []
+
+        modules[module].append((name, param))
+
+    return modules
+
+
 class AverageMeter(object):
     """Computes and stores the average and current value
        Imported from https://github.com/pytorch/examples/blob/master/imagenet/main.py#L247-L262

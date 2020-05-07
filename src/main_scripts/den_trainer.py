@@ -8,7 +8,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from src.models import ActionEncoder
 from src.main_scripts.train import train
-
+from src.utils.misc import get_modules
 
 class DENTrainer:
     """
@@ -492,17 +492,3 @@ class ActiveGradsHook:
 
         except Exception:
             traceback.print_exc()
-
-
-def get_modules(model: torch.nn.Module) -> dict:
-    modules = {}
-
-    for name, param in model.named_parameters():
-        module = name[0: name.index('.')]
-
-        if module not in modules.keys():
-            modules[module] = []
-
-        modules[module].append((name, param))
-
-    return modules

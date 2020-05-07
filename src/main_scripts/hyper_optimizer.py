@@ -1,7 +1,6 @@
 """
 File contains functions to search for best parameters.
 """
-import random
 import numpy as np
 import ray
 import torch
