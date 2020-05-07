@@ -397,16 +397,21 @@ class SelectiveRetraining:
     def __enter__(self):
         modules = get_modules(self.model)
 
-        prev_active = [True] * self.number_of_tasks
-        for task in self.tasks:
-            prev_active[task] = False
-
         hooks = []
-        prev_active, new_hooks = self._select_neurons(modules['action'], prev_active)
-        hooks.extend(new_hooks)
 
-        prev_active, new_hooks = self._select_neurons(modules['encoder'], prev_active)
-        hooks.extend(new_hooks)
+        dict_keys_to_include = ['action', 'encoder'] # Modules that don't have this name will be ignored.
+
+        for dict_key, parameters in modules.items():
+            if dict_key not in dict_keys_to_include:
+                continue
+
+            # Prev active is size of output
+            prev_active = [True] * parameters[-1][1].shape[0]  # Last parameter is bias.
+            for task in self.tasks:
+                prev_active[task] = False
+
+            prev_active, new_hooks = self._select_neurons(modules[dict_key], prev_active)
+            hooks.extend(new_hooks)
 
         self.hooks = hooks
 
