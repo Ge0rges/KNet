@@ -88,7 +88,7 @@ class DENTrainer:
                 loss, err = self.__train_tasks_for_epochs()
                 print(err)
 
-        loss, err = self.__do_den(model_copy, loss)
+            loss, err = self.__do_den(model_copy, loss)
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
@@ -405,17 +405,21 @@ class SelectiveRetraining:
 
         dict_keys_to_include = ['action', 'encoder'] # Modules that don't have this name will be ignored.
 
-        for dict_key, parameters in modules.items():
-            if dict_key not in dict_keys_to_include:
-                continue
+        prev_active = None
+        while len(dict_keys_to_include) != 0:
+            for dict_key, parameters in modules.items():
+                if dict_key != dict_keys_to_include[0]:
+                    continue
 
-            # Prev active is size of output
-            prev_active = [True] * parameters[-1][1].shape[0]  # Last parameter is bias.
-            for task in self.tasks:
-                prev_active[task] = False
+                # Prev active is size of output
+                if prev_active is None:
+                    prev_active = [True] * parameters[-1][1].shape[0]  # Last parameter is bias.
+                    for task in self.tasks:
+                        prev_active[task] = False
 
-            prev_active, new_hooks = self._select_neurons(modules[dict_key], prev_active)
-            hooks.extend(new_hooks)
+                prev_active, new_hooks = self._select_neurons(modules[dict_key], prev_active)
+                hooks.extend(new_hooks)
+            del dict_keys_to_include[0]
 
         self.hooks = hooks
 
