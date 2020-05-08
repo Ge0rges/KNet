@@ -128,8 +128,8 @@ def build_confusion_matrix(model, dataloader, number_of_tasks, tasks, device):
             all_binary_targets = torch.cat([all_binary_targets, binary_targets])
             all_binary_outputs = torch.cat([all_binary_outputs, binary_outputs])
 
-    all_binary_outputs = all_binary_outputs.argmax(1)
-    all_binary_targets = all_binary_targets.argmax(1)
+    all_binary_outputs = all_binary_outputs.argmax(1).to(torch.device("cpu"))
+    all_binary_targets = all_binary_targets.argmax(1).to(torch.device("cpu"))
 
     return torch.Tensor(confusion_matrix(all_binary_targets, all_binary_outputs))
 

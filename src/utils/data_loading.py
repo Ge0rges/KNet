@@ -12,8 +12,9 @@ class DatasetType:
     eval = 1
     test = 2
 
+
 ##### MNIST
-def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
+def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
     def one_hot_mnist(targets):
         targets_onehot = torch.zeros(10)
         targets_onehot[targets] = 1
@@ -21,11 +22,17 @@ def mnist_loader(type, batch_size=256, num_workers=0, pin_memory=False):
 
     dataset = datasets.MNIST
 
-    transform_all = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,)),
-        transforms.Lambda(lambda a: a.view(-1))
-    ])
+    if dims == 3:
+        transform_all = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,))
+        ])
+    else:
+        transform_all = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,)),
+            transforms.Lambda(lambda a: a.view(-1))
+        ])
 
     is_train = (True if type == DatasetType.train else False)
 
