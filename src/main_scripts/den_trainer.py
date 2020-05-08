@@ -459,7 +459,7 @@ class SelectiveRetraining:
                         # mark connected neuron as active
                         active[y] = False
 
-            h = layer.register_hook(ActiveGradsHook(prev_active, active))
+            h = layer.register_hook(ActiveGradsHook(active, prev_active))
 
             hooks.append(h)
             prev_active = active

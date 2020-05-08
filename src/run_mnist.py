@@ -25,7 +25,7 @@ num_workers = 4
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=0.0004, l2_coeff=0.0001)  # Penalty for all
+penalty = L1L2Penalty(l1_coeff=1e-6, l2_coeff=0.0001)  # Penalty for all
 drift_threshold = 0.08  # Drift threshold for split in DEN
 batch_size = 64
 
