@@ -89,13 +89,13 @@ class L1L2Penalty:
     def __call__(self, new_model):
         return self.l1(new_model)
 
-    def l1(self, new_model):
+    def l1(self, model):
+        L1_reg = torch.tensor(0., requires_grad=True)
         if self.l1_coeff == 0:  # Be efficient
-            return 0
+            return L1_reg
 
-        penalty = 0
-        for (name, param) in new_model.named_parameters():
-            if 'bias' not in name:
-                penalty += torch.norm(param, p=1)
+        for name, param in model.named_parameters():
+            if 'weight' in name:
+                L1_reg = L1_reg + torch.norm(param, 1)
 
-        return self.l1_coeff * penalty
+        return torch.mul(self.l1_coeff, L1_reg)

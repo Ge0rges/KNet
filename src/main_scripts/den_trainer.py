@@ -77,14 +77,18 @@ class DENTrainer:
         # Make a copy for split
         model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
 
-        # Train
-        with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+        # No DEN
+        if not with_den:
             loss, err = self.__train_tasks_for_epochs()
             print(err)
 
         # Do DEN.
-        if with_den:
-            loss, err = self.__do_den(model_copy, loss)
+        else:
+            with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+                loss, err = self.__train_tasks_for_epochs()
+                print(err)
+
+        loss, err = self.__do_den(model_copy, loss)
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
@@ -397,16 +401,21 @@ class SelectiveRetraining:
     def __enter__(self):
         modules = get_modules(self.model)
 
-        prev_active = [True] * self.number_of_tasks
-        for task in self.tasks:
-            prev_active[task] = False
-
         hooks = []
-        prev_active, new_hooks = self._select_neurons(modules['action'], prev_active)
-        hooks.extend(new_hooks)
 
-        prev_active, new_hooks = self._select_neurons(modules['encoder'], prev_active)
-        hooks.extend(new_hooks)
+        dict_keys_to_include = ['action', 'encoder'] # Modules that don't have this name will be ignored.
+
+        for dict_key, parameters in modules.items():
+            if dict_key not in dict_keys_to_include:
+                continue
+
+            # Prev active is size of output
+            prev_active = [True] * parameters[-1][1].shape[0]  # Last parameter is bias.
+            for task in self.tasks:
+                prev_active[task] = False
+
+            prev_active, new_hooks = self._select_neurons(modules[dict_key], prev_active)
+            hooks.extend(new_hooks)
 
         self.hooks = hooks
 
