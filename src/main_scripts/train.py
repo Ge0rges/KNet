@@ -41,7 +41,7 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
         action_target = action_target[:, tasks]
 
         # encoder_loss = torch.nn.BCELoss()
-        penalty_val = penalty(model) if penalty else 0
+        penalty_val = penalty(model, device) if penalty else 0
 
         # generate_loss = encoder_loss(generate_output, generate_targets) + penalty_val
         action_loss = criterion(action_output, action_target) + penalty_val
@@ -86,11 +86,11 @@ class L1L2Penalty:
         self.l1_coeff = l1_coeff
         self.l2_coeff = l2_coeff  # Used by DENTrainer to set SGD weight_decay.
 
-    def __call__(self, new_model):
-        return self.l1(new_model)
+    def __call__(self, new_model, device):
+        return self.l1(new_model, device)
 
-    def l1(self, model):
-        L1_reg = torch.tensor(0., requires_grad=True)
+    def l1(self, model, device):
+        L1_reg = torch.tensor(0., requires_grad=True).to(device)
         if self.l1_coeff == 0:  # Be efficient
             return L1_reg
 
