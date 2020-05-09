@@ -35,7 +35,7 @@ class DENTrainer:
 
         # DEN Thresholds
         self.drift_threshold = drift_threshold
-        self.zero_threshold = 1e-5  # weights below this treat as 0 in selective retraining
+        self.zero_threshold = 1e-4  # weights below this treat as 0 in selective retraining
         self.loss_threshold = 0.2  # loss above this do expand
 
         self.number_of_tasks = number_of_tasks  # experiment specific
