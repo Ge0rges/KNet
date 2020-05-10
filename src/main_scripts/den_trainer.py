@@ -74,9 +74,6 @@ class DENTrainer:
         self.__epochs_to_train = epochs
         self.__current_tasks = tasks
 
-        # Make a copy for split
-        model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
-
         # No DEN
         if not with_den:
             loss, err = self.__train_tasks_for_epochs()
@@ -84,11 +81,18 @@ class DENTrainer:
 
         # Do DEN.
         else:
-            with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+            if 0 in self.__current_tasks:
                 loss, err = self.__train_tasks_for_epochs()
-                print(err)
+            else:
+                self.__train_last_layer()
 
-            loss, err = self.__do_den(model_copy, loss)
+                # Make a copy for split
+                model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
+                with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+                    loss, err = self.__train_tasks_for_epochs()
+                    print(err)
+                    loss, err = self.__do_den(model_copy, loss)
+                    print(err)
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
@@ -112,6 +116,16 @@ class DENTrainer:
             err = self.error_function(self.model, self.valid_loader, self.__current_tasks)
 
         return loss, err
+
+    def __train_last_layer(self):
+        params = list(self.model.parameters())
+        for param in params[:-2]:
+            param.requires_grad = False
+
+        self.__train_tasks_for_epochs()
+
+        for param in self.model.parameters():
+            param.requires_grad = True
 
     def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
         # Desaturate saturated neurons
