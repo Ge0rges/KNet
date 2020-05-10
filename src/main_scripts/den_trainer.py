@@ -81,18 +81,15 @@ class DENTrainer:
 
         # Do DEN.
         else:
-            if 0 in self.__current_tasks:
-                loss, err = self.__train_tasks_for_epochs()
-            else:
-                self.__train_last_layer()
+            self.__train_last_layer()
 
-                # Make a copy for split
-                model_copy = copy.deepcopy(self.model).to(self.device) if with_den else None
-                with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
-                    loss, err = self.__train_tasks_for_epochs()
-                    print(err)
-                    loss, err = self.__do_den(model_copy, loss)
-                    print(err)
+            # Make a copy for split
+            model_copy = copy.deepcopy(self.model).to(self.device)
+            with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+                loss, err = self.__train_tasks_for_epochs()
+                print(err)
+                loss, err = self.__do_den(model_copy, loss)
+                print(err)
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
