@@ -432,29 +432,6 @@ class SelectiveRetraining:
 
     def _select_neurons(self, module_layers):
         hooks = []
-        selected = []
-
-        for layer in layers:
-
-            x_size, y_size = layer.size()
-
-            active = [True] * y_size
-            data = layer.data
-
-            for x in range(x_size):
-
-                # we skip the weight if connected neuron wasn't selected
-                if prev_active[x]:
-                    continue
-
-                for y in range(y_size):
-                    weight = data[x, y]
-                    # check if weight is active
-                    if abs(weight) > self.zero_threshold:
-                        # mark connected neuron as active
-                        active[y] = False
-
-            h = layer.register_hook(ActiveGradsHook(active, prev_active))
 
         for param_name, param in reversed(module_layers):
 
