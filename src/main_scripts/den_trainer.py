@@ -414,7 +414,7 @@ class SelectiveRetraining:
 
         hooks = []
 
-        dict_keys_to_include = ['action', 'encoder'] # Modules that don't have this name will be ignored.
+        dict_keys_to_include = ['action', 'encoder']  # Modules that don't have this name will be ignored.
 
         prev_active = None
         while len(dict_keys_to_include) != 0:
@@ -466,7 +466,7 @@ class SelectiveRetraining:
                 for y in range(y_size):
                     weight = data[x, y]
                     # check if weight is active
-                    if weight > self.zero_threshold:
+                    if abs(weight) > self.zero_threshold:
                         # mark connected neuron as active
                         active[y] = False
 
