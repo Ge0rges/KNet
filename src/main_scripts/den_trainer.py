@@ -442,7 +442,6 @@ class SelectiveRetraining:
                 continue
 
             else:
-                print(param.shape)
                 mask = torch.zeros([param.shape[0], param.shape[1]], dtype=torch.bool)
 
                 for x in range(param.shape[0]):  # Rows is size of last layer (first row ever is output size)
@@ -450,7 +449,6 @@ class SelectiveRetraining:
                         weight = param[x, y]
                         mask[x, y] = (abs(weight) > self.zero_threshold)
 
-                print("CALLING ACTIVE GRADS WITH SR")
                 hook = FreezeWeightsHook(mask)
                 hook(param)
 
