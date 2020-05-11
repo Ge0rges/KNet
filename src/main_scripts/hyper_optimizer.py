@@ -21,7 +21,6 @@ class PytorchTrainable(tune.Trainable):
     """
 
     def _setup(self, config):
-        print(torch.cuda.is_available())
         trainer_args = config.get("DENTrainerArgs")  # Type: list
 
         self.trainer = DENTrainer(*trainer_args)
@@ -119,8 +118,8 @@ class OptimizerController:
             }
 
         # check if PytorchTrainable will save/restore correctly before execution
-        # validate_save_restore(PytorchTrainable, config=config)
-        # validate_save_restore(PytorchTrainable, config=config, use_object_store=True)
+        validate_save_restore(PytorchTrainable, config=config, num_gpus=torch.cuda.device_count())
+        validate_save_restore(PytorchTrainable, config=config, use_object_store=True, num_gpus=torch.cuda.device_count())
 
         # PBT Params
         scheduler = PopulationBasedTraining(
