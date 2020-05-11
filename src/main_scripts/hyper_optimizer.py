@@ -8,7 +8,6 @@ import os
 
 from sklearn.decomposition import PCA
 from src.main_scripts.den_trainer import DENTrainer
-
 from ray import tune
 from ray.tune.schedulers import PopulationBasedTraining
 from ray.tune.utils import validate_save_restore
@@ -22,7 +21,10 @@ class PytorchTrainable(tune.Trainable):
     """
 
     def _setup(self, config):
-        self.trainer = config.get("DENTrainer")  # Type: DENTrainer
+        print(torch.cuda.is_available())
+        trainer_args = config.get("DENTrainerArgs")  # Type: list
+
+        self.trainer = DENTrainer(*trainer_args)
 
         self.trainer.optimizer = torch.optim.SGD(
             self.trainer.model.parameters(),
@@ -40,18 +42,17 @@ class PytorchTrainable(tune.Trainable):
     def _train(self):
         # Do one epoch for all tasks
         for i in range(self.trainer.number_of_tasks):
-            self.trainer.train_tasks([i], 5, False)
+            self.trainer.train_tasks([i], 5, (not i == 0))
 
         err = self.trainer.test_model(task=range(self.trainer.number_of_tasks))
         return {"mean_accuracy": err}
 
     def _save(self, checkpoint_dir):
-        checkpoint_path = os.path.join(checkpoint_dir, "model.pth")
-        torch.save(self.trainer.model.state_dict(), checkpoint_path)
-        return checkpoint_path
+        filepath = os.path.join(checkpoint_dir, "model.pth")
+        return self.trainer.save(filepath)
 
     def _restore(self, checkpoint_path):
-        self.trainer.model.load_state_dict(torch.load(checkpoint_path))
+        self.trainer.load(checkpoint_path)
 
     def _export_model(self, export_formats, export_dir):
         if export_formats == [ExportFormat.MODEL]:
@@ -101,26 +102,25 @@ class OptimizerController:
         sizes = self.construct_network_sizes()
 
         # Setup trainer. LR, Momentum, expand_by_k will be replaced.
-        self.trainer = DENTrainer(data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function,
-                                  number_of_tasks, drift_threshold)
+        self.trainer_args = [data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function,
+                                  number_of_tasks, drift_threshold]
 
     def __call__(self):
-        num_gpus = (1 if self.device.type == "cuda" else 0)
-        ray.init(num_gpus=num_gpus)
+        ray.init()
 
         # Default config
         config = {
                 "lr": np.random.uniform(0.001, 1),
                 "momentum": np.random.uniform(0, 1),
-                "DENTrainer": self.trainer,
+                "DENTrainerArgs": self.trainer_args,
                 "expand_by_k": int(np.random.uniform(1, 20)),
                 "l1_coeff": np.random.uniform(1e-20, 0),
                 "l2_coeff": np.random.uniform(1e-20, 0)
             }
 
         # check if PytorchTrainable will save/restore correctly before execution
-        validate_save_restore(PytorchTrainable, config=config)
-        validate_save_restore(PytorchTrainable, config=config, use_object_store=True)
+        # validate_save_restore(PytorchTrainable, config=config)
+        # validate_save_restore(PytorchTrainable, config=config, use_object_store=True)
 
         # PBT Params
         scheduler = PopulationBasedTraining(
@@ -158,6 +158,7 @@ class OptimizerController:
             name="pbt_test",
             scheduler=scheduler,
             reuse_actors=True,
+            resources_per_trial={"cpu": 1, "gpu": torch.cuda.device_count()},
             verbose=1,
             stop=stopper,
             export_formats=[ExportFormat.MODEL],
@@ -176,7 +177,7 @@ class OptimizerController:
         best_model = restored_trainable.trainer.model
         # Note that test only runs on a small random set of the test data, thus the
         # accuracy may be different from metrics shown in tuning process.
-        test_acc = self.trainer.test_model()
+        test_acc = restored_trainable.trainer.test_model()
 
         return test_acc, best_model
 

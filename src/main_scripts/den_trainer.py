@@ -10,6 +10,7 @@ from src.models import ActionEncoder
 from src.main_scripts.train import train
 from src.utils.misc import get_modules
 
+
 class DENTrainer:
     """
     Implements DEN training.
@@ -79,7 +80,7 @@ class DENTrainer:
             loss, err = self.__train_tasks_for_epochs()
             print(err)
 
-        # Do DEN.
+        # Do DEN. Special training regime.
         else:
             self.__train_last_layer()
 
@@ -380,11 +381,8 @@ class DENTrainer:
         return [(loss, err)]
 
     # Misc
-    def load_model(self, model_name: str) -> bool:
-        filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
+    def load_model(self, filepath) -> bool:
         assert os.path.isdir(filepath)
-
-        filepath = os.path.join(filepath, model_name)
 
         self.model = ActionEncoder(self.model.sizes, self.pruning_threshold)
         self.model.load_state_dict(torch.load(filepath))
@@ -392,13 +390,15 @@ class DENTrainer:
 
         return isinstance(self.model, ActionEncoder)
 
-    def save_model(self, model_name: str) -> None:
-        filepath = os.path.join(os.path.dirname(__file__), "../../saved_models")
+    def save_model(self, model_name: str, dir_path: str = "../../saved_models") -> str:
+        filepath = os.path.join(os.path.dirname(__file__), dir_path)
         assert os.path.isdir(filepath)
 
         filepath = os.path.join(filepath, model_name)
 
         torch.save(self.model.state_dict(), filepath)
+
+        return filepath
 
 
 class SelectiveRetraining:

@@ -4,6 +4,7 @@ import torch
 import numpy as np
 import os
 
+from filelock import FileLock
 from torch.utils.data import DataLoader, RandomSampler, SubsetRandomSampler
 
 
@@ -39,18 +40,20 @@ def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
     root = os.path.join(os.path.dirname(__file__), "../../data/MNIST")
     assert os.path.isdir(root)
 
-    dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_mnist)
+    lock = os.path.join(os.path.dirname(__file__), "../../data/MNIST.lock")
+    with FileLock(lock):
+        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_mnist)
 
-    if is_train:
-        sampler = RandomSampler(dataset)
+        if is_train:
+            sampler = RandomSampler(dataset)
 
-    else:
-        index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
-        indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
-        sampler = SubsetRandomSampler(indices)
-    loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+        else:
+            index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
+            indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
+            sampler = SubsetRandomSampler(indices)
+        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
-    return loader
+        return loader
 
 
 ##### BANANA_CAR
