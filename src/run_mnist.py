@@ -25,7 +25,7 @@ num_workers = 4
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=1e-6, l2_coeff=0.0001)  # Penalty for all
+penalty = L1L2Penalty(l1_coeff=1e-3, l2_coeff=0)  # Penalty for all
 drift_threshold = 0.08  # Drift threshold for split in DEN
 batch_size = 64
 
@@ -58,7 +58,7 @@ def find_hyperparameters():
                                          drift_threshold, encoder_in, hidden_encoder_layers, hidden_action_layers,
                                          action_out, core_invariant_size)
 
-    return pbt_controller(8)
+    return pbt_controller(8)  # Number of workers
 
 
 def train_model():
@@ -67,7 +67,7 @@ def train_model():
     """
 
     epochs = 6
-    learning_rate = 0.001
+    learning_rate = 0.01
     momentum = 0.9
     expand_by_k = 10
     err_stop_threshold = 0.99
@@ -101,8 +101,10 @@ def error_function(model, batch_loader, tasks):
     Do not modify params. Abstract method for all experiments.
     """
     tasks = list(range(tasks[0] + 1))
-    confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device).to(torch.device("cpu"))
-    print(np.round(confusion_matrix.numpy()))
+    confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device)
+    confusion_matrix = confusion_matrix.to(torch.device("cpu"))
+    # print(np.round(confusion_matrix.numpy()))
+
     class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
 
     score = 0

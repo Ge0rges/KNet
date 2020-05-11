@@ -1,8 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from torch import nn
-
+import traceback
 
 def plot_tensor(tensor, img_size, mode=None):
     assert np.prod(tensor.size()) == np.prod(img_size)
@@ -55,12 +54,57 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-class ModuleWrapperIgnores2ndArg(nn.Module):
-    def __init__(self, module):
-        super(ModuleWrapperIgnores2ndArg, self).__init__()
-        self.module = module
+class FreezeNeuronsHook:
+    """
+    Resets the gradient according to the passed masks. False is forzen.
+    """
 
-    def forward(self, x, dummy_arg=None):
-        assert dummy_arg is not None
-        x = self.module(x)
-        return x
+    def __init__(self, previously_active: [bool], currently_active: [bool], bias=False):
+
+        # Could be None for biases
+        if previously_active is not None:
+            self.previously_active = torch.BoolTensor(previously_active).long().nonzero().view(-1).numpy()
+
+        # Should never be None
+        self.currently_active = torch.BoolTensor(currently_active).long().nonzero().view(-1).numpy()
+
+        self.is_bias = bias
+
+        self.__name__ = None
+
+    def __call__(self, grad):
+        try:  # Errors don't get propagated up, this is necessary.
+            grad_clone = grad.clone().detach()
+
+            if self.is_bias:
+                grad_clone[self.currently_active] = 0
+
+            else:
+                grad_clone[self.currently_active, :] = 0
+                grad_clone[:, self.previously_active] = 0
+
+            return grad_clone
+
+        except Exception:
+            traceback.print_exc()
+
+
+class FreezeWeightsHook:
+    """
+    Resets the gradient according to the passed masks. False is forzen.
+    """
+
+    def __init__(self, mask):
+        self.mask = mask
+        self.__name__ = None
+
+    def __call__(self, grad):
+        try:  # Errors don't get propagated up, this is necessary.
+            grad_clone = grad.clone().detach()
+
+            grad_clone[self.mask] = 0
+
+            return grad_clone
+
+        except Exception:
+            traceback.print_exc()

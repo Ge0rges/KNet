@@ -45,7 +45,6 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
 
         # generate_loss = encoder_loss(generate_output, generate_targets) + penalty_val
         action_loss = criterion(action_output, action_target) + penalty_val
-
         total_loss = action_loss #+ generate_loss  # TODO: add back gen in phases
 
         # Record loss
@@ -90,12 +89,12 @@ class L1L2Penalty:
         return self.l1(new_model, device)
 
     def l1(self, model, device):
-        L1_reg = torch.tensor(0., requires_grad=True).to(device)
+        l1_reg = torch.tensor(0., requires_grad=True).to(device)
         if self.l1_coeff == 0:  # Be efficient
-            return L1_reg
+            return l1_reg
 
         for name, param in model.named_parameters():
             if 'weight' in name:
-                L1_reg = L1_reg + torch.norm(param, 1)
+                l1_reg = l1_reg + torch.norm(param, 1)
 
-        return torch.mul(self.l1_coeff, L1_reg)
+        return torch.mul(self.l1_coeff, l1_reg)

@@ -14,6 +14,7 @@ from ray.tune.utils import validate_save_restore
 from ray.tune.trial import ExportFormat
 from multiprocessing import cpu_count
 
+
 class PytorchTrainable(tune.Trainable):
     """
     Train a Pytorch net with Trainable and PopulationBasedTraining scheduler.
@@ -43,15 +44,25 @@ class PytorchTrainable(tune.Trainable):
         for i in range(self.trainer.number_of_tasks):
             self.trainer.train_tasks([i], 5, (not i == 0))
 
-        err = self.trainer.test_model(tasks=list(range(self.trainer.number_of_tasks)))
-        return {"mean_accuracy": err}
+        loss_err_list = self.trainer.test_model(tasks=list(range(self.trainer.number_of_tasks)))
+
+        mean_err = 0
+        mean_loss = 0
+
+        for loss, err in loss_err_list:
+            mean_err += err
+            mean_loss += loss
+
+        mean_loss /= len(loss_err_list)
+        mean_err /= len(loss_err_list)
+
+        return {"mean_accuracy": mean_err, "mean_loss": mean_loss}
 
     def _save(self, checkpoint_dir):
-        filepath = os.path.join(checkpoint_dir, "model.pth")
-        return self.trainer.save(filepath)
+        return self.trainer.save_model("model.pth", checkpoint_dir)
 
     def _restore(self, checkpoint_path):
-        self.trainer.load(checkpoint_path)
+        self.trainer.load_model(checkpoint_path)
 
     def _export_model(self, export_formats, export_dir):
         if export_formats == [ExportFormat.MODEL]:
@@ -105,7 +116,7 @@ class OptimizerController:
                                   number_of_tasks, drift_threshold]
 
     def __call__(self, num_workers: int):
-        ray.init()
+        ray.init(num_gpus=torch.cuda.device_count())
 
         # Default config
         config = {
@@ -132,8 +143,8 @@ class OptimizerController:
                 "lr": lambda: np.random.uniform(0.0001, 1),
                 "momentum": lambda: np.random.uniform(0, 0.99),
                 "expand_by_k": lambda: int(np.random.uniform(1, 20)),
-                "l1_coeff": lambda: np.random.uniform(1e-20, 0),
-                "l2_coeff": lambda: np.random.uniform(1e-20, 0)
+                "l1_coeff": lambda: np.random.uniform(1e-20, 1),
+                "l2_coeff": lambda: np.random.uniform(1e-20, 1)
             })
 
         # Tune params
@@ -152,13 +163,15 @@ class OptimizerController:
 
         stopper = CustomStopper()
 
+        needed_cpu = max(1, cpu_count() / num_workers)
+        needed_gpu = max(0.1, torch.cuda.device_count() / num_workers)
         analysis = tune.run(
             PytorchTrainable,
             name="pbt_test",
             scheduler=scheduler,
             reuse_actors=True,
             resources_per_trial={"cpu": cpu_count() / num_workers, "gpu": torch.cuda.device_count() / num_workers},
-            verbose=1,
+            verbose=2,
             stop=stopper,
             export_formats=[ExportFormat.MODEL],
             checkpoint_score_attr="mean_accuracy",
