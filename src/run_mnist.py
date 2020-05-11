@@ -58,7 +58,7 @@ def find_hyperparameters():
                                          drift_threshold, encoder_in, hidden_encoder_layers, hidden_action_layers,
                                          action_out, core_invariant_size)
 
-    return pbt_controller()
+    return pbt_controller(8)
 
 
 def train_model():

@@ -357,11 +357,11 @@ class DENTrainer:
         return max_validation_loss, max_validation_err
 
     # Eval Function
-    def eval_model(self, tasks, sequential=False) -> [(float, float)]:
+    def eval_model(self, tasks: list, sequential=False) -> [(float, float)]:
         return self.__loss_for_loader_in_eval(self.valid_loader, tasks, sequential)
 
     # Test function
-    def test_model(self, tasks, sequential=False) -> [(float, float)]:
+    def test_model(self, tasks: list, sequential=False) -> [(float, float)]:
         return self.__loss_for_loader_in_eval(self.test_loader, tasks, sequential)
 
     def __loss_for_loader_in_eval(self, loader, tasks, sequential) -> [(float, float)]:

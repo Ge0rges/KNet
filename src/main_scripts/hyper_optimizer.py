@@ -12,7 +12,7 @@ from ray import tune
 from ray.tune.schedulers import PopulationBasedTraining
 from ray.tune.utils import validate_save_restore
 from ray.tune.trial import ExportFormat
-
+from multiprocessing import cpu_count
 
 class PytorchTrainable(tune.Trainable):
     """
@@ -43,7 +43,7 @@ class PytorchTrainable(tune.Trainable):
         for i in range(self.trainer.number_of_tasks):
             self.trainer.train_tasks([i], 5, (not i == 0))
 
-        err = self.trainer.test_model(task=range(self.trainer.number_of_tasks))
+        err = self.trainer.test_model(tasks=list(range(self.trainer.number_of_tasks)))
         return {"mean_accuracy": err}
 
     def _save(self, checkpoint_dir):
@@ -104,7 +104,7 @@ class OptimizerController:
         self.trainer_args = [data_loaders, sizes, 0, 0, criterion, penalty, 0, device, error_function,
                                   number_of_tasks, drift_threshold]
 
-    def __call__(self):
+    def __call__(self, num_workers: int):
         ray.init()
 
         # Default config
@@ -157,14 +157,14 @@ class OptimizerController:
             name="pbt_test",
             scheduler=scheduler,
             reuse_actors=True,
-            resources_per_trial={"cpu": 1, "gpu": torch.cuda.device_count()},
+            resources_per_trial={"cpu": cpu_count() / num_workers, "gpu": torch.cuda.device_count() / num_workers},
             verbose=1,
             stop=stopper,
             export_formats=[ExportFormat.MODEL],
             checkpoint_score_attr="mean_accuracy",
             checkpoint_freq=5,
             keep_checkpoints_num=4,
-            num_samples=4,
+            num_samples=num_workers,
             config=config)
 
         # Retrieve results
