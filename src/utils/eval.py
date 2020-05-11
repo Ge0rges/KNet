@@ -93,8 +93,6 @@ def build_confusion_matrix(model, dataloader, number_of_tasks, tasks, device):
     for t in tasks:
         untrained_tasks.remove(t)
 
-    matrix_size = number_of_tasks if len(untrained_tasks) == 0 else len(tasks) + 1
-
     all_binary_outputs = None
     all_binary_targets = None
     for i, (inputs, targets) in enumerate(dataloader):

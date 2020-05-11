@@ -317,7 +317,6 @@ class DENTrainer:
                     hooks.append(hook)
 
                 else:
-
                     active_weights = [False] * old_size + [True] * neurons_added
                     hook = FreezeNeuronsHook(previously_active_weights, active_weights, bias=False)
 

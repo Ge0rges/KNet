@@ -170,7 +170,7 @@ class OptimizerController:
             name="pbt_test",
             scheduler=scheduler,
             reuse_actors=True,
-            resources_per_trial={"cpu": cpu_count() / num_workers, "gpu": torch.cuda.device_count() / num_workers},
+            resources_per_trial={"cpu": needed_cpu, "gpu": needed_gpu},
             verbose=2,
             stop=stopper,
             export_formats=[ExportFormat.MODEL],
