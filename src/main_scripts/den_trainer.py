@@ -1,14 +1,13 @@
 import copy
 import torch
 import os
-import traceback
 import torch.optim as optim
 import numpy as np
 
 from torch.utils.data import DataLoader
 from src.models import ActionEncoder
 from src.main_scripts.train import train
-from src.utils.misc import get_modules
+from src.utils.misc import get_modules, FreezeNeuronsHook, FreezeWeightsHook
 
 class DENTrainer:
     """
@@ -456,59 +455,3 @@ class SelectiveRetraining:
                 hooks.append(hook)
 
         return hooks
-
-
-class FreezeNeuronsHook:
-    """
-    Resets the gradient according to the passed masks. False is forzen.
-    """
-
-    def __init__(self, previously_active: [bool], currently_active: [bool], bias=False):
-
-        # Could be None for biases
-        if previously_active is not None:
-            self.previously_active = torch.BoolTensor(previously_active).long().nonzero().view(-1).numpy()
-
-        # Should never be None
-        self.currently_active = torch.BoolTensor(currently_active).long().nonzero().view(-1).numpy()
-
-        self.is_bias = bias
-
-        self.__name__ = None
-
-    def __call__(self, grad):
-        try:  # Errors don't get propagated up, this is necessary.
-            grad_clone = grad.clone().detach()
-
-            if self.is_bias:
-                grad_clone[self.currently_active] = 0
-
-            else:
-                grad_clone[self.currently_active, :] = 0
-                grad_clone[:, self.previously_active] = 0
-
-            return grad_clone
-
-        except Exception:
-            traceback.print_exc()
-
-
-class FreezeWeightsHook:
-    """
-    Resets the gradient according to the passed masks. False is forzen.
-    """
-
-    def __init__(self, mask):
-        self.mask = mask
-        self.__name__ = None
-
-    def __call__(self, grad):
-        try:  # Errors don't get propagated up, this is necessary.
-            grad_clone = grad.clone().detach()
-
-            grad_clone[self.mask] = 0
-
-            return grad_clone
-
-        except Exception:
-            traceback.print_exc()
