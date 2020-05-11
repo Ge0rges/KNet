@@ -10,7 +10,6 @@ from src.models import ActionEncoder
 from src.main_scripts.train import train
 from src.utils.misc import get_modules
 
-
 class DENTrainer:
     """
     Implements DEN training.
@@ -313,7 +312,7 @@ class DENTrainer:
                 # Freeze biases/weights
                 if "bias" in param_name:
                     active_biases = [False] * old_size + [True] * neurons_added
-                    hook = ActiveGradsHook(None, active_biases, bias=True)
+                    hook = FreezeNeuronsHook(None, active_biases, bias=True)
 
                     hook = param.register_hook(hook)
                     hooks.append(hook)
@@ -321,7 +320,7 @@ class DENTrainer:
                 else:
 
                     active_weights = [False] * old_size + [True] * neurons_added
-                    hook = ActiveGradsHook(previously_active_weights, active_weights, bias=False)
+                    hook = FreezeNeuronsHook(previously_active_weights, active_weights, bias=False)
 
                     hook = param.register_hook(hook)
                     hooks.append(hook)
@@ -410,25 +409,17 @@ class SelectiveRetraining:
         self.zero_threshold = zero_threshold
 
     def __enter__(self):
-        modules = get_modules(self.model)
+        dict_keys_to_include = ['action', 'encoder']  # Modules that don't have this name will be ignored.
 
+        modules = get_modules(self.model)
         hooks = []
 
-        dict_keys_to_include = ['action', 'encoder'] # Modules that don't have this name will be ignored.
-
-        prev_active = None
-        while len(dict_keys_to_include) != 0:
+        while len(dict_keys_to_include) > 0:
             for dict_key, parameters in modules.items():
                 if dict_key != dict_keys_to_include[0]:
                     continue
 
-                # Prev active is size of output
-                if prev_active is None:
-                    prev_active = [True] * parameters[-1][1].shape[0]  # Last parameter is bias.
-                    for task in self.tasks:
-                        prev_active[task] = False
-
-                prev_active, new_hooks = self._select_neurons(modules[dict_key], prev_active)
+                new_hooks = self._select_neurons(modules[dict_key], dict_key)
                 hooks.extend(new_hooks)
             del dict_keys_to_include[0]
 
@@ -440,52 +431,38 @@ class SelectiveRetraining:
         for hook in self.hooks:
             hook.remove()
 
-    def _select_neurons(self, module_layers, prev_active):
-        layers = []
-        for name, param in module_layers:
-            if 'bias' not in name:
-                layers.append(param)
-        layers = reversed(layers)
-
+    def _select_neurons(self, module_layers, module_name):
         hooks = []
-        selected = []
 
-        for layer in layers:
+        for param_name, param in reversed(module_layers):
 
-            x_size, y_size = layer.size()
+            # Freeze biases/weights for weights under a certain value
+            if "bias" in param_name:
+                # Continue freeze the bias of nodes where all weights are under the threshold
+                continue
 
-            active = [True] * y_size
-            data = layer.data
+            else:
+                print(param.shape)
+                mask = torch.zeros([param.shape[0], param.shape[1]], dtype=torch.bool)
 
-            for x in range(x_size):
+                for x in range(param.shape[0]):  # Rows is size of last layer (first row ever is output size)
+                    for y in range(param.shape[1]):  # Columns is size of current layer (last column ever is input size)
+                        weight = param[x, y]
+                        mask[x, y] = (abs(weight) > self.zero_threshold)
 
-                # we skip the weight if connected neuron wasn't selected
-                if prev_active[x]:
-                    continue
+                print("CALLING ACTIVE GRADS WITH SR")
+                hook = FreezeWeightsHook(mask)
+                hook(param)
 
-                for y in range(y_size):
-                    weight = data[x, y]
-                    # check if weight is active
-                    if weight > self.zero_threshold:
-                        # mark connected neuron as active
-                        active[y] = False
+                hook = param.register_hook(hook)
+                hooks.append(hook)
 
-            h = layer.register_hook(ActiveGradsHook(active, prev_active))
-
-            hooks.append(h)
-            prev_active = active
-
-            selected.append((y_size - sum(active), y_size))
-
-        for nr, (sel, neurons) in enumerate(reversed(selected)):
-            print("layer %d: %d / %d" % (nr + 1, sel, neurons))
-
-        return prev_active, hooks
+        return hooks
 
 
-class ActiveGradsHook:
+class FreezeNeuronsHook:
     """
-    Resets the gradient according to the passed masks.
+    Resets the gradient according to the passed masks. False is forzen.
     """
 
     def __init__(self, previously_active: [bool], currently_active: [bool], bias=False):
@@ -511,6 +488,27 @@ class ActiveGradsHook:
             else:
                 grad_clone[self.currently_active, :] = 0
                 grad_clone[:, self.previously_active] = 0
+
+            return grad_clone
+
+        except Exception:
+            traceback.print_exc()
+
+
+class FreezeWeightsHook:
+    """
+    Resets the gradient according to the passed masks. False is forzen.
+    """
+
+    def __init__(self, mask):
+        self.mask = mask
+        self.__name__ = None
+
+    def __call__(self, grad):
+        try:  # Errors don't get propagated up, this is necessary.
+            grad_clone = grad.clone().detach()
+
+            grad_clone[self.mask] = 0
 
             return grad_clone
 
