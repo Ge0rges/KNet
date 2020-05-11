@@ -418,7 +418,7 @@ class SelectiveRetraining:
                 if dict_key != dict_keys_to_include[0]:
                     continue
 
-                new_hooks = self._select_neurons(modules[dict_key], dict_key)
+                new_hooks = self._select_neurons(modules[dict_key])
                 hooks.extend(new_hooks)
             del dict_keys_to_include[0]
 
@@ -430,7 +430,7 @@ class SelectiveRetraining:
         for hook in self.hooks:
             hook.remove()
 
-    def _select_neurons(self, module_layers, module_name):
+    def _select_neurons(self, module_layers):
         hooks = []
 
         for param_name, param in reversed(module_layers):
@@ -449,7 +449,6 @@ class SelectiveRetraining:
                         mask[x, y] = (abs(weight) > self.zero_threshold)
 
                 hook = FreezeWeightsHook(mask)
-                hook(param)
 
                 hook = param.register_hook(hook)
                 hooks.append(hook)
