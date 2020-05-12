@@ -119,6 +119,7 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
 
     return loader
 
+
 def equations_abstract_loader(batch_size=256, num_workers=0, pin_memory=False):
     eqs = [
         lambda inputs: 1 if np.sum(inputs) > (len(inputs) * 0.5) else 0,
@@ -127,6 +128,11 @@ def equations_abstract_loader(batch_size=256, num_workers=0, pin_memory=False):
     ]
 
     inputs = np.random.rand(10000)
-    targets = [[eq(i) for eq in eqs] for i in inputs]
+    targets = np.asarray([[eq(i) for eq in eqs] for i in inputs])
 
-    
+    dataset = torch.utils.data.TensorDataset(torch.from_numpy(inputs), torch.from_numpy(targets))
+
+    sampler = RandomSampler(dataset)
+    loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+    return loader
