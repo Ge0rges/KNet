@@ -77,14 +77,10 @@ def train_model():
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold, err_stop_threshold)
 
-    print(trainer.model.sizes)
-
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
-
-    print(trainer.model.sizes)
-
     loss, err = trainer.test_model(range(number_of_tasks), False)[0]
 
+    print("Net has final shape:" + str(trainer.model.sizes))
     print("Done training with total net accuracy:" + str(err))
     print("Done training with results from error function:" + str(results))
 
@@ -100,7 +96,11 @@ def error_function(model, batch_loader, tasks):
 
     Do not modify params. Abstract method for all experiments.
     """
-    tasks = list(range(tasks[-1] + 1))
+
+    # When training sequentially, look at previous tasks as well.
+    if len(tasks) == 1:
+        tasks = list(range(tasks[0] + 1))
+
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device)
     confusion_matrix = confusion_matrix.to(torch.device("cpu"))
     # print(np.round(confusion_matrix.numpy()))
