@@ -118,3 +118,15 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     return loader
+
+def equations_abstract_loader(batch_size=256, num_workers=0, pin_memory=False):
+    eqs = [
+        lambda inputs: 1 if np.sum(inputs) > (len(inputs) * 0.5) else 0,
+        lambda inputs: 1 if np.sum(inputs) < (len(inputs) * 0.75) else 0,
+        lambda inputs: 1 if (len(inputs) * 0.75) > np.sum(inputs) > (len(inputs) * 0.5) else 0
+    ]
+
+    inputs = np.random.rand(10000)
+    targets = [[eq(i) for eq in eqs] for i in inputs]
+
+    
