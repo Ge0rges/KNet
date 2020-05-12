@@ -129,8 +129,8 @@ class OptimizerController:
             }
 
         # check if PytorchTrainable will save/restore correctly before execution
-        validate_save_restore(PytorchTrainable, config=config, num_gpus=torch.cuda.device_count())
-        validate_save_restore(PytorchTrainable, config=config, use_object_store=True, num_gpus=torch.cuda.device_count())
+        # validate_save_restore(PytorchTrainable, config=config, num_gpus=torch.cuda.device_count())
+        # validate_save_restore(PytorchTrainable, config=config, use_object_store=True, num_gpus=torch.cuda.device_count())
 
         # PBT Params
         scheduler = PopulationBasedTraining(
@@ -170,7 +170,7 @@ class OptimizerController:
             name="pbt_test",
             scheduler=scheduler,
             reuse_actors=True,
-            resources_per_trial={"cpu": cpu_count() / num_workers, "gpu": torch.cuda.device_count() / num_workers},
+            resources_per_trial={"cpu": needed_cpu, "gpu": needed_gpu},
             verbose=2,
             stop=stopper,
             export_formats=[ExportFormat.MODEL],
