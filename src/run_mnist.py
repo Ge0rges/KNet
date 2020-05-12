@@ -25,8 +25,8 @@ num_workers = 4
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=1e-3, l2_coeff=0)  # Penalty for all
-drift_threshold = 0.08  # Drift threshold for split in DEN
+penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=0.0001)  # Penalty for all
+drift_threshold = 0.00001  # Drift threshold for split in DEN
 batch_size = 64
 
 data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -72,7 +72,7 @@ def train_model():
     expand_by_k = 10
     err_stop_threshold = 0.99
     sizes = {"encoder": [28 * 28, 50, 50, 10],
-             "action": [10, 10]}
+             "action": [10, 2, 10]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold, err_stop_threshold)
@@ -100,7 +100,7 @@ def error_function(model, batch_loader, tasks):
 
     Do not modify params. Abstract method for all experiments.
     """
-    tasks = list(range(tasks[0] + 1))
+    tasks = list(range(tasks[-1] + 1))
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device)
     confusion_matrix = confusion_matrix.to(torch.device("cpu"))
     # print(np.round(confusion_matrix.numpy()))

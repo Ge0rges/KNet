@@ -126,7 +126,9 @@ class DENTrainer:
     def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
         # Desaturate saturated neurons
         old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
+        print(get_modules(self.model)["action"])
         loss, err = self.train_new_neurons(old_sizes, new_sizes)
+        print(get_modules(self.model)["action"])
         print(err)
 
         # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
@@ -310,7 +312,7 @@ class DENTrainer:
 
                 # Freeze biases/weights
                 if "bias" in param_name:
-                    active_biases = [False] * old_size + [True] * neurons_added
+                    active_biases = [True] * old_size + [False] * neurons_added
                     hook = FreezeNeuronsHook(None, active_biases, bias=True)
 
                     hook = param.register_hook(hook)
@@ -318,7 +320,7 @@ class DENTrainer:
 
                 else:
 
-                    active_weights = [False] * old_size + [True] * neurons_added
+                    active_weights = [True] * old_size + [False] * neurons_added
                     hook = FreezeNeuronsHook(previously_active_weights, active_weights, bias=False)
 
                     hook = param.register_hook(hook)
@@ -446,7 +448,7 @@ class SelectiveRetraining:
                 for x in range(param.shape[0]):  # Rows is size of last layer (first row ever is output size)
                     for y in range(param.shape[1]):  # Columns is size of current layer (last column ever is input size)
                         weight = param[x, y]
-                        mask[x, y] = (abs(weight) > self.zero_threshold)
+                        mask[x, y] = not (abs(weight) > self.zero_threshold)
 
                 hook = FreezeWeightsHook(mask)
 
