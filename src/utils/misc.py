@@ -57,7 +57,7 @@ class AverageMeter(object):
 
 class FreezeNeuronsHook:
     """
-    Resets the gradient according to the passed masks. False is forzen.
+    Resets the gradient according to the passed masks. True is frozen.
     """
 
     def __init__(self, previously_active: [bool], currently_active: [bool], bias=False):
@@ -92,7 +92,7 @@ class FreezeNeuronsHook:
 
 class FreezeWeightsHook:
     """
-    Resets the gradient according to the passed masks. False is forzen.
+    Resets the gradient according to the passed masks. True is frozen.
     """
 
     def __init__(self, mask):
