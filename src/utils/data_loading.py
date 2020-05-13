@@ -122,9 +122,9 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
 
 def equations_loader(batch_size=256, num_workers=0, pin_memory=False):
     eqs = [
-        lambda inputs: 1.0 if np.average(inputs) < (len(inputs) * 0.5) else 0.0,
-        lambda inputs: 1.0 if np.average(inputs) > (len(inputs) * 0.75) else 0.0,
-        lambda inputs: 1.0 if (len(inputs) * 0.75) < np.average(inputs) < (len(inputs) * 0.5) else 0.0
+        lambda inputs: 1.0 if np.sum(inputs) < (len(inputs) * 0.5) else 0.0,
+        lambda inputs: 1.0 if np.sum(inputs) > (len(inputs) * 0.75) else 0.0,
+        lambda inputs: 1.0 if (len(inputs) * 0.75) > np.sum(inputs) > (len(inputs) * 0.5) else 0.0
     ]
 
     inputs = np.random.rand(10000, 10).astype('f')
