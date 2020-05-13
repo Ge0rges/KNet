@@ -12,12 +12,31 @@ class ResourceConstrainedTrainer:
     A training algorithm for neural networks that optimizes structure based on resources used.
     Uses a DENTrainer as backend for most functions.
     """
-    def __init__(self, den_trainer: DENTrainer, resources_available: int) -> None:
+    def __init__(self, den_trainer: DENTrainer, bits_available: int) -> None:
         raise NotImplementedError
 
         self._den_trainer = den_trainer
-        self.max_entropy = None
+        self.max_entropy = self.calculate_max_entropy(bits_available)
 
+    def calculate_max_entropy(self, bits_available: int) -> float:
+        max_number = 2**(bits_available-1)
+        prob_dist = list(range(1, max_number+1))  # 0 has entropy 0, exclude it.
+
+        total_count = sum(prob_dist)
+        discrete_dist = [float(x) / total_count for x in prob_dist]
+
+        return self.entropy(discrete_dist)
+
+    def get_model_entropy(self) -> float:
+        weights = self.get_model_weights()
+        total_entropy = 0
+
+        # This assume entropy is additive.
+        # TODO: Double check that
+        for weights in weights.values():
+            total_entropy += self.matrix_entropy(weights)
+
+        return total_entropy
 
     def get_model_weights(self) -> dict:
         model = self._den_trainer.model
@@ -38,31 +57,38 @@ class ResourceConstrainedTrainer:
 
         return weights
 
-    def matrix_entropy(self, matrix):
+    def matrix_entropy(self, matrix: torch.Tensor) -> float:
         """
         Calculates the "entropy" of a matrix by treating each element as
         independent and obtaining the histogram of element values
-        @input matrix
+        @:param matrix the matrix to calculate entropy of
+        @:returns the von neumann entropy of the matrix
         """
-        counts = dict(Counter(matrix.flatten())).values()
+        counts = dict(Counter(matrix.flatten())).values()  # Singular values
         total_count = sum(counts)
-        discrete_dist = [float(x) / total_count for x in counts]
+        discrete_dist = [float(x) / total_count for x in counts]  # Normalize
         return self.entropy(discrete_dist)
 
-    def entropy(self, probability_list):
+    def entropy(self, probability_list: [float]) -> float:
         """
         Calculates the entropy of a specified discrete probability distribution
-        @input probability_list The discrete probability distribution
+        @:param probability_list The discrete probability distribution
+        @:returns the von neumann entropy of a probability list -[x1 * log(1) + .. + xn * log(xn)]
         """
         running_total = 0
 
         for item in probability_list:
+            if item == 0:
+                continue
             running_total += item * log(item, 2)
 
-        if running_total != 0:
-            running_total *= -1
+        return -running_total
 
-        return running_total
-
-    def matrix_rank(self, matrix):
+    def matrix_rank(self, matrix: torch.Tensor) -> int:
+        """
+        :param matrix: The tensor to get rank of
+        :type matrix: A tensor
+        :return: The rank of the matrix
+        :rtype: int
+        """
         return np.linalg.matrix_rank(matrix)
