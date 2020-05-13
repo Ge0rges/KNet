@@ -1,5 +1,5 @@
 """
-Train CIANet on MNIST.
+Train CIANet on Equations.
 
 There is no datapreprocessing required.
 
@@ -15,7 +15,7 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import mnist_loader, DatasetType
+from src.utils.data_loading import equations_loader
 
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -24,14 +24,14 @@ num_workers = 4
 
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
-number_of_tasks = 10  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=0.0001, l2_coeff=0.0001)  # Penalty for all
+number_of_tasks = 3  # Dataset specific, list of classification classes
+penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=0.0001)  # Penalty for all
 drift_threshold = 0.00001  # Drift threshold for split in DEN
 batch_size = 64
 
-data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
-                mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
-                mnist_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory))
+data_loaders = (equations_loader(batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
+                equations_loader(batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
+                equations_loader(batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.
@@ -48,11 +48,11 @@ def find_hyperparameters():
     Runs hyper_optimizer to find the best ML params.
     """
     # Net shape
-    encoder_in = 28 * 28
+    encoder_in = 10
     hidden_encoder_layers = 1
     hidden_action_layers = 1
-    action_out = 10
-    core_invariant_size = 405  # None is PCA
+    action_out = 3
+    core_invariant_size = None  # None is PCA
 
     pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
                                          drift_threshold, encoder_in, hidden_encoder_layers, hidden_action_layers,
@@ -71,8 +71,8 @@ def train_model():
     momentum = 0.9
     expand_by_k = 10
     err_stop_threshold = 0.99
-    sizes = {"encoder": [28 * 28, 50, 50, 10],
-             "action": [10, 2, 10]}
+    sizes = {"encoder": [10, 5, 5],
+             "action": [5, 2, 3]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold, err_stop_threshold)

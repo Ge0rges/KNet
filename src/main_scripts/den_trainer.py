@@ -126,9 +126,7 @@ class DENTrainer:
     def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
         # Desaturate saturated neurons
         old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
-        print(get_modules(self.model)["action"])
         loss, err = self.train_new_neurons(old_sizes, new_sizes)
-        print(get_modules(self.model)["action"])
         print(err)
 
         # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.

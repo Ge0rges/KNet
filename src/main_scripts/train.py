@@ -3,7 +3,7 @@ import torch
 
 from torch.utils.data import DataLoader
 from progress.bar import Bar
-from src.utils.misc import AverageMeter
+from src.utils.misc import AverageMeter, get_modules
 
 
 def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int]):
@@ -21,7 +21,6 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
     data_time = AverageMeter()
     losses = AverageMeter()
     end = time.time()
-
     for batch_idx, (inputs, action_target) in enumerate(batch_loader):
         # Measure data loading time
         data_time.update(time.time() - end)
@@ -93,8 +92,11 @@ class L1L2Penalty:
         if self.l1_coeff == 0:  # Be efficient
             return l1_reg
 
+        modules = model.get_used_keys()
+
         for name, param in model.named_parameters():
-            if 'weight' in name:
+            module = name[0: name.index('.')]
+            if 'weight' in name and module in modules:
                 l1_reg = l1_reg + torch.norm(param, 1)
 
         return torch.mul(self.l1_coeff, l1_reg)

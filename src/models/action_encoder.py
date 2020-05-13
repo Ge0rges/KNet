@@ -167,3 +167,16 @@ class ActionEncoder(nn.Module):
             init_biases[index] = layer.bias.detach()
 
         return layer.float()
+
+    def get_used_keys(self):
+        if self.ff:
+            return ["encoder"]
+        else:
+            if self.phase == "ACTION":
+                return ["encoder", "action"]
+            elif self.phase == "GENERATE":
+                return ["encoder", "decoder"]
+            elif self.phase == "BOTH":
+                return ["encoder", "action", "decoder"]
+            else:
+                raise ReferenceError
