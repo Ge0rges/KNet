@@ -20,10 +20,10 @@ class ResourceConstrainedTrainer:
 
     def calculate_max_entropy(self, bits_available: int) -> float:
         max_number = 2**(bits_available-1)
-        prob_dist = list(range(1, max_number+1))  # 0 has entropy 0, exclude it.
+        prob_dist = np.arange(max_number)
 
-        total_count = sum(prob_dist)
-        discrete_dist = [float(x) / total_count for x in prob_dist]
+        total_count = np.sum(prob_dist)
+        discrete_dist = [float(x) / total_count for x in prob_dist.flatten()]
 
         return self.entropy(discrete_dist)
 
