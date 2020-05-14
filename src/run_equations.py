@@ -25,8 +25,8 @@ num_workers = 4
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 3  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=0.0001)  # Penalty for all
-drift_threshold = 0.00001  # Drift threshold for split in DEN
+penalty = L1L2Penalty(l1_coeff=0.0001, l2_coeff=0.0001)  # Penalty for all
+drift_threshold = 0.3  # Drift threshold for split in DEN
 batch_size = 64
 
 data_loaders = (equations_loader(batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -76,6 +76,8 @@ def train_model():
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold, err_stop_threshold)
+
+    print(trainer.model.sizes)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
     loss, err = trainer.test_model(range(number_of_tasks), False)[0]

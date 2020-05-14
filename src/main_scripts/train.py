@@ -85,7 +85,7 @@ class L1L2Penalty:
         self.l2_coeff = l2_coeff  # Used by DENTrainer to set SGD weight_decay.
 
     def __call__(self, new_model, device):
-        return self.l1(new_model, device)
+        return self.l1(new_model, device) + self.l2(new_model, device)
 
     def l1(self, model, device):
         l1_reg = torch.tensor(0., requires_grad=True).to(device)
@@ -100,3 +100,17 @@ class L1L2Penalty:
                 l1_reg = l1_reg + torch.norm(param, 1)
 
         return torch.mul(self.l1_coeff, l1_reg)
+
+    def l2(self, model, device):
+        l2_reg = torch.tensor(0., requires_grad=True).to(device)
+        if self.l2_coeff == 0:  # Be efficient
+            return l2_reg
+
+        modules = model.get_used_keys()
+
+        for name, param in model.named_parameters():
+            module = name[0: name.index('.')]
+            if 'weight' in name and module in modules:
+                l1_reg = l2_reg + torch.norm(param, 2)
+
+        return torch.mul(self.l2_coeff, l2_reg)

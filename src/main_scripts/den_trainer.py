@@ -43,7 +43,7 @@ class DENTrainer:
         self.momentum = momentum
 
         self.l2_coeff = self.penalty.l2_coeff if hasattr(self.penalty, "l2_coeff") else 0
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum, weight_decay=self.l2_coeff)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
         self.__epochs_to_train = None
         self.__current_tasks = None
@@ -236,8 +236,7 @@ class DENTrainer:
         if total_neurons_added > 0:
             self.model = ActionEncoder(new_sizes, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
-            self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
-                                       weight_decay=self.l2_coeff)
+            self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
         print(self.model.sizes)
         print("median drift: {} \n mean drift: {}".format(np.median(drifts), np.mean(drifts)))
 
@@ -269,8 +268,7 @@ class DENTrainer:
         old_sizes = self.model.sizes
         self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
         self.model = self.model.to(self.device)
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
-                                   weight_decay=self.l2_coeff)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
         print(self.model.sizes)
 
@@ -346,8 +344,7 @@ class DENTrainer:
             validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
         self.model = max_model  # Discard the last two train epochs
-        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum,
-                                   weight_decay=self.l2_coeff)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
         # Remove hooks
         for hook in hooks:
             hook.remove()
