@@ -1,4 +1,4 @@
-numpy==1.18.3
+numpy==1.18.4
 Pillow==7.0.0
 progress==1.5
 torch==1.5.0

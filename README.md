@@ -74,7 +74,7 @@ Candidate Networks:
 
 # Dependencies
 - Python 3.7
-- numpy 1.18.2
+- numpy 1.18.4
 - Pillow 7.0.0 or Pillow-SIMD 7.0.0
     - For pillow-simd you will need a SSE4.1 capable CPU and `sudo apt-get install libjpeg-dev zlib1g-dev`
 - progress 1.5
