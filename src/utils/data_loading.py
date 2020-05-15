@@ -37,7 +37,7 @@ def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
 
     is_train = (True if type == DatasetType.train else False)
 
-    root = os.path.join(os.path.dirname(__file__), "../../data/MNIST")
+    root = os.path.join(os.path.dirname(__file__), "../../data/")
     assert os.path.isdir(root)
 
     lock = os.path.join(os.path.dirname(__file__), "../../data/MNIST.lock")
