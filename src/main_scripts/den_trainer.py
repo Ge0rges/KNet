@@ -85,9 +85,11 @@ class DENTrainer:
             # Make a copy for split
             model_copy = copy.deepcopy(self.model).to(self.device)
             with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+                # print("before training", get_modules(self.model)["encoder"])
                 loss, err = self.__train_tasks_for_epochs()
+                # print("after training", get_modules(self.model)["encoder"])
                 print(err)
-                loss, err = self.__do_den(model_copy, loss)
+                loss, err = self.__do_den(model_copy, loss, err)
                 print(err)
 
         # Return validation error
@@ -123,23 +125,23 @@ class DENTrainer:
         for param in self.model.parameters():
             param.requires_grad = True
 
-    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
+    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float, starting_error: float) -> (float, float):
         # Desaturate saturated neurons
         old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
-        loss, err = self.train_new_neurons(old_sizes, new_sizes)
+        loss, err = self.train_new_neurons(old_sizes, new_sizes, starting_error)
         print(err)
 
         # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
         loss = starting_loss if loss is None else loss
 
-        # If loss is still above a certain threshold, add capacity.
-        if loss > self.loss_threshold:
-            old_sizes, new_sizes = self.dynamically_expand()
-            t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
-            print(err)
-
-            # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
-            loss = loss if t_loss is None else t_loss
+        # # If loss is still above a certain threshold, add capacity.
+        # if loss > self.loss_threshold:
+        #     old_sizes, new_sizes = self.dynamically_expand()
+        #     t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
+        #     print(err)
+        #
+        #     # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
+        #     loss = loss if t_loss is None else t_loss
 
         return loss, err
 
@@ -189,6 +191,9 @@ class DENTrainer:
                 new_layer_size = 0
                 added_last_layer = 0
 
+                weights_split = []
+                biases_split = []
+
                 # For each node's weights
                 for j, new_weights in enumerate(new_param.detach()):
                     old_bias = old_biases[biases_index].detach()[j]
@@ -202,23 +207,26 @@ class DENTrainer:
                     if count == 0:
                         drifts.append(drift.to(torch.device("cpu")).numpy())
 
+                    # Add old neuron
+                    new_layer_weights.append(old_weights.tolist())
+                    new_layer_biases.append(old_bias)
+
                     if drift > self.drift_threshold:
                         # Split 1 neuron into 2
                         new_layer_size += 2
                         total_neurons_added += 1
                         added_last_layer += 1
 
-                        # Add old neuron
-                        new_layer_weights.append(old_weights.tolist())
-                        new_layer_biases.append(old_bias)
+                        weights_split.append(old_weights.tolist())
+                        biases_split.append(old_bias)
 
                     else:
                         # One neuron not split
                         new_layer_size += 1
 
-                        # Add existing neuron back
-                        new_layer_weights.append(new_weights.tolist())
-                        new_layer_biases.append(new_bias)
+                # add split weights to the new_layer_weights and biases
+                new_layer_weights.extend(weights_split)
+                new_layer_biases.extend(biases_split)
 
                 # Update dicts
                 weights[dict_key].append(new_layer_weights)
@@ -228,7 +236,10 @@ class DENTrainer:
                 biases_index += 1
 
             # Output must remain constant
-            new_sizes[dict_key][-1] -= added_last_layer
+            if added_last_layer != 0:
+                del weights[dict_key][-1][-added_last_layer:]
+                del biases[dict_key][-1][-added_last_layer:]
+                new_sizes[dict_key][-1] -= added_last_layer
             count = 1
 
         # Be efficient
@@ -239,6 +250,7 @@ class DENTrainer:
             self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
         print(self.model.sizes)
         print("median drift: {} \n mean drift: {}".format(np.median(drifts), np.mean(drifts)))
+        # print("after split", get_modules(self.model)["encoder"])
 
         return old_sizes, self.model.sizes
 
@@ -274,7 +286,7 @@ class DENTrainer:
 
         return old_sizes, self.model.sizes
 
-    def train_new_neurons(self, old_sizes: dict, new_sizes: dict) -> (float, float):
+    def train_new_neurons(self, old_sizes: dict, new_sizes: dict, starting_error: float) -> (float, float):
         if old_sizes == new_sizes:
             print("No new neurons to train.")
             return (None, None)
@@ -327,19 +339,21 @@ class DENTrainer:
         # Train until validation loss reaches a maximum
         max_model = self.model
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
+        print("valid_err", max_validation_err)
 
         # Initial train
-        for _ in range(3):
+        for _ in range(2*self.__epochs_to_train):
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
         # Train till validation error stops growing
-        while validation_error > max_validation_err:
+        while validation_error > max_validation_err and validation_loss < max_validation_loss:
+            print("valid_err", validation_error)
             max_model = self.model
             max_validation_err = validation_error
             max_validation_loss = validation_loss
 
-            for _ in range(3):
+            for _ in range(self.__epochs_to_train):
                 self.__train_one_epoch()
             validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 

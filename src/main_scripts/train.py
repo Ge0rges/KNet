@@ -44,7 +44,7 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
 
         # generate_loss = encoder_loss(generate_output, generate_targets) + penalty_val
         action_loss = criterion(action_output, action_target) + penalty_val
-        total_loss = action_loss #+ generate_loss  # TODO: add back gen in phases
+        total_loss = action_loss  # + generate_loss  # TODO: add back gen in phases
 
         # Record loss
         losses.update(total_loss.item(), inputs.size(0))
