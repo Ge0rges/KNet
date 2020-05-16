@@ -47,9 +47,12 @@ class DENTrainer:
 
         self.__epochs_to_train = None
         self.__current_tasks = None
+        self.__sequential = None
 
     # Train Functions
     def train_all_tasks_sequentially(self, epochs: int, with_den: bool) -> [float]:
+        self.__sequential = True
+
         errs = []
         # tasks = list(range(self.number_of_tasks))
         for i in range(self.number_of_tasks):
@@ -69,6 +72,17 @@ class DENTrainer:
         return errs
 
     def train_tasks(self, tasks: [int], epochs: int, with_den: bool) -> (float, float):
+        # API must be used correctly. Tasks are ints in range(self.number_of_tasks)
+        for i in tasks:
+            assert 0 <= i < self.number_of_tasks
+
+        # Sequential is used to pass seen_tasks to train
+        if len(tasks) > 1:
+            self.__sequential = False
+            print("WARNING: DENTrainer does not support simultaneous multi-task training yet. "
+                  "Train function will not know what tasks have already been trained. ")
+            raise NotImplementedError
+
         # train_new_neurons will need this.
         self.__epochs_to_train = epochs
         self.__current_tasks = tasks
@@ -104,7 +118,10 @@ class DENTrainer:
         return loss, err
 
     def __train_one_epoch(self) -> (float, float):
-        loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device, self.__current_tasks)
+        seen_tasks = list(range(self.__current_tasks[-1])) if self.__sequential else []
+
+        loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device,
+                     self.__current_tasks, seen_tasks)
 
         # Compute the error if we need early stopping
         err = None
@@ -114,11 +131,19 @@ class DENTrainer:
         return loss, err
 
     def __train_last_layer(self):
+        print("Training last layer only...")
         params = list(self.model.parameters())
         for param in params[:-2]:
             param.requires_grad = False
 
+        # Train few epochs
+        t = self.__epochs_to_train
+        self.__epochs_to_train = 5
+
         self.__train_tasks_for_epochs()
+
+        # Restore number of epochs
+        self.__epochs_to_train = t
 
         for param in self.model.parameters():
             param.requires_grad = True
@@ -329,7 +354,7 @@ class DENTrainer:
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
 
         # Initial train
-        for _ in range(3):
+        for _ in range(3*self.__epochs_to_train):
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
@@ -339,7 +364,7 @@ class DENTrainer:
             max_validation_err = validation_error
             max_validation_loss = validation_loss
 
-            for _ in range(3):
+            for _ in range(self.__epochs_to_train):
                 self.__train_one_epoch()
             validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
@@ -364,14 +389,15 @@ class DENTrainer:
             losses = []
             for t in tasks:
                 loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device,
-                             [t])
+                             [t], range(t))
                 err = self.error_function(self.model, loader, range(t))
                 losses.append((loss, err))
 
             return losses
 
         # Else, all tasks as once
-        loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks)
+        print("WARNING: Evaluating with no previously seen tasks")
+        loss = train(loader, self.model, self.criterion, self.optimizer, self.penalty, True, self.device, tasks, [])
         err = self.error_function(self.model, loader, tasks)
         return [(loss, err)]
 

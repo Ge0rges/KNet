@@ -6,7 +6,7 @@ from progress.bar import Bar
 from src.utils.misc import AverageMeter, get_modules
 
 
-def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int]):
+def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int], seen_tasks: [int]):
 
     # switch to train or evaluate mode
     if testing:
@@ -34,10 +34,14 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
         # generate_targets = inputs according to Lucas
 
         model.phase = "ACTION"
+
         action_output = model(inputs)
 
-        action_output = action_output[:, tasks]
-        action_target = action_target[:, tasks]
+        action_output = action_output[:, tasks+seen_tasks]
+        action_target = action_target[:, tasks+seen_tasks]
+
+        # For seen tasks, set target = output
+        action_target[:, seen_tasks] = action_output.clone().detach()[:, seen_tasks]
 
         # encoder_loss = torch.nn.BCELoss()
         penalty_val = penalty(model, device) if penalty else 0
