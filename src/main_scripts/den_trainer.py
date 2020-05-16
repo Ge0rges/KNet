@@ -89,8 +89,8 @@ class DENTrainer:
                 loss, err = self.__train_tasks_for_epochs()
                 # print("after training", get_modules(self.model)["encoder"])
                 print(err)
-                loss, err = self.__do_den(model_copy, loss, err)
-                print(err)
+            loss, err = self.__do_den(model_copy, loss, err)
+            print(err)
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
@@ -207,15 +207,14 @@ class DENTrainer:
                     if count == 0:
                         drifts.append(drift.to(torch.device("cpu")).numpy())
 
-                    # Add old neuron
-                    new_layer_weights.append(old_weights.tolist())
-                    new_layer_biases.append(old_bias)
-
                     if drift > self.drift_threshold:
                         # Split 1 neuron into 2
                         new_layer_size += 2
                         total_neurons_added += 1
                         added_last_layer += 1
+
+                        new_layer_weights.append(old_weights.tolist())
+                        new_layer_biases.append(old_bias)
 
                         weights_split.append(old_weights.tolist())
                         biases_split.append(old_bias)
@@ -223,6 +222,8 @@ class DENTrainer:
                     else:
                         # One neuron not split
                         new_layer_size += 1
+                        new_layer_weights.append(new_weights.tolist())
+                        new_layer_biases.append(new_bias)
 
                 # add split weights to the new_layer_weights and biases
                 new_layer_weights.extend(weights_split)
