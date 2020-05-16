@@ -101,8 +101,9 @@ class DENTrainer:
             with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
                 loss, err = self.__train_tasks_for_epochs()
                 print(err)
-                loss, err = self.__do_den(model_copy, loss)
-                print(err)
+
+            loss, err = self.__do_den(model_copy, loss)
+            print(err)
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
