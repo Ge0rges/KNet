@@ -9,6 +9,7 @@ from src.models import ActionEncoder
 from src.main_scripts.train import train
 from src.utils.misc import get_modules, FreezeNeuronsHook, FreezeWeightsHook
 
+
 class DENTrainer:
     """
     Implements DEN training.
@@ -84,11 +85,11 @@ class DENTrainer:
 
             # Make a copy for split
             model_copy = copy.deepcopy(self.model).to(self.device)
-            with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
-                # print("before training", get_modules(self.model)["encoder"])
-                loss, err = self.__train_tasks_for_epochs()
-                # print("after training", get_modules(self.model)["encoder"])
-                print(err)
+            # with SelectiveRetraining(self.model, self.number_of_tasks, self.__current_tasks, self.zero_threshold):
+            # print("before training", get_modules(self.model)["encoder"])
+            loss, err = self.__train_tasks_for_epochs()
+            # print("after training", get_modules(self.model)["encoder"])
+            print(err)
             loss, err = self.__do_den(model_copy, loss, err)
             print(err)
 
