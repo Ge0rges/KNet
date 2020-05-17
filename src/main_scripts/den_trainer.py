@@ -104,8 +104,12 @@ class DENTrainer:
                 loss, err = self.__train_tasks_for_epochs()
                 print(err)
 
-            loss, err = self.__do_den(model_copy, loss)
+            den_loss, den_err = self.__do_den(model_copy)
             print(err)
+
+            loss = loss if den_loss is None else den_loss
+            err = err if den_err is None else den_err
+
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
@@ -151,14 +155,14 @@ class DENTrainer:
         for param in self.model.parameters():
             param.requires_grad = True
 
-    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
+    def __do_den(self, model_copy: torch.nn.Module) -> (float, float):
         # Desaturate saturated neurons
         old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
         loss, err = self.train_new_neurons(old_sizes, new_sizes)
         print(err)
 
-        # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
-        loss = starting_loss if loss is None else loss
+        # # If loss is still above a certain threshold, add capacity.
+        # if loss > self.loss_threshold:
 
         # If loss is still above a certain threshold, add capacity.
         if loss > self.loss_threshold:
