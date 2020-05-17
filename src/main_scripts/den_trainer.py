@@ -104,12 +104,10 @@ class DENTrainer:
                 loss, err = self.__train_tasks_for_epochs()
                 print(err)
 
-            den_loss, den_err = self.__do_den(model_copy)
+            den_loss, err = self.__do_den(model_copy)
             print(err)
 
             loss = loss if den_loss is None else den_loss
-            err = err if den_err is None else den_err
-
 
         # Return validation error
         err = self.error_function(self.model, self.valid_loader, tasks)
@@ -160,9 +158,6 @@ class DENTrainer:
         old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
         loss, err = self.train_new_neurons(old_sizes, new_sizes)
         print(err)
-
-        # # If loss is still above a certain threshold, add capacity.
-        # if loss > self.loss_threshold:
 
         # If loss is still above a certain threshold, add capacity.
         if loss > self.loss_threshold:
