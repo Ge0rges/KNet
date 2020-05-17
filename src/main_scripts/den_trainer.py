@@ -52,6 +52,7 @@ class DENTrainer:
     # Train Functions
     def train_all_tasks_sequentially(self, epochs: int, with_den: bool) -> [float]:
         self.__sequential = True
+        self.__epochs_to_train = epochs
 
         errs = []
         # tasks = list(range(self.number_of_tasks))
@@ -355,7 +356,7 @@ class DENTrainer:
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
 
         # Initial train
-        for _ in range(3*self.__epochs_to_train):
+        for _ in range(self.__epochs_to_train):
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
