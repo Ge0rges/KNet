@@ -3,7 +3,7 @@ import torch
 
 from torch.utils.data import DataLoader
 from progress.bar import Bar
-from src.utils.misc import AverageMeter, get_modules
+from src.utils.misc import AverageMeter
 
 
 def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer, penalty, testing: bool, device: torch.device, tasks: [int], seen_tasks: [int]):
@@ -41,7 +41,14 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
         action_target = action_target[:, tasks+seen_tasks]
 
         # For seen tasks, set target = output
-        action_target[:, seen_tasks] = action_output.clone().detach()[:, seen_tasks]
+        # action_target[:, seen_tasks] = action_output.clone().detach()[:, seen_tasks]
+        if len(seen_tasks) > 0:
+            seen_outputs = action_output.clone().detach()[:, seen_tasks]
+            seen_outputs_current_tasks = torch.cat([seen_outputs, action_target[:, tasks]], dim=1)
+            _, indices = torch.max(seen_outputs_current_tasks, 1)
+            binary_seen_outputs = torch.nn.functional.one_hot(indices, num_classes=len(seen_tasks)+len(tasks))
+
+            action_target[:, seen_tasks] = binary_seen_outputs.float()[:, seen_tasks]
 
         # encoder_loss = torch.nn.BCELoss()
         penalty_val = penalty(model, device) if penalty else 0

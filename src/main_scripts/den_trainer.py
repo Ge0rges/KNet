@@ -369,7 +369,7 @@ class DENTrainer:
         print("valid_err", max_validation_err)
 
         # Initial train
-        for _ in range(self.__epochs_to_train):
+        for _ in range(2*self.__epochs_to_train):
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
