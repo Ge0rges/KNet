@@ -32,6 +32,7 @@ class PytorchTrainable(tune.Trainable):
             momentum=config.get("momentum", 0.9))
 
         self.trainer.expand_by_k = config.get("expand_by_k", 10)
+        self.trainer.drift_threshold = config.get("drift_threshold", 0.02)
 
         if hasattr(self.trainer.penalty, "l1_coeff"):
             self.trainer.penalty.l1_coeff = config.get("l1_coeff", 0)
@@ -125,8 +126,9 @@ class OptimizerController:
                 "DENTrainerArgs": self.trainer_args,
                 "expand_by_k": int(np.random.uniform(1, 20)),
                 "l1_coeff": np.random.uniform(1e-20, 0),
-                "l2_coeff": np.random.uniform(1e-20, 0)
-            }
+                "l2_coeff": np.random.uniform(1e-20, 0),
+                "drift_threshold": np.random.uniform(0.001, 5)
+        }
 
         # check if PytorchTrainable will save/restore correctly before execution
         # validate_save_restore(PytorchTrainable, config=config, num_gpus=torch.cuda.device_count())
@@ -144,7 +146,8 @@ class OptimizerController:
                 "momentum": lambda: np.random.uniform(0, 0.99),
                 "expand_by_k": lambda: int(np.random.uniform(1, 20)),
                 "l1_coeff": lambda: np.random.uniform(1e-20, 1),
-                "l2_coeff": lambda: np.random.uniform(1e-20, 1)
+                "l2_coeff": lambda: np.random.uniform(1e-20, 1),
+                "drift_threshold": lambda: np.random.uniform(0.001, 5)
             })
 
         # Tune params

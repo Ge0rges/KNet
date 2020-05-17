@@ -26,7 +26,7 @@ num_workers = 4
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=1e-6)  # Penalty for all
-drift_threshold = 0.02  # Drift threshold for split in DEN
+drift_threshold = 0.2  # Drift threshold for split in DEN
 batch_size = 64
 
 data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -58,7 +58,7 @@ def find_hyperparameters():
                                          drift_threshold, encoder_in, hidden_encoder_layers, hidden_action_layers,
                                          action_out, core_invariant_size)
 
-    return pbt_controller(8)  # Number of workers
+    return pbt_controller(4)  # Number of workers
 
 
 def train_model():
@@ -66,7 +66,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 10
+    epochs = 20
     learning_rate = 0.01
     momentum = 0.9
     expand_by_k = 10
