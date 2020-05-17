@@ -151,23 +151,23 @@ class DENTrainer:
         for param in self.model.parameters():
             param.requires_grad = True
 
-    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float, starting_error: float) -> (float, float):
+    def __do_den(self, model_copy: torch.nn.Module, starting_loss: float) -> (float, float):
         # Desaturate saturated neurons
         old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
-        loss, err = self.train_new_neurons(old_sizes, new_sizes, starting_error)
+        loss, err = self.train_new_neurons(old_sizes, new_sizes)
         print(err)
 
         # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
         loss = starting_loss if loss is None else loss
 
-        # # If loss is still above a certain threshold, add capacity.
-        # if loss > self.loss_threshold:
-        #     old_sizes, new_sizes = self.dynamically_expand()
-        #     t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
-        #     print(err)
-        #
-        #     # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
-        #     loss = loss if t_loss is None else t_loss
+        # If loss is still above a certain threshold, add capacity.
+        if loss > self.loss_threshold:
+            old_sizes, new_sizes = self.dynamically_expand()
+            t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
+            print(err)
+
+            # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
+            loss = loss if t_loss is None else t_loss
 
         return loss, err
 
@@ -313,7 +313,7 @@ class DENTrainer:
 
         return old_sizes, self.model.sizes
 
-    def train_new_neurons(self, old_sizes: dict, new_sizes: dict, starting_error: float) -> (float, float):
+    def train_new_neurons(self, old_sizes: dict, new_sizes: dict) -> (float, float):
         if old_sizes == new_sizes:
             print("No new neurons to train.")
             return (None, None)
@@ -375,7 +375,6 @@ class DENTrainer:
 
         # Train till validation error stops growing
         while validation_error > max_validation_err and validation_loss < max_validation_loss:
-            print("valid_err", validation_error)
             max_model = self.model
             max_validation_err = validation_error
             max_validation_loss = validation_loss
