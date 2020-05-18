@@ -24,7 +24,7 @@ num_workers = 4
 
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
-number_of_tasks = 3  # Dataset specific, list of classification classes
+number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=0.0001, l2_coeff=0.0001)  # Penalty for all
 drift_threshold = 0.3  # Drift threshold for split in DEN
 batch_size = 64
@@ -51,7 +51,7 @@ def find_hyperparameters():
     encoder_in = 10
     hidden_encoder_layers = 1
     hidden_action_layers = 1
-    action_out = 3
+    action_out = 2
     core_invariant_size = None  # None is PCA
 
     pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
