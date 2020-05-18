@@ -160,7 +160,7 @@ class DENTrainer:
         print(err)
 
         # If loss is still above a certain threshold, add capacity.
-        if loss > self.loss_threshold:
+        if loss is not None and loss > self.loss_threshold:
             old_sizes, new_sizes = self.dynamically_expand()
             t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
             print(err)
