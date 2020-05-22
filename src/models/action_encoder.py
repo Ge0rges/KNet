@@ -94,7 +94,7 @@ class ActionEncoder(nn.Module):
 
         for i in range(1, len(sizes) - 1):
             layers.append(nn.LeakyReLU())
-            layers.append(self.get_layer(sizes[i], sizes[i+1], oldWeights, oldBiases, i))
+            layers.append(self.get_layer(sizes[i], sizes[i+1], init_weights=oldWeights, init_biases=oldBiases, index=i))
 
         return layers
 
@@ -121,13 +121,13 @@ class ActionEncoder(nn.Module):
             # Padding
             weights = layer.weight.detach()
 
-            if input != weights.shape[1]:
+            if input > weights.shape[1]:
                 kaiming_weights = torch.rand(weights.shape[0], input - weights.shape[1]).to(weights.device)
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
 
                 weights = torch.cat([weights.float(), kaiming_weights.float()], dim=1)
 
-            if output != weights.shape[0]:
+            if output > weights.shape[0]:
                 kaiming_weights = torch.rand(output - weights.shape[0], input).to(weights.device)
                 torch.nn.init.kaiming_uniform_(kaiming_weights, mode='fan_in', nonlinearity='leaky_relu')
 

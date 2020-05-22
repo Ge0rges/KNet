@@ -181,6 +181,7 @@ class DENTrainer:
         new_modules = get_modules(self.model)
 
         drifts = []
+        prev_indices_split = []
         count = 0
         # For each module (encoder, decoder, action...)
         for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
@@ -218,6 +219,7 @@ class DENTrainer:
 
                 weights_split = []
                 biases_split = []
+                indices_split = []
 
                 # For each node's weights
                 for j, new_weights in enumerate(new_param.detach()):
@@ -237,19 +239,26 @@ class DENTrainer:
                         new_layer_size += 2
                         total_neurons_added += 1
                         added_last_layer += 1
+                        old_weights = old_weights.tolist()
+                        for i in prev_indices_split:
+                            old_weights.append(old_weights[i])
 
-                        new_layer_weights.append(old_weights.tolist())
+                        new_layer_weights.append(old_weights)
                         new_layer_biases.append(old_bias)
 
-                        weights_split.append(old_weights.tolist())
+                        weights_split.append(old_weights)
                         biases_split.append(old_bias)
-
+                        indices_split.append(j)
                     else:
                         # One neuron not split
                         new_layer_size += 1
-                        new_layer_weights.append(new_weights.tolist())
+                        new_weights = new_weights.tolist()
+                        for i in prev_indices_split:
+                            new_weights.append(new_weights[i])
+                        new_layer_weights.append(new_weights)
                         new_layer_biases.append(new_bias)
 
+                prev_indices_split = indices_split
                 # add split weights to the new_layer_weights and biases
                 new_layer_weights.extend(weights_split)
                 new_layer_biases.extend(biases_split)
@@ -267,9 +276,11 @@ class DENTrainer:
                 del biases[dict_key][-1][-added_last_layer:]
                 new_sizes[dict_key][-1] -= added_last_layer
             count = 1
+            prev_indices_split = []
 
         # Be efficient
         old_sizes = self.model.sizes
+        print(new_sizes)
         if total_neurons_added > 0:
             self.model = ActionEncoder(new_sizes, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
