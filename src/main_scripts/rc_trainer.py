@@ -31,8 +31,9 @@ class ResourceConstrainedTrainer:
         weights = self.get_model_weights()
         total_entropy = 0
 
-        # This assume entropy is additive.
-        # TODO: Double check that
+        # For our cases entropy is additive as each matrix
+        # will supposedly encode different information from previous
+        # Break case: Singular values.
         for weights in weights.values():
             total_entropy += self.matrix_entropy(weights)
 

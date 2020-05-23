@@ -26,7 +26,7 @@ num_workers = 4
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 2  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=0.0001, l2_coeff=0.0001)  # Penalty for all
-drift_threshold = 0.3  # Drift threshold for split in DEN
+drift_threshold = 0.02  # Drift threshold for split in DEN
 batch_size = 64
 
 data_loaders = (equations_loader(batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -66,7 +66,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 6
+    epochs = 1
     learning_rate = 0.01
     momentum = 0.9
     expand_by_k = 10
@@ -80,7 +80,7 @@ def train_model():
     print(trainer.model.sizes)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
-    loss, err = trainer.test_model(range(number_of_tasks), False)[0]
+    loss, err = trainer.test_model(list(range(number_of_tasks)), False)[0]
 
     print("Net has final shape:" + str(trainer.model.sizes))
     print("Done training with total net accuracy:" + str(err))

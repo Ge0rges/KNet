@@ -55,41 +55,6 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-class FreezeNeuronsHook:
-    """
-    Resets the gradient according to the passed masks. True is frozen.
-    """
-
-    def __init__(self, previously_active: [bool], currently_active: [bool], bias=False):
-
-        # Could be None for biases
-        if previously_active is not None:
-            self.previously_active = torch.BoolTensor(previously_active).long().nonzero().view(-1).numpy()
-
-        # Should never be None
-        self.currently_active = torch.BoolTensor(currently_active).long().nonzero().view(-1).numpy()
-
-        self.is_bias = bias
-
-        self.__name__ = None
-
-    def __call__(self, grad):
-        try:  # Errors don't get propagated up, this is necessary.
-            grad_clone = grad.clone().detach()
-
-            if self.is_bias:
-                grad_clone[self.currently_active] = 0
-
-            else:
-                grad_clone[self.currently_active, :] = 0
-                grad_clone[:, self.previously_active] = 0
-
-            return grad_clone
-
-        except Exception:
-            traceback.print_exc()
-
-
 class FreezeWeightsHook:
     """
     Resets the gradient according to the passed masks. True is frozen.
@@ -108,4 +73,5 @@ class FreezeWeightsHook:
             return grad_clone
 
         except Exception:
+            print(self.mask)
             traceback.print_exc()
