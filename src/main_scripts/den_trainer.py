@@ -7,7 +7,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from src.models import ActionEncoder
 from src.main_scripts.train import train
-from src.utils.misc import get_modules, FreezeNeuronsHook, FreezeWeightsHook
+from src.utils.misc import get_modules, FreezeWeightsHook
 
 
 class DENTrainer:
@@ -335,7 +335,7 @@ class DENTrainer:
         modules = get_modules(self.model)
 
         for module_name, parameters in modules.items():
-            previously_active_weights = [False] * new_sizes[module_name][0]
+            previously_frozen_nodes = [False] * new_sizes[module_name][0]
 
             for param_name, param in parameters:
                 split_param_name = param_name.split(".")  # Splits action.0.weights
@@ -356,22 +356,21 @@ class DENTrainer:
                     continue
 
                 # Freeze biases/weights
-                if "bias" in param_name:
-                    active_biases = [True] * old_size + [False] * neurons_added
-                    hook = FreezeNeuronsHook(None, active_biases, bias=True)
+                current_frozen_nodes = [True] * old_size + [False] * neurons_added
 
-                    hook = param.register_hook(hook)
-                    hooks.append(hook)
+                is_frozen_mask = torch.zeros(param.shape, dtype=torch.bool)
 
-                else:
+                if "weight" in param_name:
+                    is_frozen_mask[current_frozen_nodes, :] = True
+                    is_frozen_mask[:, previously_frozen_nodes] = True
 
-                    active_weights = [True] * old_size + [False] * neurons_added
-                    hook = FreezeNeuronsHook(previously_active_weights, active_weights, bias=False)
+                    previously_frozen_nodes = current_frozen_nodes
 
-                    hook = param.register_hook(hook)
-                    hooks.append(hook)
+                elif "bias" in param_name:
+                    is_frozen_mask[current_frozen_nodes] = True
 
-                    previously_active_weights = active_weights
+                hook = param.register_hook(FreezeWeightsHook(is_frozen_mask))
+                hooks.append(hook)
 
         # Train until validation loss reaches a maximum
         max_model = self.model
@@ -489,7 +488,7 @@ class SelectiveRetraining:
                 continue
 
             else:
-                mask = torch.zeros([param.shape[0], param.shape[1]], dtype=torch.bool)
+                mask = torch.zeros(param.shape, dtype=torch.bool)
 
                 for x in range(param.shape[0]):  # Rows is size of last layer (first row ever is output size)
                     for y in range(param.shape[1]):  # Columns is size of current layer (last column ever is input size)
