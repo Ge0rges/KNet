@@ -105,16 +105,12 @@ def error_function(model, batch_loader, tasks):
 
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device)
     confusion_matrix = confusion_matrix.to(torch.device("cpu"))
-    # print(np.round(confusion_matrix.numpy()))
+    print(np.round(confusion_matrix.numpy()))
 
-    class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
+    num_samples = sum(confusion_matrix.sum(1))
+    correctly_classified = sum(confusion_matrix.diag())
 
-    score = 0
-    for i in range(class_acc.shape[0]):
-        score += class_acc[i]
-    score /= class_acc.shape[0]
-
-    return score
+    return correctly_classified / num_samples
 
 
 if __name__ == "__main__":
