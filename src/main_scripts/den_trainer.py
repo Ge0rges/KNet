@@ -394,6 +394,7 @@ class DENTrainer:
 
         self.model = max_model  # Discard the last two train epochs
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
+
         # Remove hooks
         for hook in hooks:
             hook.remove()

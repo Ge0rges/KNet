@@ -122,6 +122,6 @@ class L1L2Penalty:
         for name, param in model.named_parameters():
             module = name[0: name.index('.')]
             if 'weight' in name and module in modules:
-                l1_reg = l2_reg + torch.norm(param, 2)
+                l2_reg = l2_reg + torch.norm(param, 2)
 
         return torch.mul(self.l2_coeff, l2_reg)
