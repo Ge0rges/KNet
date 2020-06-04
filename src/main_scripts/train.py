@@ -37,6 +37,9 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
 
         action_output = model(inputs)
 
+        # action_output = action_output[:, tasks]
+        # action_target = action_target[:, tasks]
+
         action_output = action_output[:, tasks+seen_tasks]
         action_target = action_target[:, tasks+seen_tasks]
 
@@ -122,6 +125,6 @@ class L1L2Penalty:
         for name, param in model.named_parameters():
             module = name[0: name.index('.')]
             if 'weight' in name and module in modules:
-                l1_reg = l2_reg + torch.norm(param, 2)
+                l2_reg = l2_reg + torch.norm(param, 2)
 
         return torch.mul(self.l2_coeff, l2_reg)

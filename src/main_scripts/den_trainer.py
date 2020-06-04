@@ -160,13 +160,13 @@ class DENTrainer:
         print(err)
 
         # If loss is still above a certain threshold, add capacity.
-        if loss is not None and loss > self.loss_threshold:
-            old_sizes, new_sizes = self.dynamically_expand()
-            t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
-            print(err)
-
-            # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
-            loss = loss if t_loss is None else t_loss
+        # if loss is not None and loss > self.loss_threshold:
+        #     old_sizes, new_sizes = self.dynamically_expand()
+        #     t_loss, err = self.train_new_neurons(old_sizes, new_sizes)
+        #     print(err)
+        #
+        #     # If old_sizes == new_sizes, train_new_neurons has nothing to train => None loss.
+        #     loss = loss if t_loss is None else t_loss
 
         return loss, err
 
@@ -194,6 +194,7 @@ class DENTrainer:
 
             # First get all biases.
             for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
+
                 if "bias" in new_param_name:
                     new_biases.append(new_param)
                     old_biases.append(old_param)
@@ -201,6 +202,7 @@ class DENTrainer:
             # Go through per node/weights
             biases_index = 0
             added_last_layer = 0  # Needed here, to make last layer fixed size.
+            value_split = {}  # keeping track for last layer
 
             # For each layer
             for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
@@ -211,6 +213,8 @@ class DENTrainer:
                 # Need input size
                 if len(new_sizes[dict_key]) == 0:
                     new_sizes[dict_key].append(new_param.shape[1])
+
+                value_split = {}  # keeping track for last layer
 
                 new_layer_weights = []
                 new_layer_biases = []
@@ -255,20 +259,30 @@ class DENTrainer:
                         split_old_weights = copy.copy(old_weights)
                         for i in prev_indices_split:
                             split_old_weights.append(old_weights[i])
+                            if j in self.__current_tasks:
+                                if j not in value_split.keys():
+                                    value_split[j] = [i]
+                                else:
+                                    value_split[j].append(i)
                             old_weights.append(0)
 
                         new_layer_weights.append(old_weights)
                         new_layer_biases.append(old_bias)
 
-                        weights_split.append(old_weights)
+                        weights_split.append(split_old_weights)
                         biases_split.append(old_bias)
                         indices_split.append(j)
                     else:
                         # One neuron not split
                         new_layer_size += 1
                         new_weights = new_weights.tolist()
-                        for _ in prev_indices_split:
+                        for i in prev_indices_split:
                             new_weights.append(0)
+                            if j in self.__current_tasks:
+                                if j not in value_split.keys():
+                                    value_split[j] = [i]
+                                else:
+                                    value_split[j].append(i)
                         new_layer_weights.append(new_weights)
                         new_layer_biases.append(new_bias)
 
@@ -300,6 +314,11 @@ class DENTrainer:
                 del weights[dict_key][-1][-added_last_layer:]
                 del biases[dict_key][-1][-added_last_layer:]
                 new_sizes[dict_key][-1] -= added_last_layer
+            # making sure the neurons for the current task in the last layer are incorporating inputs from the new
+            # neurons in the previous layers
+            for task in self.__current_tasks:
+                for i in range(1, len(value_split[task]) + 1):
+                    weights[dict_key][-1][task][-i] = weights[dict_key][-1][task][value_split[task][-i]]
             count = 1
             prev_indices_split = []
 
@@ -406,6 +425,7 @@ class DENTrainer:
 
         # Initial train
         for _ in range(2*self.__epochs_to_train):
+            print(get_modules(self.model)["encoder"])
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
