@@ -122,8 +122,8 @@ class DENTrainer:
 
         return loss, err
 
-    def __train_one_epoch(self) -> (float, float):
-        seen_tasks = list(range(self.__current_tasks[-1])) if self.__sequential else []
+    def __train_one_epoch(self, use_seen_task: bool = True) -> (float, float):
+        seen_tasks = list(range(self.__current_tasks[-1])) if self.__sequential and use_seen_task else []
 
         loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device,
                      self.__current_tasks, seen_tasks)
@@ -220,7 +220,11 @@ class DENTrainer:
                 weights_split = []
                 biases_split = []
                 indices_split = []
-
+                max_drift = 0
+                max_drift_weights = []
+                max_drift_bias = None
+                max_index = None
+                has_split = False
                 # For each node's weights
                 for j, new_weights in enumerate(new_param.detach()):
                     old_bias = old_biases[biases_index].detach()[j]
@@ -231,17 +235,27 @@ class DENTrainer:
                     # Check drift
                     diff = old_weights - new_weights
                     drift = diff.norm(2)
+
+                    if drift >= max_drift:
+                        max_drift_weights = old_weights.tolist()
+                        max_drift = drift
+                        max_drift_bias = old_bias
+                        max_index = j
+
                     if count == 0:
                         drifts.append(drift.to(torch.device("cpu")).numpy())
 
                     if drift > self.drift_threshold:
+                        has_split = True
                         # Split 1 neuron into 2
                         new_layer_size += 2
                         total_neurons_added += 1
                         added_last_layer += 1
                         old_weights = old_weights.tolist()
+                        split_old_weights = copy.copy(old_weights)
                         for i in prev_indices_split:
-                            old_weights.append(old_weights[i])
+                            split_old_weights.append(old_weights[i])
+                            old_weights.append(0)
 
                         new_layer_weights.append(old_weights)
                         new_layer_biases.append(old_bias)
@@ -253,10 +267,21 @@ class DENTrainer:
                         # One neuron not split
                         new_layer_size += 1
                         new_weights = new_weights.tolist()
-                        for i in prev_indices_split:
-                            new_weights.append(new_weights[i])
+                        for _ in prev_indices_split:
+                            new_weights.append(0)
                         new_layer_weights.append(new_weights)
                         new_layer_biases.append(new_bias)
+
+                # always split at least one
+                if not has_split:
+                    new_layer_size += 1
+                    total_neurons_added += 1
+                    added_last_layer += 1
+                    for i in prev_indices_split:
+                        max_drift_weights.append(max_drift_weights[i])
+                    weights_split.append(max_drift_weights)
+                    biases_split.append(max_drift_bias)
+                    indices_split.append(max_index)
 
                 prev_indices_split = indices_split
                 # add split weights to the new_layer_weights and biases
@@ -329,6 +354,8 @@ class DENTrainer:
             return (None, None)
 
         print("Training new neurons...")
+
+        self.__train_last_layer()
 
         # Generate hooks for each layer
         hooks = []
