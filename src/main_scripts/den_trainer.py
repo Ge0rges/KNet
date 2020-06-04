@@ -293,6 +293,8 @@ class DENTrainer:
                     added_last_layer += 1
                     for i in prev_indices_split:
                         max_drift_weights.append(max_drift_weights[i])
+                        if max_index in self.__current_tasks:
+                            value_split[max_index] = [i]
                     weights_split.append(max_drift_weights)
                     biases_split.append(max_drift_bias)
                     indices_split.append(max_index)
@@ -316,9 +318,10 @@ class DENTrainer:
                 new_sizes[dict_key][-1] -= added_last_layer
             # making sure the neurons for the current task in the last layer are incorporating inputs from the new
             # neurons in the previous layers
-            for task in self.__current_tasks:
-                for i in range(1, len(value_split[task]) + 1):
-                    weights[dict_key][-1][task][-i] = weights[dict_key][-1][task][value_split[task][-i]]
+            if len(value_split.keys()) != 0:
+                for task in self.__current_tasks:
+                    for i in range(1, len(value_split[task]) + 1):
+                        weights[dict_key][-1][task][-i] = weights[dict_key][-1][task][value_split[task][-i]]
             count = 1
             prev_indices_split = []
 
