@@ -28,17 +28,18 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
         inputs = inputs.to(device)
         action_target = action_target.to(device)
 
-        # compute output
-        # model.phase = "GENERATE"
-        # generate_output = model(inputs)
-        # generate_targets = inputs according to Lucas
+        # generate_targets = inputs
 
+        # model.phase = "BOTH"
         model.phase = "ACTION"
-
-        action_output = model(inputs)
-
-        action_output = action_output[:, tasks]
+        # output = model(inputs)
+        #
+        # generate_output = output[:, :inputs.size()[1]]
+        #
+        # action_output = output[:, inputs.size()[1]:][:, tasks]
         action_target = action_target[:, tasks]
+        action_output = model(inputs)
+        action_output = action_output[:, tasks]
         #
         # action_output = action_output[:, tasks+seen_tasks]
         # action_target = action_target[:, tasks+seen_tasks]
@@ -57,8 +58,9 @@ def train(batch_loader: DataLoader, model: torch.nn.Module, criterion, optimizer
         penalty_val = penalty(model, device) if penalty else 0
 
         # generate_loss = encoder_loss(generate_output, generate_targets) + penalty_val
-        action_loss = criterion(action_output, action_target) + penalty_val
-        total_loss = action_loss  # + generate_loss  # TODO: add back gen in phases
+        action_loss = criterion(action_output, action_target)
+        # generate_loss = criterion(generate_output, generate_targets)
+        total_loss = action_loss + penalty_val  # + generate_loss
 
         # Record loss
         losses.update(total_loss.item(), inputs.size(0))

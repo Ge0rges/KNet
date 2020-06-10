@@ -96,7 +96,7 @@ class DENTrainer:
 
         # Do DEN. Special training regime.
         else:
-            self.__train_last_layer()
+            # self.__train_last_layer()
 
             # Make a copy for split
             model_copy = copy.deepcopy(self.model).to(self.device)
@@ -327,7 +327,7 @@ class DENTrainer:
 
         # Be efficient
         old_sizes = self.model.sizes
-        print(new_sizes)
+        print(old_sizes)
         if total_neurons_added > 0:
             self.model = ActionEncoder(new_sizes, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
@@ -377,7 +377,7 @@ class DENTrainer:
 
         print("Training new neurons...")
 
-        self.__train_last_layer()
+        # self.__train_last_layer()
 
         # Generate hooks for each layer
         hooks = []
