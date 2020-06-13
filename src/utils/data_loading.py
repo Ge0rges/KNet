@@ -56,6 +56,46 @@ def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
         return loader
 
 
+def cifar10_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
+    def one_hot_cifar(targets):
+        targets_onehot = torch.zeros(10)
+        targets_onehot[targets] = 1
+        return targets_onehot
+
+    dataset = datasets.CIFAR10
+
+    if dims == 3:
+        transform_all = transforms.Compose(
+            [transforms.ToTensor(),
+             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    else:
+        transform_all = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            transforms.Lambda(lambda a: a.view(-1))
+        ])
+
+    is_train = (True if type == DatasetType.train else False)
+
+    root = os.path.join(os.path.dirname(__file__), "../../data/")
+    assert os.path.isdir(root)
+
+    lock = os.path.join(os.path.dirname(__file__), "../../data/CIFAR10.lock")
+    with FileLock(lock):
+        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_cifar)
+
+        if is_train:
+            sampler = RandomSampler(dataset)
+
+        else:
+            index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
+            indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
+            sampler = SubsetRandomSampler(indices)
+        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+        return loader
+
+
 ##### BANANA_CAR
 def banana_car_loader(dataset_type, size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
 
@@ -122,8 +162,10 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
 
 def equations_loader(batch_size=256, num_workers=0, pin_memory=False):
     eqs = [
-        lambda inputs: 1.0 if np.sum(inputs) < (len(inputs) * 0.5) else 0.0,
-        lambda inputs: 1.0 if (len(inputs) * 0.75) > np.sum(inputs) > (len(inputs) * 0.5) else 0.0
+        lambda inputs: 1.0 if np.sum(inputs) < (len(inputs) * 0.25) else 0.0,
+        lambda inputs: 1.0 if (len(inputs) * 0.5) > np.sum(inputs) > (len(inputs) * 0.25) else 0.0,
+        lambda inputs: 1.0 if (len(inputs) * 0.75) > np.sum(inputs) > (len(inputs) * 0.5) else 0.0,
+        lambda inputs: 1.0 if np.sum(inputs) > (len(inputs) * 0.75) else 0.0
     ]
 
     inputs = np.random.rand(10000, 10).astype('f')
