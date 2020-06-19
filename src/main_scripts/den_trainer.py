@@ -5,7 +5,6 @@ import torch.optim as optim
 import numpy as np
 
 from torch.utils.data import DataLoader
-from src.models import ActionEncoder
 from src.main_scripts.train import train
 from src.utils.misc import get_modules, FreezeWeightsHook
 
@@ -15,8 +14,8 @@ class DENTrainer:
     Implements DEN training.
     """
 
-    def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader),
-                 sizes: dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
+    def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader), model_fn,
+                 sizes:dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
                  device: torch.device, err_func: callable, number_of_tasks: int, drift_threshold: float,
                  err_stop_threshold: float = None) -> None:
 
@@ -39,7 +38,8 @@ class DENTrainer:
         self.loss_threshold = 0.2  # loss above this do expand
 
         self.number_of_tasks = number_of_tasks  # experiment specific
-        self.model = ActionEncoder(sizes=sizes).to(device)
+        self.model_fn = model_fn
+        self.model = self.model_fn(sizes=sizes).to(device)
         self.learning_rate = learning_rate
         self.momentum = momentum
 
@@ -124,7 +124,7 @@ class DENTrainer:
 
     def __train_one_epoch(self, use_seen_task: bool = True) -> (float, float):
         seen_tasks = list(range(self.__current_tasks[-1])) if self.__sequential and use_seen_task else []
-
+        print(self.model.conv2.weight[0][0])
         loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device,
                      self.__current_tasks, seen_tasks)
 
@@ -329,7 +329,7 @@ class DENTrainer:
         old_sizes = self.model.sizes
         print(old_sizes)
         if total_neurons_added > 0:
-            self.model = ActionEncoder(new_sizes, oldWeights=weights, oldBiases=biases)
+            self.model = self.model_fn(new_sizes, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
             self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
         print(self.model.sizes)
@@ -362,7 +362,7 @@ class DENTrainer:
             sizes[dict_key][-1] -= self.expand_by_k
 
         old_sizes = self.model.sizes
-        self.model = ActionEncoder(sizes, oldWeights=weights, oldBiases=biases)
+        self.model = self.model_fn(sizes, oldWeights=weights, oldBiases=biases)
         self.model = self.model.to(self.device)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
@@ -384,6 +384,7 @@ class DENTrainer:
         modules = get_modules(self.model)
 
         for module_name, parameters in modules.items():
+            print(module_name)
             previously_frozen_nodes = [False] * new_sizes[module_name][0]
 
             for param_name, param in parameters:
@@ -479,11 +480,11 @@ class DENTrainer:
     def load_model(self, filepath) -> bool:
         assert os.path.isdir(filepath)
 
-        self.model = ActionEncoder(self.model.sizes, self.pruning_threshold)
+        self.model = self.model_fn(self.model.sizes, self.pruning_threshold)
         self.model.load_state_dict(torch.load(filepath))
         self.model.to(self.device)
 
-        return isinstance(self.model, ActionEncoder)
+        return isinstance(self.model, self.model_fn)
 
     def save_model(self, model_name: str, dir_path: str = "../../saved_models") -> str:
         filepath = os.path.join(os.path.dirname(__file__), dir_path)

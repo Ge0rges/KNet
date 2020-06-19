@@ -23,14 +23,14 @@ def plot_tensor(tensor, img_size, mode=None):
 
 def get_modules(model: torch.nn.Module) -> dict:
     modules = {}
-
+    keys_to_use = model.get_used_keys()
     for name, param in model.named_parameters():
         module = name[0: name.index('.')]
+        if module in keys_to_use:
+            if module not in modules.keys():
+                modules[module] = []
 
-        if module not in modules.keys():
-            modules[module] = []
-
-        modules[module].append((name, param))
+            modules[module].append((name, param))
 
     return modules
 

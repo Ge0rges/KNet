@@ -24,9 +24,9 @@ num_workers = 4
 
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
-number_of_tasks = 2  # Dataset specific, list of classification classes
-penalty = L1L2Penalty(l1_coeff=0.0001, l2_coeff=0.0001)  # Penalty for all
-drift_threshold = 0.02  # Drift threshold for split in DEN
+number_of_tasks = 4  # Dataset specific, list of classification classes
+penalty = L1L2Penalty(l1_coeff=0.0001, l2_coeff=0.000001)  # Penalty for all
+drift_threshold = 100  # Drift threshold for split in DEN
 batch_size = 64
 
 data_loaders = (equations_loader(batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
@@ -71,8 +71,8 @@ def train_model():
     momentum = 0.9
     expand_by_k = 10
     err_stop_threshold = 0.99
-    sizes = {"encoder": [10, 5, 5],
-             "action": [5, 2, 2]}
+    sizes = {"encoder": [10, 5, 5, 5],
+             "action": [5, 2, 4]}
 
     trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold, err_stop_threshold)
@@ -105,7 +105,8 @@ def error_function(model, batch_loader, tasks):
 
     confusion_matrix = build_confusion_matrix(model, batch_loader, number_of_tasks, tasks, device)
     confusion_matrix = confusion_matrix.to(torch.device("cpu"))
-    print(np.round(confusion_matrix.numpy()))
+    np.set_printoptions(suppress=True)
+    # print(np.round(confusion_matrix.numpy()))
 
     num_samples = sum(confusion_matrix.sum(1))
     correctly_classified = sum(confusion_matrix.diag())

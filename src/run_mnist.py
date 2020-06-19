@@ -16,7 +16,7 @@ from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
 from src.utils.data_loading import mnist_loader, DatasetType
-
+from src.models import FFConv, ActionEncoder
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
@@ -26,12 +26,13 @@ num_workers = 4
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=1e-6)  # Penalty for all
-drift_threshold = 0.2  # Drift threshold for split in DEN
-batch_size = 64
+drift_threshold = 0.1  # Drift threshold for split in DEN
+batch_size = 256
+dims = 3  # 3 for ffconv, 1 for ActionEncoder
 
-data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
-                mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory),
-                mnist_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory))
+data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.
@@ -69,13 +70,15 @@ def train_model():
     epochs = 20
     learning_rate = 0.01
     momentum = 0.9
-    expand_by_k = 10
+    expand_by_k = 5
     err_stop_threshold = 0.99
     sizes = {"encoder": [28 * 28, 50, 50, 10],
+    # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
              "action": [10, 10]}
+    sizes = {"classifier": [28*28, 30, 20, 10]}
 
-    trainer = DENTrainer(data_loaders, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
-                         error_function, number_of_tasks, drift_threshold, err_stop_threshold)
+    trainer = DENTrainer(data_loaders, FFConv, sizes, learning_rate, momentum, criterion, penalty, expand_by_k,
+                         device, error_function, number_of_tasks, drift_threshold, err_stop_threshold)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
     loss, err = trainer.test_model(list(range(number_of_tasks)), False)[0]
