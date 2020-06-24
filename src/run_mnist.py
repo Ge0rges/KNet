@@ -26,9 +26,9 @@ num_workers = 4
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=1e-6)  # Penalty for all
-drift_threshold = 0.1  # Drift threshold for split in DEN
+drift_threshold = 0.2  # Drift threshold for split in DEN
 batch_size = 256
-dims = 3  # 3 for ffconv, 1 for ActionEncoder
+dims = 1  # 3 for ffconv, 1 for ActionEncoder
 
 data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
                 mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
@@ -75,9 +75,9 @@ def train_model():
     sizes = {"encoder": [28 * 28, 50, 50, 10],
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
              "action": [10, 10]}
-    sizes = {"classifier": [28*28, 30, 20, 10]}
+    # sizes = {"classifier": [28*28, 30, 20, 10]}
 
-    trainer = DENTrainer(data_loaders, FFConv, sizes, learning_rate, momentum, criterion, penalty, expand_by_k,
+    trainer = DENTrainer(data_loaders, ActionEncoder, sizes, learning_rate, momentum, criterion, penalty, expand_by_k,
                          device, error_function, number_of_tasks, drift_threshold, err_stop_threshold)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)

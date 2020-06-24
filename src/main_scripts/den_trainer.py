@@ -124,7 +124,6 @@ class DENTrainer:
 
     def __train_one_epoch(self, use_seen_task: bool = True) -> (float, float):
         seen_tasks = list(range(self.__current_tasks[-1])) if self.__sequential and use_seen_task else []
-        print(self.model.conv2.weight[0][0])
         loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device,
                      self.__current_tasks, seen_tasks)
 

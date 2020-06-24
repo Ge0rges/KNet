@@ -170,7 +170,7 @@ class ActionEncoder(nn.Module):
 
     def get_used_keys(self):
         if self.ff:
-            return ["encoder"]
+            return ["encoder", "action", "decoder"]
         else:
             if self.phase == "ACTION":
                 return ["encoder", "action"]
