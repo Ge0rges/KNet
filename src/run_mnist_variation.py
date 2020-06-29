@@ -15,12 +15,12 @@ from src.main_scripts.den_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import mnist_loader, DatasetType
+from src.utils.data_loading import mnist_variation_loader, DatasetType
 from src.models import FFConv, ActionEncoder
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
-num_workers = 12
+num_workers = 6
 
 # Global experiment params
 criterion = torch.nn.BCELoss()  # Change to use different loss function
@@ -30,9 +30,9 @@ drift_threshold = 0.1  # Drift threshold for split in DEN
 batch_size = 256
 dims = 1  # 3 for ffconv, 1 for ActionEncoder
 
-data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
-                mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
-                mnist_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
+data_loaders = (mnist_variation_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_variation_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_variation_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.

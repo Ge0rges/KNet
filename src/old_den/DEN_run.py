@@ -27,15 +27,18 @@ trainX = mnist.train.images
 valX = mnist.validation.images
 testX = mnist.test.images
 
-task_permutation = []
-for task in range(10):
-    task_permutation.append(np.random.permutation(784))
+# task_permutation = []
+# for task in range(10):
+#     task_permutation.append(np.random.permutation(784))
 
 trainXs, valXs, testXs = [], [], []
 for task in range(10):
-    trainXs.append(trainX[:, task_permutation[task]])
-    valXs.append(valX[:, task_permutation[task]])
-    testXs.append(testX[:, task_permutation[task]])
+    trainXs.append(trainX)
+    valXs.append(valX)
+    # trainXs.append(trainX[:, task_permutation[task]])
+    # valXs.append(valX[:, task_permutation[task]])
+    # testXs.append(testX[:, task_permutation[task]])
+    testXs.append(testX)
 
 model = DEN.DEN(FLAGS)
 params = dict()
@@ -64,5 +67,23 @@ for t in range(FLAGS.n_classes):
         temp_perfs.append(temp_perf)
     avg_perf.append( sum(temp_perfs) / float(t+1) )
     print("   [*] avg_perf: %.4f"%avg_perf[t])
+    print("REGULAR CLASSIFICATION")
+    preds = []
+    for k in range(t+1):
+        temp_preds = model.prediction(k+1, testXs[k])
+        preds.append(temp_preds)
+        print(np.shape(preds))
+    predictions = []
+    for l in range(t+1):
+        for m in range(np.shape(preds[l])[0]):
+            if l == 0:
+                predictions.append(preds[l][m])
+            else:
+                if max(predictions[m]) < max(preds[l][m]):
+                    predictions[m] = preds[l][m]
+    print(np.shape(predictions))
+    predictions = np.array(predictions)
+    performance = model.get_performance(predictions, mnist.test.labels)
+    print(performance)
     model.destroy_graph()
     model.sess.close()

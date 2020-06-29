@@ -625,6 +625,7 @@ class DEN(object):
         self.sess.run(tf.global_variables_initializer())
 
         test_preds = self.sess.run(self.yhat, feed_dict={self.X: X})
+        print(np.shape(test_preds))
         test_perf = self.get_performance(test_preds, Y)
 
         if task_name == None:
@@ -633,7 +634,11 @@ class DEN(object):
         print(" [*] Evaluation, Task:%s, test_acc: %.4f" % (str(task_name), test_perf))
         return test_perf
 
-    def prediction(self, X):
+    def prediction(self, task_id, X):
+        self.X = tf.placeholder(tf.float32, [None, self.dims[0]])
+        self.build_model(task_id, prediction=True)
+        self.sess.run(tf.global_variables_initializer())
+
         preds = self.sess.run(self.yhat, feed_dict={self.X: X})
         return preds
 

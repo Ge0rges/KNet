@@ -15,7 +15,7 @@ class DENTrainer:
     """
 
     def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader), model_fn,
-                 sizes:dict, learning_rate: float, momentum: float, criterion, penalty, expand_by_k: int,
+                 sizes:dict, learning_rate: float, momentum: float, criterion, penalty, iter_to_change: int,
                  device: torch.device, err_func: callable, number_of_tasks: int, drift_threshold: float,
                  err_stop_threshold: float = None) -> None:
 
@@ -28,7 +28,8 @@ class DENTrainer:
         self.penalty = penalty
         self.criterion = criterion
         self.device = device
-        self.expand_by_k = expand_by_k
+        self.expand_by_k = 1
+        self.iter_to_change = iter_to_change
         self.error_function = err_func
         self.err_stop_threshold = err_stop_threshold if err_stop_threshold else float("inf")
 
@@ -116,6 +117,7 @@ class DENTrainer:
     def __train_tasks_for_epochs(self):
         loss, err = None, None
         for i in range(self.__epochs_to_train):
+            print("### EPOCH: {} / {} ###".format(i + 1, self.__epochs_to_train))
             loss, err = self.__train_one_epoch()
             if err is not None and err >= self.err_stop_threshold:
                 break
@@ -427,7 +429,8 @@ class DENTrainer:
         print("valid_err", max_validation_err)
 
         # Initial train
-        for _ in range(self.__epochs_to_train):
+        for i in range(self.__epochs_to_train):
+            print("### EPOCH: {} / {} ###".format(i + 1, self.__epochs_to_train))
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
@@ -437,7 +440,8 @@ class DENTrainer:
             max_validation_err = validation_error
             max_validation_loss = validation_loss
 
-            for _ in range(self.__epochs_to_train):
+            for i in range(self.iter_to_change):
+                print("### EPOCH: {} / {} ###".format(i + 1, self.iter_to_change))
                 self.__train_one_epoch()
             validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
