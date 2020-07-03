@@ -16,8 +16,8 @@ class DENTrainer:
 
     def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader), model_fn,
                  sizes:dict, learning_rate: float, momentum: float, criterion, penalty, iter_to_change: int,
-                 device: torch.device, err_func: callable, number_of_tasks: int, drift_threshold: float,
-                 err_stop_threshold: float = None) -> None:
+                 device: torch.device, err_func: callable, number_of_tasks: int, drift_thresholds: dict,
+                 err_stop_threshold: float = None, drift_deltas: dict = None) -> None:
 
         # Get the loaders by task
         self.train_loader = data_loaders[0]
@@ -34,7 +34,8 @@ class DENTrainer:
         self.err_stop_threshold = err_stop_threshold if err_stop_threshold else float("inf")
 
         # DEN Thresholds
-        self.drift_threshold = drift_threshold
+        self.drift_thresholds = drift_thresholds
+        self.drift_deltas = drift_deltas
         self.zero_threshold = 1e-4  # weights below this treat as 0 in selective retraining
         self.loss_threshold = 0.2  # loss above this do expand
 
@@ -69,6 +70,9 @@ class DENTrainer:
             # No DEN on t=0.
             loss, err = self.train_tasks(tasks, epochs, (with_den and i > 0))
             errs.append(err)
+            for (dict_key, drift_thresholds), (_, drift_deltas) in zip(self.drift_thresholds.items(), self.drift_deltas.items()):
+                for i in range(len(drift_thresholds)):
+                    self.drift_thresholds[dict_key][i] += self.drift_deltas[dict_key][i]
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
@@ -115,12 +119,38 @@ class DENTrainer:
         return loss, err
 
     def __train_tasks_for_epochs(self):
+        # loss, err = None, None
+        # for i in range(self.__epochs_to_train):
+        #     print("### EPOCH: {} / {} ###".format(i + 1, self.__epochs_to_train))
+        #     loss, err = self.__train_one_epoch()
+        #     if err is not None and err >= self.err_stop_threshold:
+        #         break
+
+        # Train until validation loss reaches a maximum
         loss, err = None, None
+        max_model = self.model
+        max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
+        print("valid_err", max_validation_err)
+
+        # Initial train
         for i in range(self.__epochs_to_train):
             print("### EPOCH: {} / {} ###".format(i + 1, self.__epochs_to_train))
             loss, err = self.__train_one_epoch()
-            if err is not None and err >= self.err_stop_threshold:
-                break
+        validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
+
+        # Train till validation error stops growing
+        while validation_error > max_validation_err and validation_loss < max_validation_loss:
+            max_model = self.model
+            max_validation_err = validation_error
+            max_validation_loss = validation_loss
+
+            for i in range(self.iter_to_change):
+                print("### EPOCH: {} / {} ###".format(i + 1, self.iter_to_change))
+                loss, err = self.__train_one_epoch()
+            validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
+
+        self.model = max_model  # Discard the last two train epochs
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
         return loss, err
 
@@ -185,7 +215,7 @@ class DENTrainer:
         prev_indices_split = []
         count = 0
         # For each module (encoder, decoder, action...)
-        for (_, old_module), (dict_key, new_module), in zip(old_modules.items(), new_modules.items()):
+        for (_, old_module), (dict_key, new_module), (_, drift_threshold) in zip(old_modules.items(), new_modules.items(), self.drift_thresholds.items()):
             # Initialize the dicts
             new_sizes[dict_key], weights[dict_key], biases[dict_key] = [], [], []
 
@@ -204,7 +234,7 @@ class DENTrainer:
             biases_index = 0
             added_last_layer = 0  # Needed here, to make last layer fixed size.
             value_split = {}  # keeping track for last layer
-
+            m = 0
             # For each layer
             for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
                 # Skip biases params
@@ -250,7 +280,7 @@ class DENTrainer:
                     if count == 0:
                         drifts.append(drift.to(torch.device("cpu")).numpy())
 
-                    if drift > self.drift_threshold:
+                    if drift > drift_threshold[m]:
                         has_split = True
                         # Split 1 neuron into 2
                         new_layer_size += 2
@@ -299,6 +329,8 @@ class DENTrainer:
                     weights_split.append(max_drift_weights)
                     biases_split.append(max_drift_bias)
                     indices_split.append(max_index)
+
+                m += 1
 
                 prev_indices_split = indices_split
                 # add split weights to the new_layer_weights and biases

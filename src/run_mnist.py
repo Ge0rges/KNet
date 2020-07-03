@@ -16,7 +16,7 @@ from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
 from src.utils.data_loading import mnist_loader, DatasetType
-from src.models import FFConv, ActionEncoder
+from src.models import FFConv, ActionEncoder, FF
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
@@ -26,7 +26,7 @@ num_workers = 12
 criterion = torch.nn.BCELoss()  # Change to use different loss function
 number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=1e-6)  # Penalty for all
-drift_threshold = 0.1  # Drift threshold for split in DEN
+
 batch_size = 256
 dims = 1  # 3 for ffconv, 1 for ActionEncoder
 
@@ -54,9 +54,11 @@ def find_hyperparameters():
     hidden_action_layers = 1
     action_out = 10
     core_invariant_size = 405  # None is PCA
+    drift_thresholds = {0.05}  # Drift threshold for split in DEN
+    drift_deltas = [0.05]
 
     pbt_controller = OptimizerController(device, data_loaders, criterion, penalty, error_function, number_of_tasks,
-                                         drift_threshold, encoder_in, hidden_encoder_layers, hidden_action_layers,
+                                         drift_thresholds, encoder_in, hidden_encoder_layers, hidden_action_layers,
                                          action_out, core_invariant_size)
 
     return pbt_controller(4)  # Number of workers
@@ -67,19 +69,21 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 500
+    epochs = 1000
     learning_rate = 0.001
     momentum = 0.9
     expand_by_k = 5
-    iter_to_change = 100
+    iter_to_change = 200
     err_stop_threshold = 0.99
-    sizes = {"encoder": [28 * 28, 50, 50, 10],
+    # sizes = {"encoder": [28 * 28, 50, 50, 10],
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
-             "action": [10, 10]}
-    # sizes = {"classifier": [28*28, 30, 20, 10]}
+    #          "action": [10, 10]}
+    sizes = {"classifier": [28*28, 50, 50, 10]}
+    drift_thresholds = {"classifier": [10, 0.05, 0.1, 10]}  # Drift threshold for split in DEN
+    drift_deltas = {"classifier": [0, 0.05, 0.07, 0]}
 
-    trainer = DENTrainer(data_loaders, ActionEncoder, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
-                         device, error_function, number_of_tasks, drift_threshold, err_stop_threshold)
+    trainer = DENTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
+                         device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
     loss, err = trainer.test_model(list(range(number_of_tasks)), False)[0]
