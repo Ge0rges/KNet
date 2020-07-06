@@ -71,8 +71,8 @@ class DENTrainer:
             loss, err = self.train_tasks(tasks, epochs, (with_den and i > 0))
             errs.append(err)
             for (dict_key, drift_thresholds), (_, drift_deltas) in zip(self.drift_thresholds.items(), self.drift_deltas.items()):
-                for i in range(len(drift_thresholds)):
-                    self.drift_thresholds[dict_key][i] += self.drift_deltas[dict_key][i]
+                for j in range(len(drift_thresholds)):
+                    self.drift_thresholds[dict_key][j] += self.drift_deltas[dict_key][j]
 
             print("Task: [{}/{}] Ended with Err: {}".format(i + 1, self.number_of_tasks, err))
 
