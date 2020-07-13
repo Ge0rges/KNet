@@ -137,6 +137,7 @@ def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
             sampler = RandomSampler(dataset)
 
         else:
+            print(len(dataset))
             index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
             indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
             sampler = SubsetRandomSampler(indices)

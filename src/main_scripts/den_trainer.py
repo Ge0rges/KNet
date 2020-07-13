@@ -101,7 +101,7 @@ class DENTrainer:
 
         # Do DEN. Special training regime.
         else:
-            # self.__train_last_layer()
+            self.__train_last_layer()
 
             # Make a copy for split
             model_copy = copy.deepcopy(self.model).to(self.device)
@@ -114,8 +114,8 @@ class DENTrainer:
 
             loss = loss if den_loss is None else den_loss
 
-        # Return validation error
-        err = self.error_function(self.model, self.valid_loader, tasks)
+        # Return test error
+        err = self.error_function(self.model, self.test_loader, tasks)
         return loss, err
 
     def __train_tasks_for_epochs(self):
@@ -173,13 +173,13 @@ class DENTrainer:
             param.requires_grad = False
 
         # Train few epochs
-        t = self.__epochs_to_train
-        self.__epochs_to_train = 5
+        # t = self.__epochs_to_train
+        # self.__epochs_to_train = self.iter_to_change
 
         self.__train_tasks_for_epochs()
 
         # Restore number of epochs
-        self.__epochs_to_train = t
+        # self.__epochs_to_train = t
 
         for param in self.model.parameters():
             param.requires_grad = True
@@ -211,7 +211,8 @@ class DENTrainer:
         old_modules = get_modules(model_copy)
         new_modules = get_modules(self.model)
 
-        drifts = []
+        mean_drifts = {}
+        median_drifts = {}
         prev_indices_split = []
         count = 0
         # For each module (encoder, decoder, action...)
@@ -222,6 +223,8 @@ class DENTrainer:
             # Biases needed before going through weights
             old_biases = []
             new_biases = []
+            mean_drifts[dict_key] = []
+            median_drifts[dict_key] = []
 
             # First get all biases.
             for (_, old_param), (new_param_name, new_param) in zip(old_module, new_module):
@@ -241,6 +244,8 @@ class DENTrainer:
                 if "bias" in new_param_name:
                     continue
 
+                layer_drift = []
+                print(m, drift_threshold[m])
                 # Need input size
                 if len(new_sizes[dict_key]) == 0:
                     new_sizes[dict_key].append(new_param.shape[1])
@@ -278,7 +283,7 @@ class DENTrainer:
                         max_index = j
 
                     if count == 0:
-                        drifts.append(drift.to(torch.device("cpu")).numpy())
+                        layer_drift.append(drift.to(torch.device("cpu")).numpy())
 
                     if drift > drift_threshold[m]:
                         has_split = True
@@ -306,16 +311,20 @@ class DENTrainer:
                     else:
                         # One neuron not split
                         new_layer_size += 1
-                        new_weights = new_weights.tolist()
+                        # new_weights = new_weights.tolist()
+                        old_weights = old_weights.tolist()
                         for i in prev_indices_split:
-                            new_weights.append(0)
+                            # new_weights.append(0)
+                            old_weights.append(0)
                             if j in self.__current_tasks:
                                 if j not in value_split.keys():
                                     value_split[j] = [i]
                                 else:
                                     value_split[j].append(i)
-                        new_layer_weights.append(new_weights)
-                        new_layer_biases.append(new_bias)
+                        # new_layer_weights.append(new_weights)
+                        new_layer_weights.append(old_weights)
+                        # new_layer_biases.append(new_bias)
+                        new_layer_biases.append(old_bias)
 
                 # always split at least one
                 if not has_split:
@@ -331,6 +340,8 @@ class DENTrainer:
                     indices_split.append(max_index)
 
                 m += 1
+                mean_drifts[dict_key].append(np.mean(layer_drift))
+                median_drifts[dict_key].append(np.median(layer_drift))
 
                 prev_indices_split = indices_split
                 # add split weights to the new_layer_weights and biases
@@ -366,7 +377,8 @@ class DENTrainer:
             self.model = self.model.to(self.device)
             self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
         print(self.model.sizes)
-        print("median drift: {} \n mean drift: {}".format(np.median(drifts), np.mean(drifts)))
+        print("median drift: {} \n mean drift: {}".format(median_drifts, mean_drifts))
+        print("drift thresholds: {}".format(self.drift_thresholds))
         # print("after split", get_modules(self.model)["encoder"])
 
         return old_sizes, self.model.sizes
@@ -410,7 +422,7 @@ class DENTrainer:
 
         print("Training new neurons...")
 
-        # self.__train_last_layer()
+        self.__train_last_layer()
 
         # Generate hooks for each layer
         hooks = []

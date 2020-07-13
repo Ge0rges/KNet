@@ -26,6 +26,9 @@ mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 trainX = mnist.train.images
 valX = mnist.validation.images
 testX = mnist.test.images
+print(np.shape(testX))
+print(np.shape(valX))
+
 
 # task_permutation = []
 # for task in range(10):

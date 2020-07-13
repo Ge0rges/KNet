@@ -68,17 +68,17 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 4300
+    epochs = 3000
     learning_rate = 0.001
     momentum = 0.9
-    iter_to_change = 400
+    iter_to_change = 100
     err_stop_threshold = 0.99
     # sizes = {"encoder": [28 * 28, 100, 50, 25, 10],
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
              # "action": [10, 10]}
     sizes = {"classifier": [28*28, 312, 128, 10]}
-    drift_thresholds = {"classifier": [10, 0.05, 0.1, 10]}  # Drift threshold for split in DEN
-    drift_deltas = {"classifier": [0, 0.05, 0.07, 0]}
+    drift_thresholds = {"classifier": [0.05, 0.1, 10]}  # Drift threshold for split in DEN
+    drift_deltas = {"classifier": [0.05, 0.05, 10]}
 
     trainer = DENTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
                          device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
@@ -111,14 +111,14 @@ def error_function(model, batch_loader, tasks):
     confusion_matrix = confusion_matrix.to(torch.device("cpu"))
     print(confusion_matrix.numpy().astype(int))
 
-    class_acc = confusion_matrix.diag() / confusion_matrix.sum(1)
+    class_acc = sum(confusion_matrix.diag()) / sum(confusion_matrix.sum(1))
 
-    score = 0
-    for i in range(class_acc.shape[0]):
-        score += class_acc[i]
-    score /= class_acc.shape[0]
+    # score = 0
+    # for i in range(class_acc.shape[0]):
+    #     score += class_acc[i]
+    # score /= class_acc.shape[0]
 
-    return score
+    return class_acc
 
 
 if __name__ == "__main__":
