@@ -99,7 +99,7 @@ class L1L2Penalty:
 
     def __init__(self, l1_coeff, l2_coeff):
         self.l1_coeff = l1_coeff
-        self.l2_coeff = l2_coeff  # Used by DENTrainer to set SGD weight_decay.
+        self.l2_coeff = l2_coeff  # Used by PSSTrainer to set SGD weight_decay.
 
     def __call__(self, new_model, device):
         return self.l1(new_model, device) + self.l2(new_model, device)

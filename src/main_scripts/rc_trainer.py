@@ -3,19 +3,19 @@ import numpy as np
 
 from math import log
 from collections import Counter
-from src.main_scripts.pss_trainer import DENTrainer
+from src.main_scripts.pss_trainer import PSSTrainer
 from src.utils.misc import get_modules
 
 
 class ResourceConstrainedTrainer:
     """
     A training algorithm for neural networks that optimizes structure based on resources used.
-    Uses a DENTrainer as backend for most functions.
+    Uses a PSSTrainer as backend for most functions.
     """
-    def __init__(self, den_trainer: DENTrainer, bits_available: int) -> None:
+    def __init__(self, pss_trainer: PSSTrainer, bits_available: int) -> None:
         raise NotImplementedError
 
-        self._den_trainer = den_trainer
+        self._pss_trainer = pss_trainer
         self.max_entropy = self.calculate_max_entropy(bits_available)
 
     def calculate_max_entropy(self, bits_available: int) -> float:
@@ -40,7 +40,7 @@ class ResourceConstrainedTrainer:
         return total_entropy
 
     def get_model_weights(self) -> dict:
-        model = self._den_trainer.model
+        model = self._pss_trainer.model
         modules = get_modules(model)
         weights = {}
 
