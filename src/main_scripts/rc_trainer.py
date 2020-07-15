@@ -3,7 +3,7 @@ import numpy as np
 
 from math import log
 from collections import Counter
-from src.main_scripts.den_trainer import DENTrainer
+from src.main_scripts.pss_trainer import DENTrainer
 from src.utils.misc import get_modules
 
 

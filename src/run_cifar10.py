@@ -11,7 +11,7 @@ import torch
 import random
 import numpy as np
 
-from src.main_scripts.den_trainer import DENTrainer
+from src.main_scripts.pss_trainer import DENTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
