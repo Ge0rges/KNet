@@ -7,7 +7,7 @@ import torch
 import os
 
 from sklearn.decomposition import PCA
-from src.main_scripts.den_trainer import DENTrainer
+from src.main_scripts.pss_trainer import PSSTrainer
 from ray import tune
 from ray.tune.schedulers import PopulationBasedTraining
 from ray.tune.utils import validate_save_restore
@@ -24,7 +24,7 @@ class PytorchTrainable(tune.Trainable):
     def _setup(self, config):
         trainer_args = config.get("DENTrainerArgs")  # Type: list
 
-        self.trainer = DENTrainer(*trainer_args)
+        self.trainer = PSSTrainer(*trainer_args)
 
         self.trainer.optimizer = torch.optim.SGD(
             self.trainer.model.parameters(),

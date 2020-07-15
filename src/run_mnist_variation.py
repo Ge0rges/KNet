@@ -11,7 +11,7 @@ import torch
 import random
 import numpy as np
 
-from src.main_scripts.den_trainer import DENTrainer
+from src.main_scripts.pss_trainer import PSSTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
@@ -80,7 +80,7 @@ def train_model():
     drift_thresholds = {"classifier": [0.05, 0.1, 10]}  # Drift threshold for split in DEN
     drift_deltas = {"classifier": [0.05, 0.05, 10]}
 
-    trainer = DENTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
+    trainer = PSSTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
                          device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)

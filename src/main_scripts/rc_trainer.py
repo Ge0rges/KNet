@@ -3,16 +3,16 @@ import numpy as np
 
 from math import log
 from collections import Counter
-from src.main_scripts.den_trainer import DENTrainer
+from src.main_scripts.pss_trainer import PSSTrainer
 from src.utils.misc import get_modules
 
 
 class ResourceConstrainedTrainer:
     """
     A training algorithm for neural networks that optimizes structure based on resources used.
-    Uses a DENTrainer as backend for most functions.
+    Uses a PSSTrainer as backend for most functions.
     """
-    def __init__(self, den_trainer: DENTrainer, bits_available: int) -> None:
+    def __init__(self, den_trainer: PSSTrainer, bits_available: int) -> None:
         raise NotImplementedError
 
         self._den_trainer = den_trainer

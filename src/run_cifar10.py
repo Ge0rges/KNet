@@ -11,7 +11,7 @@ import torch
 import random
 import numpy as np
 
-from src.main_scripts.den_trainer import DENTrainer
+from src.main_scripts.pss_trainer import PSSTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
@@ -76,7 +76,7 @@ def train_model():
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
     #          "action": [10, 10]}
              }
-    trainer = DENTrainer(data_loaders, FFConv, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
+    trainer = PSSTrainer(data_loaders, FFConv, sizes, learning_rate, momentum, criterion, penalty, expand_by_k, device,
                          error_function, number_of_tasks, drift_threshold, err_stop_threshold)
 
     results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
