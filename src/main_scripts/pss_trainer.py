@@ -9,13 +9,13 @@ from src.main_scripts.train import train
 from src.utils.misc import get_modules, FreezeWeightsHook
 
 
-class DENTrainer:
+class PSSTrainer:
     """
-    Implements DEN training.
+    Implements PSS training.
     """
 
     def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader), model_fn,
-                 sizes:dict, learning_rate: float, momentum: float, criterion, penalty, iter_to_change: int,
+                 sizes: dict, learning_rate: float, momentum: float, criterion, penalty, iter_to_change: int,
                  device: torch.device, err_func: callable, number_of_tasks: int, drift_thresholds: dict,
                  err_stop_threshold: float = None, drift_deltas: dict = None) -> None:
 
@@ -33,7 +33,7 @@ class DENTrainer:
         self.error_function = err_func
         self.err_stop_threshold = err_stop_threshold if err_stop_threshold else float("inf")
 
-        # DEN Thresholds
+        # PSS Thresholds
         self.drift_thresholds = drift_thresholds
         self.drift_deltas = drift_deltas
         self.zero_threshold = 1e-4  # weights below this treat as 0 in selective retraining
@@ -53,7 +53,7 @@ class DENTrainer:
         self.__sequential = None
 
     # Train Functions
-    def train_all_tasks_sequentially(self, epochs: int, with_den: bool) -> [float]:
+    def train_all_tasks_sequentially(self, epochs: int, with_pss: bool) -> [float]:
         self.__sequential = True
         self.__epochs_to_train = epochs
 
@@ -67,8 +67,8 @@ class DENTrainer:
 
             tasks = [i]
 
-            # No DEN on t=0.
-            loss, err = self.train_tasks(tasks, epochs, (with_den and i > 0))
+            # No PSS on t=0.
+            loss, err = self.train_tasks(tasks, epochs, (with_pss and i > 0))
             errs.append(err)
             for (dict_key, drift_thresholds), (_, drift_deltas) in zip(self.drift_thresholds.items(), self.drift_deltas.items()):
                 for j in range(len(drift_thresholds)):
@@ -78,7 +78,7 @@ class DENTrainer:
 
         return errs
 
-    def train_tasks(self, tasks: [int], epochs: int, with_den: bool) -> (float, float):
+    def train_tasks(self, tasks: [int], epochs: int, with_pss: bool) -> (float, float):
         # API must be used correctly. Tasks are ints in range(self.number_of_tasks)
         for i in tasks:
             assert 0 <= i < self.number_of_tasks
@@ -86,7 +86,7 @@ class DENTrainer:
         # Sequential is used to pass seen_tasks to train
         if len(tasks) > 1:
             self.__sequential = False
-            print("WARNING: DENTrainer does not support simultaneous multi-task training yet. "
+            print("WARNING: PSSTrainer does not support simultaneous multi-task training yet. "
                   "Train function will not know what tasks have already been trained. ")
             raise NotImplementedError
 
@@ -94,12 +94,12 @@ class DENTrainer:
         self.__epochs_to_train = epochs
         self.__current_tasks = tasks
 
-        # No DEN
-        if not with_den:
+        # No PSS
+        if not with_pss:
             loss, err = self.__train_tasks_for_epochs()
             print(err)
 
-        # Do DEN. Special training regime.
+        # Do PSS. Special training regime.
         else:
             self.__train_last_layer()
 
@@ -109,10 +109,10 @@ class DENTrainer:
                 loss, err = self.__train_tasks_for_epochs()
                 print(err)
 
-            den_loss, err = self.__do_den(model_copy)
+            pss_loss, err = self.__do_pss(model_copy)
             print(err)
 
-            loss = loss if den_loss is None else den_loss
+            loss = loss if pss_loss is None else pss_loss
 
         # Return test error
         err = self.error_function(self.model, self.test_loader, tasks)
@@ -185,7 +185,7 @@ class DENTrainer:
         for param in self.model.parameters():
             param.requires_grad = True
 
-    def __do_den(self, model_copy: torch.nn.Module) -> (float, float):
+    def __do_pss(self, model_copy: torch.nn.Module) -> (float, float):
         # Desaturate saturated neurons
         old_sizes, new_sizes = self.split_saturated_neurons(model_copy)
         loss, err = self.train_new_neurons(old_sizes, new_sizes)
@@ -202,7 +202,7 @@ class DENTrainer:
 
         return loss, err
 
-    # DEN Functions
+    # PSS Functions
     def split_saturated_neurons(self, model_copy: torch.nn.Module) -> (dict, dict):
         print("Splitting...")
         total_neurons_added = 0
