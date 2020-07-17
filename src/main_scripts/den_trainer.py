@@ -127,6 +127,7 @@ class DENTrainer:
         #         break
 
         # Train until validation loss reaches a maximum
+        print("Main training phase")
         loss, err = None, None
         max_model = self.model
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
@@ -473,6 +474,7 @@ class DENTrainer:
         print("valid_err", max_validation_err)
 
         # Initial train
+        print("Initial Training")
         for i in range(self.__epochs_to_train):
             print("### EPOCH: {} / {} ###".format(i + 1, self.__epochs_to_train))
             self.__train_one_epoch()
