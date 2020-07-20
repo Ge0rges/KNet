@@ -157,6 +157,7 @@ class PSSTrainer:
 
     def __train_one_epoch(self, use_seen_task: bool = True) -> (float, float):
         seen_tasks = list(range(self.__current_tasks[-1])) if self.__sequential and use_seen_task else []
+        # seen_tasks = [self.__current_tasks[-1]]
         loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device,
                      self.__current_tasks, seen_tasks)
 
@@ -169,21 +170,70 @@ class PSSTrainer:
 
     def __train_last_layer(self):
         print("Training last layer only...")
-        params = list(self.model.parameters())
-        for param in params[:-2]:
-            param.requires_grad = False
+        # params = list(self.model.parameters())
+        # for param in params[:-2]:
+        #     param.requires_grad = False
+        weight_hooks = []
+        bias_hooks = []
+        modules = get_modules(self.model)
+        layer = None
+        for module_name, parameters in modules.items():
+            print(module_name)
+
+            for param_name, param in parameters:
+                split_param_name = param_name.split(".")  # Splits action.0.weights
+                param_index = int(split_param_name[1])
+
+                # Map every two indices to one
+                param_index -= param_index % 2
+                param_index /= 2
+                param_index = int(param_index)
+
+                size = self.model.sizes[module_name][param_index + 1]
+                # Freeze biases/weights
+                current_frozen_nodes = [True] * size
+
+                is_frozen_mask = torch.zeros(param.shape, dtype=torch.bool)
+
+                if "weight" in param_name:
+                    is_frozen_mask[current_frozen_nodes, :] = True
+                    hook = param.register_hook(FreezeWeightsHook(is_frozen_mask))
+                    weight_hooks.append(hook)
+                    layer = param
+                elif "bias" in param_name:
+                    is_frozen_mask[current_frozen_nodes] = True
+                    hook = param.register_hook(FreezeWeightsHook(is_frozen_mask))
+                    bias_hooks.append(hook)
+
+        weight_hooks[-1].remove()
+        bias_hooks[-1].remove()
+
+        current_frozen_nodes = [True] * np.shape(layer)[0]
+        current_frozen_nodes[self.__current_tasks[-1]] = False
+        is_frozen_mask = torch.zeros(layer.shape, dtype=torch.bool)
+        is_frozen_mask[current_frozen_nodes, :] = True
+
+        hook = layer.register_hook(FreezeWeightsHook(is_frozen_mask))
+        weight_hooks.append(hook)
 
         # Train few epochs
         # t = self.__epochs_to_train
         # self.__epochs_to_train = self.iter_to_change
-
+        # print(get_modules(self.model)["classifier"])
         self.__train_tasks_for_epochs()
+        # print(get_modules(self.model)["classifier"])
 
         # Restore number of epochs
         # self.__epochs_to_train = t
 
-        for param in self.model.parameters():
-            param.requires_grad = True
+        # for param in self.model.parameters():
+        #     param.requires_grad = True
+
+        # Remove hooks
+        for hook in weight_hooks:
+            hook.remove()
+        for hook in bias_hooks:
+            hook.remove()
 
     def __do_pss(self, model_copy: torch.nn.Module) -> (float, float):
         # Desaturate saturated neurons
@@ -422,7 +472,7 @@ class PSSTrainer:
             return (None, None)
 
         print("Training new neurons...")
-
+        print()
         self.__train_last_layer()
 
         # Generate hooks for each layer

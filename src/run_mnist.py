@@ -69,7 +69,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 100
+    epochs = 200
     learning_rate = 0.001
     momentum = 0.9
     expand_by_k = 5
@@ -79,13 +79,13 @@ def train_model():
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
     #          "action": [10, 10]}
     sizes = {"classifier": [28*28, 312, 128, 10]}
-    drift_thresholds = {"classifier": [0.45, 0.4, 10]}  # Drift threshold for split in DENz
+    drift_thresholds = {"classifier": [0.18, 0.48, 10]}  # Drift threshold for split in DENz
     drift_deltas = {"classifier": [0, 0, 10]}
 
     trainer = PSSTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
                          device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
 
-    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
+    results = trainer.train_all_tasks_sequentially(epochs, with_pss=True)
     loss, err = trainer.test_model(list(range(number_of_tasks)), False)[0]
 
     print("Net has final shape:" + str(trainer.model.sizes))
