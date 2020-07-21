@@ -472,8 +472,7 @@ class PSSTrainer:
             return (None, None)
 
         print("Training new neurons...")
-        print()
-        self.__train_last_layer()
+        # self.__train_last_layer()
 
         # Generate hooks for each layer
         hooks = []
