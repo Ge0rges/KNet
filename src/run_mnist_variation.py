@@ -68,7 +68,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 3000
+    epochs = 200
     learning_rate = 0.001
     momentum = 0.9
     iter_to_change = 100
@@ -77,8 +77,8 @@ def train_model():
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
              # "action": [10, 10]}
     sizes = {"classifier": [28*28, 312, 128, 10]}
-    drift_thresholds = {"classifier": [0.05, 0.1, 10]}  # Drift threshold for split in DEN
-    drift_deltas = {"classifier": [0.05, 0.05, 10]}
+    drift_thresholds = {"classifier": [0.2, 0.4, 10]}  # Drift threshold for split in DEN
+    drift_deltas = {"classifier": [0.0, 0.0, 0]}
 
     trainer = PSSTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
                          device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
