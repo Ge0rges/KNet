@@ -15,8 +15,8 @@ from src.main_scripts.pss_trainer import PSSTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import mnist_variation_loader, DatasetType
-from src.models import FFConv, ActionEncoder, FF
+from src.utils.data_loading import mnist_torch_variation_loader, DatasetType
+from src.models import FF
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
@@ -29,9 +29,9 @@ penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=1e-6)  # Penalty for all
 batch_size = 256
 dims = 1  # 3 for ffconv, 1 for ActionEncoder
 
-data_loaders = (mnist_variation_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
-                mnist_variation_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
-                mnist_variation_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
+data_loaders = (mnist_torch_variation_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_torch_variation_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_torch_variation_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.

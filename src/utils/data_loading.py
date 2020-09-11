@@ -6,6 +6,7 @@ import os
 import torch.nn.functional as F
 from filelock import FileLock
 from torch.utils.data import DataLoader, RandomSampler, SubsetRandomSampler, TensorDataset
+from src.utils.misc import AddGaussianNoise
 
 
 class DatasetType:
@@ -99,6 +100,53 @@ def mnist_variation_loader(type, batch_size=256, num_workers=0, dims=1, pin_memo
     loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
     return loader
+
+
+##### MNIST VARIATION TORCH ######
+def mnist_torch_variation_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
+    def one_hot_mnist(targets):
+        targets_onehot = torch.zeros(10)
+        targets_onehot[targets] = 1
+        return targets_onehot
+
+    dataset = datasets.MNIST
+
+    if dims == 3:
+        transform_all = transforms.Compose([
+            transforms.RandomRotation(180),
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,)),
+            # AddGaussianNoise(0., 1.)
+        ])
+    else:
+        transform_all = transforms.Compose([
+            transforms.RandomRotation(180),
+            transforms.ToTensor(),
+            transforms.Normalize((0.1307,), (0.3081,)),
+            transforms.Lambda(lambda a: a.view(-1)),
+            AddGaussianNoise(0., 1.)
+        ])
+
+    is_train = (True if type == DatasetType.train else False)
+
+    root = os.path.join(os.path.dirname(__file__), "../../data/")
+    assert os.path.isdir(root)
+
+    lock = os.path.join(os.path.dirname(__file__), "../../data/MNIST.lock")
+    with FileLock(lock):
+        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_mnist)
+
+        if is_train:
+            sampler = RandomSampler(dataset)
+
+        else:
+            print(len(dataset))
+            index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
+            indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
+            sampler = SubsetRandomSampler(indices)
+        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
+
+        return loader
 
 
 ##### MNIST
