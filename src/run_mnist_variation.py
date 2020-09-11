@@ -83,7 +83,7 @@ def train_model():
     trainer = PSSTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
                          device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
 
-    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
+    results = trainer.train_all_tasks_sequentially(epochs, with_pss=True)
     loss, err = trainer.test_model(list(range(number_of_tasks)), False)[0]
 
     print("Net has final shape:" + str(trainer.model.sizes))
