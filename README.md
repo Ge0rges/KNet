@@ -2,7 +2,7 @@
 
 # KNet
 
-**A network that integrates plasticity and unsupervised learning in a way that models the brain's function.**
+**A network that integrates plasticity, unsupervised learning and entropy-constrained learning in a way that models the brain's function.**
 
 [![CodeFactor](https://www.codefactor.io/repository/github/ge0rges/knet/badge/master?s=2bd0ecc26d1a05b4bb8b1a7855a145c0cce0baf9)](https://www.codefactor.io/repository/github/ge0rges/knet/overview/master)
 
@@ -95,6 +95,9 @@ Below a compilation of resources we've used along the way, including academic pa
 - [The wake-sleep algorithm for unsupervised neural networks](https://www.cs.toronto.edu/~hinton/absps/ws.pdf)
 - [Lifelong Learning with Dynamically Expandable Networks](https://openreview.net/pdf?id=Sk7KsfW0-) with [code](https://github.com/jaehong-yoon93/DEN)
 - [Measuring abstract reasoning in neural networks](https://arxiv.org/pdf/1807.04225.pdf)
+- [Entropy-Constrained raining of Deep Neural Networks](http://iphome.hhi.de/samek/pdf/WieIJCNN19.pdf)
+- [Entropy and mutual information in models of deep neural networks](https://papers.nips.cc/paper/7453-entropy-and-mutual-information-in-models-of-deep-neural-networks.pdf)
+
 ### Datasets
 - [Car Evaluation](https://archive.ics.uci.edu/ml/datasets/Car+Evaluation)
 - [Car 1](https://archive.ics.uci.edu/ml/datasets/Automobile)
