@@ -22,6 +22,8 @@ The idea behind this design is inspired from our brain. We suppose that the auto
 
 Training occurs in a modified way. The autoencoder is trained classicaly with a mean-squared error loss that guides the network towards learning a compressed version of the inputs. The action network is itself is trained classically as well using cross-entropy loss, but in addition to backprop affecting it, we backpropagate all the way back into the encoder part of the autoencoder as well. 
 
+### Testing
+We intended to test our network by teaching it a widely different set of datasets. MNIST, Bananas Pictures and Car Pictures. We would then make sure that plasticity worked by verifying that the network learned all datasets adequalty without forgetting previosuly learned datasets. Then we would like to show that it encoded "meaning" properly by showing it a [banana-car](https://i.ytimg.com/vi/_9Nm_aI_7hc/maxresdefault.jpg) and showing that it recognizes the presence of a banana as well as a car. 
 
 ## Bigger Picture
 My research interest is to model the functions of the brain by integrating existing machine learning models together.
