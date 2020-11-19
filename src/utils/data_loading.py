@@ -3,29 +3,21 @@ import torchvision.datasets as datasets
 import torch
 import numpy as np
 import os
-import torch.nn.functional as func
+import torch.nn.functional as F
 from filelock import FileLock
 from torch.utils.data import DataLoader, RandomSampler, SubsetRandomSampler, TensorDataset
 
 
 class DatasetType:
-    """
-    Enum to determine dataset type.
-    """
     train = 0
     eval = 1
     test = 2
 
 
-# MNIST Variation
+#### MNIST Variation
 def mnist_variation_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
-    if dims != 1:
-        print("MNIST Variations loader has no support for dims.")
-
-    train_valid_filepath = os.path.relpath(
-        "../data/mnist_rotation_back_image_new/mnist_all_background_images_rotation_normalized_train_valid.amat")
-    test_filepath = os.path.relpath(
-        "../data/mnist_rotation_back_image_new/mnist_all_background_images_rotation_normalized_test.amat")
+    train_valid_filepath = os.path.relpath("../data/mnist_rotation_back_image_new/mnist_all_background_images_rotation_normalized_train_valid.amat")
+    test_filepath = os.path.relpath("../data/mnist_rotation_back_image_new/mnist_all_background_images_rotation_normalized_test.amat")
 
     if type == DatasetType.train or type == DatasetType.eval:
 
@@ -100,7 +92,7 @@ def mnist_variation_loader(type, batch_size=256, num_workers=0, dims=1, pin_memo
 
     data = torch.FloatTensor(data)
     targets = torch.Tensor(targets)
-    targets = func.one_hot(targets.to(torch.int64)).to(torch.float32)
+    targets = F.one_hot(targets.to(torch.int64)).to(torch.float32)
 
     dataset = TensorDataset(data, targets)
     sampler = RandomSampler(dataset)
@@ -109,7 +101,7 @@ def mnist_variation_loader(type, batch_size=256, num_workers=0, dims=1, pin_memo
     return loader
 
 
-# MNIST
+##### MNIST
 def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
     def one_hot_mnist(targets):
         targets_onehot = torch.zeros(10)
@@ -139,8 +131,7 @@ def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
 
     lock = os.path.join(os.path.dirname(__file__), "../../data/MNIST.lock")
     with FileLock(lock):
-        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all,
-                          target_transform=one_hot_mnist)
+        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_mnist)
 
         if is_train:
             sampler = RandomSampler(dataset)
@@ -150,12 +141,11 @@ def mnist_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
             index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
             indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
             sampler = SubsetRandomSampler(indices)
-        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers,
-                            pin_memory=pin_memory)
+        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
         return loader
 
-# CIFAR
+
 def cifar10_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False):
     def one_hot_cifar(targets):
         targets_onehot = torch.zeros(10)
@@ -182,8 +172,7 @@ def cifar10_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False
 
     lock = os.path.join(os.path.dirname(__file__), "../../data/CIFAR10.lock")
     with FileLock(lock):
-        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all,
-                          target_transform=one_hot_cifar)
+        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_cifar)
 
         if is_train:
             sampler = RandomSampler(dataset)
@@ -192,8 +181,7 @@ def cifar10_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=False
             index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
             indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
             sampler = SubsetRandomSampler(indices)
-        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers,
-                            pin_memory=pin_memory)
+        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
         return loader
 
@@ -224,8 +212,7 @@ def cifar100_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=Fals
 
     lock = os.path.join(os.path.dirname(__file__), "../../data/CIFAR10.lock")
     with FileLock(lock):
-        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all,
-                          target_transform=one_hot_cifar)
+        dataset = dataset(root=root, train=is_train, download=True, transform=transform_all, target_transform=one_hot_cifar)
 
         if is_train:
             sampler = RandomSampler(dataset)
@@ -234,14 +221,14 @@ def cifar100_loader(type, batch_size=256, num_workers=0, dims=1, pin_memory=Fals
             index = int(len(dataset) * 0.2) if (type == DatasetType.eval) else int(len(dataset) * 0.8)
             indices = list(range(index)) if (type == DatasetType.eval) else list(range(index, len(dataset)))
             sampler = SubsetRandomSampler(indices)
-        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers,
-                            pin_memory=pin_memory)
+        loader = DataLoader(dataset, sampler=sampler, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory)
 
         return loader
 
 
-# BANANA_CAR
+##### BANANA_CAR
 def banana_car_loader(dataset_type, size=(280, 190), batch_size=256, num_workers=0, pin_memory=False):
+
     def one_hot_bc(targets):
         targets_onehot = torch.zeros(2)
         targets_onehot[targets] = 1
@@ -262,13 +249,13 @@ def banana_car_loader(dataset_type, size=(280, 190), batch_size=256, num_workers
     np.random.shuffle(indices)
 
     if dataset_type == DatasetType.train:
-        indices = indices[:int(len(dataset) * 0.7)]
+        indices = indices[:int(len(dataset)*0.7)]
 
     elif dataset_type == DatasetType.eval:
-        indices = indices[int(len(dataset) * 0.7):int(len(dataset) * 0.8)]
+        indices = indices[int(len(dataset)*0.7):int(len(dataset)*0.8)]
 
     elif dataset_type == DatasetType.test:
-        indices = indices[int(len(dataset) * 0.8):]
+        indices = indices[int(len(dataset)*0.8):]
 
     else:
         raise ReferenceError
@@ -302,7 +289,7 @@ def bananacar_abstract_loader(size=(280, 190), batch_size=256, num_workers=0, pi
 
     return loader
 
-# Equations
+
 def equations_loader(batch_size=256, num_workers=0, pin_memory=False):
     eqs = [
         lambda inputs: 1.0 if np.sum(inputs) < (len(inputs) * 0.25) else 0.0,

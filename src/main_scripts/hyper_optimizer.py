@@ -6,13 +6,13 @@ import ray
 import torch
 import os
 
-from multiprocessing import cpu_count
 from sklearn.decomposition import PCA
-from src.main_scripts.pss_trainer import PSSTrainer
+from src.main_scripts.den_trainer import DENTrainer
 from ray import tune
 from ray.tune.schedulers import PopulationBasedTraining
-from ray.tune.trial import ExportFormat
 from ray.tune.utils import validate_save_restore
+from ray.tune.trial import ExportFormat
+from multiprocessing import cpu_count
 
 
 class PytorchTrainable(tune.Trainable):
@@ -24,7 +24,7 @@ class PytorchTrainable(tune.Trainable):
     def _setup(self, config):
         trainer_args = config.get("DENTrainerArgs")  # Type: list
 
-        self.trainer = PSSTrainer(*trainer_args)
+        self.trainer = DENTrainer(*trainer_args)
 
         self.trainer.optimizer = torch.optim.SGD(
             self.trainer.model.parameters(),

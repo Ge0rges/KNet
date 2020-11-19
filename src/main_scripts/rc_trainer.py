@@ -3,31 +3,22 @@ import numpy as np
 
 from math import log
 from collections import Counter
-from src.main_scripts.pss_trainer import PSSTrainer
+from src.main_scripts.den_trainer import DENTrainer
 from src.utils.misc import get_modules
 
 
 class ResourceConstrainedTrainer:
     """
     A training algorithm for neural networks that optimizes structure based on resources used.
-    Uses a PSSTrainer as backend for most functions.
+    Uses a DENTrainer as backend for most functions.
     """
-    def __init__(self, pss_trainer: PSSTrainer, bits_available: int) -> None:
-
-        self._pss_trainer = pss_trainer
-        self.max_entropy = self.calculate_max_entropy(bits_available)
-
+    def __init__(self, den_trainer: DENTrainer, bits_available: int) -> None:
         raise NotImplementedError
 
-    def calculate_max_entropy(self, bits_available: int) -> float:
-        """
-        Calculates the maximum entropy permissible.
+        self._den_trainer = den_trainer
+        self.max_entropy = self.calculate_max_entropy(bits_available)
 
-        :param bits_available: The bits available to the model weights
-        :type bits_available: Integer
-        :return: The max entropy
-        :rtype: Float
-        """
+    def calculate_max_entropy(self, bits_available: int) -> float:
         max_number = 2**(bits_available-1)
         prob_dist = np.arange(max_number)
 
@@ -37,15 +28,8 @@ class ResourceConstrainedTrainer:
         return self.entropy(discrete_dist)
 
     def get_model_entropy(self) -> float:
-        """
-        Returns the von neumann entropy of the model
-        :return: The model's von neumann entropy
-        :rtype: Float
-        """
         weights = self.get_model_weights()
         total_entropy = 0
-
-        raise NotImplementedError
 
         # For our cases entropy is additive as each matrix
         # will supposedly encode different information from previous
@@ -56,12 +40,7 @@ class ResourceConstrainedTrainer:
         return total_entropy
 
     def get_model_weights(self) -> dict:
-        """
-        Get the weights matrices of the model
-        :return: The weight matrices of the model
-        :rtype: Pytorch Tensor
-        """
-        model = self._pss_trainer.model
+        model = self._den_trainer.model
         modules = get_modules(model)
         weights = {}
 
@@ -83,8 +62,8 @@ class ResourceConstrainedTrainer:
         """
         Calculates the "entropy" of a matrix by treating each element as
         independent and obtaining the histogram of element values
-        :param matrix the matrix to calculate entropy of
-        :returns the von neumann entropy of the matrix
+        @:param matrix the matrix to calculate entropy of
+        @:returns the von neumann entropy of the matrix
         """
         counts = dict(Counter(matrix.flatten())).values()  # Singular values
         total_count = sum(counts)
@@ -94,8 +73,8 @@ class ResourceConstrainedTrainer:
     def entropy(self, probability_list: [float]) -> float:
         """
         Calculates the entropy of a specified discrete probability distribution
-        :param probability_list The discrete probability distribution
-        :returns the von neumann entropy of a probability list -[x1 * log(1) + .. + xn * log(xn)]
+        @:param probability_list The discrete probability distribution
+        @:returns the von neumann entropy of a probability list -[x1 * log(1) + .. + xn * log(xn)]
         """
         running_total = 0
 

@@ -62,10 +62,10 @@ class FreezeWeightsHook:
 
     def __init__(self, mask):
         self.mask = mask
-        self.__name__ = ""  # Bug in pytorch see https://github.com/pytorch/pytorch/issues/37672
+        self.__name__ = None
 
     def __call__(self, grad):
-        try:  # Errors don't get propagated up, this is necessary. See https://github.com/pytorch/pytorch/issues/37672
+        try:  # Errors don't get propagated up, this is necessary.
             grad_clone = grad.clone().detach()
 
             grad_clone[self.mask] = 0
@@ -75,15 +75,3 @@ class FreezeWeightsHook:
         except Exception:
             print(self.mask)
             traceback.print_exc()
-
-
-class AddGaussianNoise(object):
-    def __init__(self, mean=0., std=1.):
-        self.std = std
-        self.mean = mean
-
-    def __call__(self, tensor):
-        return tensor + torch.randn(tensor.size()) * self.std + self.mean
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
