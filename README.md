@@ -80,7 +80,7 @@ Candidate Networks:
 
 *This repository implements Step 1.a and Step 1.b*
 ## Software 
-# How to Run
+### How to Run
 1. Install the dependencies below.
 2. Pick the experiment you'd like to run, find it's corresponding run_experiment.py file.
 3. Run prepare_experiment()
@@ -88,7 +88,7 @@ Candidate Networks:
 5. Run train_model(). Parameters are defined inside the function.
 
 
-# Dependencies
+### Dependencies
 - Python 3.7
 - numpy 1.18.4
 - Pillow 7.0.0 or Pillow-SIMD 7.0.0
