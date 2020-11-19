@@ -1,16 +1,11 @@
 import torch.nn as nn
 import torch
 import numpy as np
-import torch.nn.functional as F
-import torch.nn.utils.prune as prune
-
-# from torch.utils.checkpoint import checkpoint
-# from src.utils.misc import ModuleWrapperIgnores2ndArg
 
 
-class FF(nn.Module):
-    def __init__(self, sizes: dict, oldWeights=None, oldBiases=None):
-        super(FF, self).__init__()
+class FeedForward(nn.Module):
+    def __init__(self, sizes: dict, old_weights=None, old_biases=None):
+        super(FeedForward, self).__init__()
 
         self.phase = None  # irrelevant for this model
 
@@ -18,7 +13,7 @@ class FF(nn.Module):
         self.input_size = sizes["classifier"][0]
 
         # Classifier
-        ff_layers = self.set_module('classifier', oldWeights=oldWeights, oldBiases=oldBiases)
+        ff_layers = self.set_module('classifier', old_weights=old_weights, old_biases=old_biases)
         ff_layers.append(nn.Sigmoid())  # Must be non-linear
         self.classifier = nn.Sequential(*ff_layers)
 
@@ -29,22 +24,22 @@ class FF(nn.Module):
         x = self.classifier(x)
         return x
 
-    def set_module(self, label, oldWeights=None, oldBiases=None):
+    def set_module(self, label, old_weights=None, old_biases=None):
         sizes = self.sizes[label]
 
-        if oldWeights:
-            oldWeights = oldWeights[label]
+        if old_weights:
+            old_weights = old_weights[label]
 
-        if oldBiases:
-            oldBiases = oldBiases[label]
+        if old_biases:
+            old_biases = old_biases[label]
 
         layers = [
-            self.get_layer(sizes[0], sizes[1], oldWeights, oldBiases, 0)
+            self.get_layer(sizes[0], sizes[1], old_weights, old_biases, 0)
         ]
 
         for i in range(1, len(sizes) - 1):
             layers.append(nn.LeakyReLU())
-            layers.append(self.get_layer(sizes[i], sizes[i+1], init_weights=oldWeights, init_biases=oldBiases, index=i))
+            layers.append(self.get_layer(sizes[i], sizes[i+1], init_weights=old_weights, init_biases=old_biases, index=i))
 
         return layers
 
@@ -113,11 +108,7 @@ class FF(nn.Module):
             # Set
             layer.bias = nn.Parameter(biases)
 
-            # Update the oldBiases to include padding
+            # Update the old_biases to include padding
             init_biases[index] = layer.bias.detach()
 
         return layer.float()
-
-    def get_used_keys(self):
-        return ["classifier"]
-

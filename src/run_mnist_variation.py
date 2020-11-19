@@ -15,8 +15,8 @@ from src.main_scripts.pss_trainer import PSSTrainer
 from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
-from src.utils.data_loading import mnist_torch_variation_loader, DatasetType
-from src.models import FF
+from src.utils.data_loading import mnist_variation_loader, DatasetType
+from src.models import FFConv, ActionEncoder, FeedForward
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
@@ -29,9 +29,9 @@ penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=1e-6)  # Penalty for all
 batch_size = 256
 dims = 1  # 3 for ffconv, 1 for ActionEncoder
 
-data_loaders = (mnist_torch_variation_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
-                mnist_torch_variation_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
-                mnist_torch_variation_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
+data_loaders = (mnist_variation_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_variation_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
+                mnist_variation_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
 
 # Set the seed
 seed = None  # Change to seed random functions. None is no Seed.
@@ -68,7 +68,7 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 200
+    epochs = 3000
     learning_rate = 0.001
     momentum = 0.9
     iter_to_change = 100
@@ -77,13 +77,13 @@ def train_model():
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
              # "action": [10, 10]}
     sizes = {"classifier": [28*28, 312, 128, 10]}
-    drift_thresholds = {"classifier": [0.2, 0.4, 10]}  # Drift threshold for split in DEN
-    drift_deltas = {"classifier": [0.0, 0.0, 0]}
+    drift_thresholds = {"classifier": [0.05, 0.1, 10]}  # Drift threshold for split in DEN
+    drift_deltas = {"classifier": [0.05, 0.05, 10]}
 
-    trainer = PSSTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
+    trainer = PSSTrainer(data_loaders, FeedForward, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
                          device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
 
-    results = trainer.train_all_tasks_sequentially(epochs, with_pss=True)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
     loss, err = trainer.test_model(list(range(number_of_tasks)), False)[0]
 
     print("Net has final shape:" + str(trainer.model.sizes))

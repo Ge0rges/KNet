@@ -62,10 +62,10 @@ class FreezeWeightsHook:
 
     def __init__(self, mask):
         self.mask = mask
-        self.__name__ = None
+        self.__name__ = ""  # Bug in pytorch see https://github.com/pytorch/pytorch/issues/37672
 
     def __call__(self, grad):
-        try:  # Errors don't get propagated up, this is necessary.
+        try:  # Errors don't get propagated up, this is necessary. See https://github.com/pytorch/pytorch/issues/37672
             grad_clone = grad.clone().detach()
 
             grad_clone[self.mask] = 0

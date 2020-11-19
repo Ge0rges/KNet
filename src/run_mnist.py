@@ -16,7 +16,8 @@ from src.main_scripts.hyper_optimizer import OptimizerController
 from src.main_scripts.train import L1L2Penalty
 from src.utils.eval import build_confusion_matrix
 from src.utils.data_loading import mnist_loader, DatasetType
-from src.models import FFConv, ActionEncoder, FF
+from src.models import ActionEncoder, FeedForward
+
 # No need to touch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
@@ -28,14 +29,14 @@ number_of_tasks = 10  # Dataset specific, list of classification classes
 penalty = L1L2Penalty(l1_coeff=1e-4, l2_coeff=1e-6)  # Penalty for all
 
 batch_size = 256
-dims = 1  # 3 for ffconv, 1 for ActionEncoder
+dims = 1  # 3 for Conv else 1
 
 data_loaders = (mnist_loader(DatasetType.train, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
                 mnist_loader(DatasetType.eval, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims),
                 mnist_loader(DatasetType.test, batch_size=batch_size, num_workers=num_workers, pin_memory=pin_memory, dims=dims))
 
 # Set the seed
-seed = None  # Change to seed random functions. None is no Seed.
+seed: int = 20  # Change to seed random functions. None is no Seed.
 if seed is not None:
     random.seed(seed)
     torch.manual_seed(seed)
@@ -69,23 +70,23 @@ def train_model():
     Trains a CIANet model on the following params.
     """
 
-    epochs = 500
+    epochs = 100
     learning_rate = 0.001
     momentum = 0.9
     expand_by_k = 5
-    iter_to_change = 50
+    iter_to_change = 30
     err_stop_threshold = 0.99
     # sizes = {"encoder": [28 * 28, 50, 50, 10],
     # sizes = {"encoder": [28 * 28, 20, 20, 15, 15, 10, 10, 10],
     #          "action": [10, 10]}
     sizes = {"classifier": [28*28, 312, 128, 10]}
-    drift_thresholds = {"classifier": [0.2, 0.5, 10]}  # Drift threshold for split in DENz
-    drift_deltas = {"classifier": [0.01, 0.01, 10]}
+    drift_thresholds = {"classifier": [0.45, 0.4, 10]}  # Drift threshold for split in DENz
+    drift_deltas = {"classifier": [0, 0, 10]}
 
-    trainer = PSSTrainer(data_loaders, FF, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
+    trainer = PSSTrainer(data_loaders, FeedForward, sizes, learning_rate, momentum, criterion, penalty, iter_to_change,
                          device, error_function, number_of_tasks, drift_thresholds, err_stop_threshold, drift_deltas)
 
-    results = trainer.train_all_tasks_sequentially(epochs, with_pss=True)
+    results = trainer.train_all_tasks_sequentially(epochs, with_den=True)
     loss, err = trainer.test_model(list(range(number_of_tasks)), False)[0]
 
     print("Net has final shape:" + str(trainer.model.sizes))

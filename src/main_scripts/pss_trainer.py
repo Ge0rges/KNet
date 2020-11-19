@@ -14,7 +14,7 @@ class PSSTrainer:
     Implements PSS training.
     """
 
-    def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader), model_fn,
+    def __init__(self, data_loaders: (DataLoader, DataLoader, DataLoader), model_class,
                  sizes: dict, learning_rate: float, momentum: float, criterion, penalty, iter_to_change: int,
                  device: torch.device, err_func: callable, number_of_tasks: int, drift_thresholds: dict,
                  err_stop_threshold: float = None, drift_deltas: dict = None) -> None:
@@ -40,8 +40,8 @@ class PSSTrainer:
         self.loss_threshold = 0.2  # loss above this do expand
 
         self.number_of_tasks = number_of_tasks  # experiment specific
-        self.model_fn = model_fn
-        self.model = self.model_fn(sizes=sizes).to(device)
+        self.model_class = model_class
+        self.model = self.model_class(sizes=sizes).to(device)
         self.learning_rate = learning_rate
         self.momentum = momentum
 
@@ -58,7 +58,6 @@ class PSSTrainer:
         self.__epochs_to_train = epochs
 
         errs = []
-        # tasks = list(range(self.number_of_tasks))
         for i in range(self.number_of_tasks):
             print("Task: [{}/{}]".format(i + 1, self.number_of_tasks))
 
@@ -70,6 +69,8 @@ class PSSTrainer:
             # No PSS on t=0.
             loss, err = self.train_tasks(tasks, epochs, (with_pss and i > 0))
             errs.append(err)
+
+            # Increase drif threshold by drift delta
             for (dict_key, drift_thresholds), (_, drift_deltas) in zip(self.drift_thresholds.items(), self.drift_deltas.items()):
                 for j in range(len(drift_thresholds)):
                     self.drift_thresholds[dict_key][j] += self.drift_deltas[dict_key][j]
@@ -80,10 +81,9 @@ class PSSTrainer:
 
     def train_tasks(self, tasks: [int], epochs: int, with_pss: bool) -> (float, float):
         # API must be used correctly. Tasks are ints in range(self.number_of_tasks)
-        for i in tasks:
-            assert 0 <= i < self.number_of_tasks
+        assert 0 <= min(tasks) <= max(tasks) < self.number_of_tasks
 
-        # Sequential is used to pass seen_tasks to train
+        # Sequential is used to calculate seen_tasks for train
         if len(tasks) > 1:
             self.__sequential = False
             print("WARNING: PSSTrainer does not support simultaneous multi-task training yet. "
@@ -127,7 +127,6 @@ class PSSTrainer:
         #         break
 
         # Train until validation loss reaches a maximum
-        print("Main training phase")
         loss, err = None, None
         max_model = self.model
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
@@ -157,7 +156,6 @@ class PSSTrainer:
 
     def __train_one_epoch(self, use_seen_task: bool = True) -> (float, float):
         seen_tasks = list(range(self.__current_tasks[-1])) if self.__sequential and use_seen_task else []
-        # seen_tasks = [self.__current_tasks[-1]]
         loss = train(self.train_loader, self.model, self.criterion, self.optimizer, self.penalty, False, self.device,
                      self.__current_tasks, seen_tasks)
 
@@ -170,70 +168,21 @@ class PSSTrainer:
 
     def __train_last_layer(self):
         print("Training last layer only...")
-        # params = list(self.model.parameters())
-        # for param in params[:-2]:
-        #     param.requires_grad = False
-        weight_hooks = []
-        bias_hooks = []
-        modules = get_modules(self.model)
-        layer = None
-        for module_name, parameters in modules.items():
-            print(module_name)
-
-            for param_name, param in parameters:
-                split_param_name = param_name.split(".")  # Splits action.0.weights
-                param_index = int(split_param_name[1])
-
-                # Map every two indices to one
-                param_index -= param_index % 2
-                param_index /= 2
-                param_index = int(param_index)
-
-                size = self.model.sizes[module_name][param_index + 1]
-                # Freeze biases/weights
-                current_frozen_nodes = [True] * size
-
-                is_frozen_mask = torch.zeros(param.shape, dtype=torch.bool)
-
-                if "weight" in param_name:
-                    is_frozen_mask[current_frozen_nodes, :] = True
-                    hook = param.register_hook(FreezeWeightsHook(is_frozen_mask))
-                    weight_hooks.append(hook)
-                    layer = param
-                elif "bias" in param_name:
-                    is_frozen_mask[current_frozen_nodes] = True
-                    hook = param.register_hook(FreezeWeightsHook(is_frozen_mask))
-                    bias_hooks.append(hook)
-
-        weight_hooks[-1].remove()
-        bias_hooks[-1].remove()
-
-        current_frozen_nodes = [True] * np.shape(layer)[0]
-        current_frozen_nodes[self.__current_tasks[-1]] = False
-        is_frozen_mask = torch.zeros(layer.shape, dtype=torch.bool)
-        is_frozen_mask[current_frozen_nodes, :] = True
-
-        hook = layer.register_hook(FreezeWeightsHook(is_frozen_mask))
-        weight_hooks.append(hook)
+        params = list(self.model.parameters())
+        for param in params[:-2]:
+            param.requires_grad = False
 
         # Train few epochs
         # t = self.__epochs_to_train
         # self.__epochs_to_train = self.iter_to_change
-        # print(get_modules(self.model)["classifier"])
+
         self.__train_tasks_for_epochs()
-        # print(get_modules(self.model)["classifier"])
 
         # Restore number of epochs
         # self.__epochs_to_train = t
 
-        # for param in self.model.parameters():
-        #     param.requires_grad = True
-
-        # Remove hooks
-        for hook in weight_hooks:
-            hook.remove()
-        for hook in bias_hooks:
-            hook.remove()
+        for param in self.model.parameters():
+            param.requires_grad = True
 
     def __do_pss(self, model_copy: torch.nn.Module) -> (float, float):
         # Desaturate saturated neurons
@@ -411,6 +360,7 @@ class PSSTrainer:
                 del weights[dict_key][-1][-added_last_layer:]
                 del biases[dict_key][-1][-added_last_layer:]
                 new_sizes[dict_key][-1] -= added_last_layer
+                
             # making sure the neurons for the current task in the last layer are incorporating inputs from the new
             # neurons in the previous layers
             if len(value_split.keys()) != 0:
@@ -424,13 +374,12 @@ class PSSTrainer:
         old_sizes = self.model.sizes
         print(old_sizes)
         if total_neurons_added > 0:
-            self.model = self.model_fn(new_sizes, oldWeights=weights, oldBiases=biases)
+            self.model = self.model_class(new_sizes, oldWeights=weights, oldBiases=biases)
             self.model = self.model.to(self.device)
             self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
         print(self.model.sizes)
         print("median drift: {} \n mean drift: {}".format(median_drifts, mean_drifts))
         print("drift thresholds: {}".format(self.drift_thresholds))
-        # print("after split", get_modules(self.model)["encoder"])
 
         return old_sizes, self.model.sizes
 
@@ -458,7 +407,7 @@ class PSSTrainer:
             sizes[dict_key][-1] -= self.expand_by_k
 
         old_sizes = self.model.sizes
-        self.model = self.model_fn(sizes, oldWeights=weights, oldBiases=biases)
+        self.model = self.model_class(sizes, oldWeights=weights, oldBiases=biases)
         self.model = self.model.to(self.device)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.learning_rate, momentum=self.momentum)
 
@@ -472,7 +421,8 @@ class PSSTrainer:
             return (None, None)
 
         print("Training new neurons...")
-        # self.__train_last_layer()
+
+        self.__train_last_layer()
 
         # Generate hooks for each layer
         hooks = []
@@ -517,19 +467,18 @@ class PSSTrainer:
                 hook = param.register_hook(FreezeWeightsHook(is_frozen_mask))
                 hooks.append(hook)
 
-        # Train until validation loss reaches a maximum
+        # Get initial current loss and error
         max_model = self.model
         max_validation_loss, max_validation_err = self.eval_model(self.__current_tasks, False)[0]
         print("valid_err", max_validation_err)
 
         # Initial train
-        print("Initial Training")
         for i in range(self.__epochs_to_train):
             print("### EPOCH: {} / {} ###".format(i + 1, self.__epochs_to_train))
             self.__train_one_epoch()
         validation_loss, validation_error = self.eval_model(self.__current_tasks, False)[0]
 
-        # Train till validation error stops growing
+        # Train till validation error and loss stop growing
         while validation_error > max_validation_err and validation_loss < max_validation_loss:
             max_model = self.model
             max_validation_err = validation_error
@@ -578,11 +527,11 @@ class PSSTrainer:
     def load_model(self, filepath) -> bool:
         assert os.path.isdir(filepath)
 
-        self.model = self.model_fn(self.model.sizes, self.pruning_threshold)
+        self.model = self.model_class(self.model.sizes)
         self.model.load_state_dict(torch.load(filepath))
         self.model.to(self.device)
 
-        return isinstance(self.model, self.model_fn)
+        return isinstance(self.model, self.model_class)
 
     def save_model(self, model_name: str, dir_path: str = "../../saved_models") -> str:
         filepath = os.path.join(os.path.dirname(__file__), dir_path)
