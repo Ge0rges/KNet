@@ -8,7 +8,23 @@
 
 </div>
 
-## Detailed High Level Idea
+## State of the Effort
+Thank you for taking interest in this project. After working on it for over a year, here is what we've learned. The arhcitecture we came up with does not work. We can't guarrantee it's not due to a bug or mathemtical error, but we have stopped pursuing research and development of it. Instead we pivoted to working on the [Plastic Support Structure](https://github.com/Ge0rges/Plastic-Support-Structure). 
+
+We have attempted different variations of the architecture, adn this repo's current state is as it was before we pivoted. 
+
+We hope that by open sourcing this code, someone can highlight our errors or continue our work. Ge0rges is interested in pursuing this idea through a seperate research effort focused on some of the same core ideas but in a different implementation and architecture. Feel free to contact him. Please feel free to open an issue if you'd like more details on what we tried or about the project in general. 
+
+### Architecture Design
+The idea behind our implementation is as follows. We set up an autoencoder network, and endow it with plasticity based on a modified DEN algortihm. We add a feed forward network on top of the autoencoder called the action network. The action network takes as inputs the outputs of the middle layer of the autoencoder, and outputs the category. The action network is equally plastic. 
+
+The idea behind this design is inspired from our brain. We suppose that the autoencoder will encode meaning by compressing the data into it's most invariant forms. In essence, the autoencoder attempts to replicate meaning by way of it's core invairant layer (middle layer) within our brain, and unsupervised learning by way of it's training method. The logic behind the action network is that in order to categorize something, we take an input, compare it to our "meaning database", then produce an output. That is what the action network aims to replicate, by taking the processed input at the core-invariant label then classifying it. 
+
+Training occurs in a modified way. The autoencoder is trained classicaly with a mean-squared error loss that guides the network towards learning a compressed version of the inputs. The action network is itself is trained classically as well using cross-entropy loss, but in addition to backprop affecting it, we backpropagate all the way back into the encoder part of the autoencoder as well. 
+
+
+## Bigger Picture
+My research interest is to model the functions of the brain by integrating existing machine learning models together.
 Model the entire process by which humans have come to exist using various types of neural networks, and a computational base.
 
   Energy + Luck + Matter -> Simple cells (+ Time + Natural Selection) -> Humans
@@ -110,7 +126,3 @@ Thanks to Prof. Steve Mann for providing some computational resources.
 Thanks to bjsowa/DEN for inital fork structure.
 
 Thanks to mikacho for guidance on the resource constraining function.
-
-
-## Citation
-Unavailable
