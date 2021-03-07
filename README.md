@@ -9,9 +9,9 @@
 </div>
 
 ## State of the Effort
-Thank you for taking interest in this project. After working on it for over a year, here is what we've learned. The architecture we came up with does not work. We can't guarrantee it's not due to a bug or mathemtical error, but we have stopped pursuing research and development of it. Instead we pivoted to working on the [Plastic Support Structure](https://github.com/Ge0rges/Plastic-Support-Structure). 
+Thank you for taking interest in this project. After working on it for over a year, here is what we've learned. The architecture we came up with does not work. We can't guarrantee it's not due to a bug or mathematical error, but we have stopped pursuing research and development of it. Instead we pivoted to working on the [Plastic Support Structure](https://github.com/Ge0rges/Plastic-Support-Structure). 
 
-We have attempted different variations of the architecture, adn this repo's current state is as it was before we pivoted. 
+We have attempted different variations of the architecture, and this repo's current state is as it was before we pivoted. 
 
 We hope that by open sourcing this code, someone can highlight our errors or continue our work. Ge0rges is interested in pursuing this idea through a seperate research effort focused on some of the same core ideas but in a different implementation and architecture. Feel free to contact him. Please feel free to open an issue if you'd like more details on what we tried or about the project in general. 
 
