@@ -4,7 +4,7 @@
 
 **A network that integrates plasticity and unsupervised learning in a way that models the brain's function.**
 
-[![CodeFactor](https://www.codefactor.io/repository/github/ge0rges/knet/badge/master?s=2bd0ecc26d1a05b4bb8b1a7855a145c0cce0baf9)](https://www.codefactor.io/repository/github/ge0rges/knet/overview/master)
+[![CodeFactor](https://www.codefactor.io/repository/github/ge0rges/knet/badge/master?s=2bd0ecc26d1a05b4bb8b1a7855a145c0cce0baf9)](https://www.codefactor.io/repository/github/ge0rges/knet/overview/den-based)
 
 </div>
 
@@ -14,6 +14,8 @@ Thank you for taking interest in this project. After working on it for over a ye
 We have attempted different variations of the architecture, and this repo's current state is as it was before we pivoted. 
 
 We hope that by open sourcing this code, someone can highlight our errors or continue our work. Ge0rges is interested in pursuing this idea through a seperate research effort focused on some of the same core ideas but in a different implementation and architecture. Feel free to contact him. Please feel free to open an issue if you'd like more details on what we tried or about the project in general. 
+
+Our latest work can be found on the master branch.
 
 ### Architecture Design
 The idea behind our implementation is as follows. We set up an autoencoder network, and endow it with plasticity based on a modified DEN algortihm. We add a feed forward network on top of the autoencoder called the action network. The action network takes as inputs the outputs of the middle layer of the autoencoder, and outputs the category. The action network is equally plastic. 
