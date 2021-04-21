@@ -1,11 +1,11 @@
 """
-The PyTorch module for a simple autoencoder.
+Implementation of a plastic autoencoder using backpropamine.
 """
 import torch.nn as nn
 from src.utils.misc import get_sequential
 
 
-class AutoEncoder(nn.Module):
+class bpAutoEncoder(nn.Module):
     """
     A simple autoencoder.
     Initialized with Kaiming uniform weights.
@@ -17,7 +17,7 @@ class AutoEncoder(nn.Module):
 
         :param encoder_shape: A list of ints representing the size of each layer in the encoder.
 
-        >>> ae = AutoEncoder([10, 20, 30])
+        >>> ae = bpAutoEncoder([10, 20, 30])
         >>> ae.encoder
         Sequential(
           (0): Linear(in_features=10, out_features=20, bias=True)
