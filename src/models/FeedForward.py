@@ -1,28 +1,24 @@
+"""
+Legacy code from den-based.
+Should be rewritten to be simpler if useful.
+Definitely should be checked for bugs and errors.
+"""
+
 import torch.nn as nn
 import torch
 import numpy as np
-import torch.nn.functional as F
-import torch.nn.utils.prune as prune
-
-# from torch.utils.checkpoint import checkpoint
-# from src.utils.misc import ModuleWrapperIgnores2ndArg
 
 
-class FFConv(nn.Module):
-    def __init__(self, sizes: dict, oldWeights=None, oldBiases=None, connected=False, ff=True):
-        super(FFConv, self).__init__()
+class FF(nn.Module):
+    def __init__(self, sizes: dict, oldWeights=None, oldBiases=None):
+        assert False, "Class has not been checked for bugs"
+
+        super(FF, self).__init__()
 
         self.phase = None  # irrelevant for this model
 
         self.sizes = sizes
         self.input_size = sizes["classifier"][0]
-
-        # Convulational part
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-
-        self.sizes["classifier"][0] = 16*5*5
 
         # Classifier
         ff_layers = self.set_module('classifier', oldWeights=oldWeights, oldBiases=oldBiases)
@@ -33,9 +29,6 @@ class FFConv(nn.Module):
         self.float()
 
     def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = x.view(-1, 16 * 5 * 5)
         x = self.classifier(x)
         return x
 

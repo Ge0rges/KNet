@@ -1,3 +1,9 @@
+"""
+Unknown source, carried over from den-based.
+Should be rewritten to be simpler if useful.
+Definitely should be checked for bugs and errors.
+"""
+
 import torch
 import torch.nn as nn
 try:
@@ -17,6 +23,8 @@ model_urls = {
 class AlexNet(nn.Module):
 
     def __init__(self, num_classes=1000):
+        assert False, "Class has not been checked for bugs"
+
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),

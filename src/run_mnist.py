@@ -1,4 +1,11 @@
 """
+Legacy code from den-based.
+Should be rewritten to be simpler if useful.
+Definitely should be checked for bugs and errors.
+"""
+
+assert False, "Experiment has not been checked for bugs."
+"""
 Train CIANet on MNIST.
 
 There is no datapreprocessing required.

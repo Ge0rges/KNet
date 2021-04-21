@@ -9,13 +9,13 @@ import torch
 NBACTIONS = 4  # U, D, L, R ## This was meant to be used ina maze originally.
 
 
-class Network(nn.Module):
+class bpRNN(nn.Module):
     """
     An NN with backpropamine.
     """
 
     def __init__(self, isize, hsize):
-        super(Network, self).__init__()
+        super(bpRNN, self).__init__()
         self.hsize, self.isize = hsize, isize
 
         self.i2h = torch.nn.Linear(isize, hsize)  # Weights from input to recurrent layer

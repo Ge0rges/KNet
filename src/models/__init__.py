@@ -1,6 +1,8 @@
 """Useful utils
 """
-from .action_encoder import ActionEncoder
-from .ff_conv import FFConv
-from .ff import FF
+from .AlexNet import import AlexNet
+from .AutoEncoder import AutoEncoder
+from .FeedForwardConvolutional import FFConv
+from .FeedForward import FF
+from .BackpropamineRNN import bpRNN
 
