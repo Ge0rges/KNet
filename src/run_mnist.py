@@ -1,13 +1,21 @@
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+from torch.utils.tensorboard import SummaryWriter
 import os
 from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler
+from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
+from ignite.metrics import Accuracy, Loss
+from functools import partial
+from src.models import AutoEncoder, FeedForward
 import torch
 import logging
 import json
+import sys
 # Pytorch dataloading variables
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
+num_workers = 0   # number of cpu threads allocated to data loading
+batch_size = 256
 
 # where to download the data files
 data_root = './data'
@@ -27,15 +35,23 @@ if not os.path.exists(result_root):
 
 output_folder_path = result_root + '/output_run_' + str(run_id)
 if os.path.exists(output_folder_path):
-    print("THERE ALREADY EXISTS A RUN WITH THIS RUN IDENTIFIER, PLEASE MODIFY THE RUN_ID BEFORE RESTARTING")
+    print("THERE ALREADY EXISTS A RUN WITH THIS RUN IDENTIFIER, PLEASE MODIFY THE RUN_ID OR REMOVE THE EXISTING"
+          " OUTPUT RUN FOLDER BEFORE RESTARTING")
     exit(1)
 else:
     os.mkdir(output_folder_path)
 
-# please use the logging command to log anything that you print to the standard output that we would want to save to
-# look at at a later date (example, when printing the loss, accuracy etc...)
-log_file_name = output_folder_path + '/output_log.log'
+# logging INFO and above so we can keep ignite info
+log_file_name = output_folder_path + '/logs.log'
 logging.basicConfig(filename=log_file_name, level=logging.INFO)
+
+# please write to the following file anything you print to the standard output that we would want to save to
+# look at at a later date (example, when printing the loss, accuracy etc...)
+std_output = output_folder_path + '/std_output.txt'
+output_handle = open(std_output, 'w')
+
+# we save the original standard output
+original = sys.stdout
 
 # setting up the tensorboard folder logic
 tensorboard_log_dir = output_folder_path + '/tb_logs'
@@ -47,19 +63,27 @@ tensorboard_log_dir = output_folder_path + '/tb_logs'
 # SAVE ANY AND EVERY HYPERPARAMETER VALUE THAT IS RELEVANT TO THE EXPERIMENT
 hyper_parameter_dictionary = {}
 
-# Example:
-epochs = 100
+# These are example placeholder values TODO: change those values to appropriate ones once we start experimentation
+epochs = 15
 hyper_parameter_dictionary['epochs'] = epochs
 
+learning_rate = 0.001
+hyper_parameter_dictionary['learning_rate'] = learning_rate
+
+hyper_parameter_dictionary['batch_size'] = batch_size
+
+weight_decay = 0.0001
+hyper_parameter_dictionary['weight_decay'] = weight_decay
+
+
 # put the rest of the hyper_parameters below before the dictionary save
-
 dictionary_path = output_folder_path + '/hyper_parameters.txt'
-# then we save the dictionary
-with open(dictionary_path, 'w') as file:
-    file.write(json.dumps(hyper_parameter_dictionary))
+
+# there are still some variables that we would like to store that can't be stored in the header, so we don't save the
+# dictionary just yet
 
 
-def mnist_loader(batch_size=256, num_workers=0, dims=1):
+def mnist_loader(dims=1):
     def one_hot_mnist(targets):
         targets_onehot = torch.zeros(10)
         targets_onehot[targets] = 1
@@ -101,3 +125,133 @@ def mnist_loader(batch_size=256, num_workers=0, dims=1):
 
     return train_loader, test_loader, eval_loader
 
+
+def setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_loader):
+    log_interval = 10
+
+    writer = SummaryWriter(log_dir=tensorboard_log_dir)
+
+    @trainer.on(Events.EPOCH_COMPLETED)
+    def log_training_loss(trainer):
+        """ Logs training loss at every epoch """
+        out = "Epoch[{}] Loss: {:.5f}".format(trainer.state.epoch, trainer.state.output)
+        print(out)
+        sys.stdout = output_handle
+        print(out)
+        sys.stdout = original
+        # doesn't work for some reason
+        # with open(std_output, 'w') as file:
+        #     print("writing")
+        #     file.write(out)
+
+        writer.add_scalar("training_iteration_loss", trainer.state.output, trainer.state.epoch)
+
+    @trainer.on(Events.EPOCH_COMPLETED(every=log_interval))
+    def log_training_results(trainer):
+        """ Logs training metrics at every log_interval epochs """
+        evaluator.run(train_loader)
+        metrics = evaluator.state.metrics
+        out = "Training Results - Epoch: {}  Accuracy: {:.5f} Loss: {:.5f}".format(trainer.state.epoch,
+                                                                                   metrics["accuracy"], metrics["nll"])
+        print(out)
+        sys.stdout = output_handle
+        print(out)
+        sys.stdout = original
+
+        writer.add_scalar("training_loss", metrics["nll"], trainer.state.epoch)
+        writer.add_scalar("training_accuracy", metrics["accuracy"], trainer.state.epoch)
+
+    @trainer.on(Events.EPOCH_COMPLETED(every=log_interval))
+    def log_eval_results(trainer):
+        """ Logs evaluation metrics at every log_interval epochs """
+        evaluator.run(eval_loader)
+        metrics = evaluator.state.metrics
+        out = "Validation Results - Epoch: {}  Accuracy: {:.5f} Loss: {:.5f}".format(trainer.state.epoch,
+                                                                                     metrics["accuracy"],
+                                                                                     metrics["nll"])
+        print(out)
+        sys.stdout = output_handle
+        print(out)
+        sys.stdout = original
+
+        writer.add_scalar("eval_loss", metrics["nll"], trainer.state.epoch)
+        writer.add_scalar("eval_accuracy", metrics["accuracy"], trainer.state.epoch)
+
+    @trainer.on(Events.COMPLETED)
+    def log_test_results(trainer):
+        """ Logs test metrics at the end of the run """
+        evaluator.run(test_loader)
+        metrics = evaluator.state.metrics
+        out = "Test Results - Epoch: {}  Accuracy: {:.5f} Loss: {:.5f}".format(trainer.state.epoch,
+                                                                               metrics["accuracy"],
+                                                                               metrics["nll"])
+        print(out)
+        sys.stdout = output_handle
+        print(out)
+        sys.stdout = original
+
+        writer.add_scalar("test_loss", metrics["nll"], trainer.state.epoch)
+        writer.add_scalar("test_accuracy", metrics["accuracy"], trainer.state.epoch)
+
+
+def run():
+    """ we assume all hyperparameters have been defined in the header, we should only have run code here """
+    # define the model
+    # TODO: add the model once the model code has been implemented
+    model = FeedForward([784, 10, 10])  # placeholder for now
+    # move the model to the correct device
+    model = model.to(device)
+    # we save model name and model version to the hyper param dictionary
+    hyper_parameter_dictionary['model_name'] = model.name
+    hyper_parameter_dictionary['model_version'] = model.version
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    hyper_parameter_dictionary['optimizer'] = 'Adam'  # couldn't find a way of getting the name from the object
+
+    criterion = torch.nn.BCELoss()
+    hyper_parameter_dictionary['loss'] = criterion._get_name()
+
+    # we save the hyper parameter dictionary
+    with open(dictionary_path, 'w') as file:
+        file.write(json.dumps(hyper_parameter_dictionary, indent=4, sort_keys=4))
+
+    train_loader, test_loader, eval_loader = mnist_loader()
+
+    trainer = create_supervised_trainer(model, optimizer, criterion, device=device)
+
+    def acc_ot_func(output):
+        """ this function is used to change the format of the model output to match the required format
+        for the accuracy metric """
+        # TODO: test that it works with our new model as this was implemented for a previous model
+        y_pred, y = output
+        y_pred = torch.nn.functional.one_hot(torch.max(y_pred, 1)[1], num_classes=10).to(torch.float)
+        return (y_pred, y)
+
+    # here we store all the metrics we want the evaluator to look at
+    # if any metrics are deleted, make sure to also remove them from the setup_event_handler function
+    # if any metric is added, make sure to add it where appropriate in the setup_event_handler function otherwise
+    # it won't appear in the logs
+    val_metrics = {
+        # We're using Accuracy for classification tasks, however it might not make sense for AutoEncoders
+        # TODO: find good metric to evaluate AutoEncoder
+        "accuracy": Accuracy(output_transform=partial(acc_ot_func)),
+        "nll": Loss(criterion)
+    }
+
+    evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=device)
+
+    setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_loader)
+
+    trainer.run(train_loader, max_epochs=epochs)
+
+    # we now save the final trained model
+    model_save_path = output_folder_path + '/model'
+    torch.save(model, model_save_path)
+    out = "Model Saved!"
+    print(out)
+    output_handle.write(out)
+
+
+if __name__ == '__main__':
+    run()
+    output_handle.close()
