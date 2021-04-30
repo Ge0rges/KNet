@@ -33,7 +33,11 @@ result_root = './results'
 if not os.path.exists(result_root):
     os.mkdir(result_root)
 
-output_folder_path = result_root + '/output_run_' + str(run_id)
+mnist_folder = result_root + '/mnist'
+if not os.path.exists(mnist_folder):
+    os.mkdir(mnist_folder)
+
+output_folder_path = mnist_folder + '/output_run_' + str(run_id)
 if os.path.exists(output_folder_path):
     print("THERE ALREADY EXISTS A RUN WITH THIS RUN IDENTIFIER, PLEASE MODIFY THE RUN_ID OR REMOVE THE EXISTING"
           " OUTPUT RUN FOLDER BEFORE RESTARTING")
