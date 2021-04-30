@@ -29,6 +29,9 @@ class FeedForward(nn.Module):
 
         self.classifier = get_sequential(network_shape, backwards=False, activation=nn.Sigmoid)
 
+        self.name = 'FeedForward'
+        self.version = 'V0.0'
+
     def forward(self, x):
         x = self.classifier(x)
         return x

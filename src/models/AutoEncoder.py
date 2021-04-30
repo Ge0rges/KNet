@@ -44,6 +44,12 @@ class AutoEncoder(nn.Module):
         # Decoder
         self.decoder = get_sequential(encoder_shape, backwards=True, activation=nn.Sigmoid)
 
+        # Model Name
+        self.name = 'AutoEncoder'
+
+        # Model Version (placeholder concept)
+        self.version = 'V0.0'
+
     def forward(self, x):
         y = self.encoder(x)
         y = self.decoder(y)

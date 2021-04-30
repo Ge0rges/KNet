@@ -1,8 +1,7 @@
 """Useful utils
 """
-from .AlexNet import AlexNet
 from .AutoEncoder import AutoEncoder
-from .ConvolutionalNeuralNetwork import FFConv
-from .FeedForward import FF
+from .ConvolutionalNeuralNetwork import ConvolutionalNN
+from .FeedForward import FeedForward
 from .BackpropamineRNN import bpRNN
 
