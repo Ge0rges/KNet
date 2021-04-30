@@ -1,6 +1,8 @@
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import os
+from torch.utils.data import TensorDataset, RandomSampler, DataLoader
+import torch
 
 root = './data'
 if not os.path.exists(root):
