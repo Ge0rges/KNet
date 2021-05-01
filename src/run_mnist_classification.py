@@ -2,7 +2,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
 import os
-from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler
+from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler, TensorDataset
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss
 from functools import partial
@@ -33,7 +33,7 @@ result_root = './results'
 if not os.path.exists(result_root):
     os.mkdir(result_root)
 
-mnist_folder = result_root + '/mnist'
+mnist_folder = result_root + '/mnist_classification'
 if not os.path.exists(mnist_folder):
     os.mkdir(mnist_folder)
 
@@ -88,6 +88,7 @@ dictionary_path = output_folder_path + '/hyper_parameters.txt'
 
 
 def mnist_loader(dims=1):
+    """ Regular MNIST loader, meant to be used to train a classifier """
     def one_hot_mnist(targets):
         targets_onehot = torch.zeros(10)
         targets_onehot[targets] = 1
@@ -201,8 +202,7 @@ def setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_load
 def run():
     """ we assume all hyperparameters have been defined in the header, we should only have run code here """
     # define the model
-    # TODO: add the model once the model code has been implemented
-    model = FeedForward([784, 10, 10])  # placeholder for now
+    model = FeedForward([784, 100, 10])  # placeholder for now
     # move the model to the correct device
     model = model.to(device)
     # we save model name and model version to the hyper param dictionary
@@ -226,7 +226,6 @@ def run():
     def acc_ot_func(output):
         """ this function is used to change the format of the model output to match the required format
         for the accuracy metric """
-        # TODO: test that it works with our new model as this was implemented for a previous model
         y_pred, y = output
         y_pred = torch.nn.functional.one_hot(torch.max(y_pred, 1)[1], num_classes=10).to(torch.float)
         return (y_pred, y)
@@ -237,7 +236,6 @@ def run():
     # it won't appear in the logs
     val_metrics = {
         # We're using Accuracy for classification tasks, however it might not make sense for AutoEncoders
-        # TODO: find good metric to evaluate AutoEncoder
         "accuracy": Accuracy(output_transform=partial(acc_ot_func)),
         "nll": Loss(criterion)
     }
