@@ -4,13 +4,14 @@ from torch.utils.tensorboard import SummaryWriter
 import os
 from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler, TensorDataset
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-from ignite.metrics import Accuracy, Loss
+from ignite.metrics import PSNR, Loss
 from functools import partial
 from src.models import AutoEncoder, FeedForward
 import torch
 import logging
 import json
 import sys
+import numpy as np
 # Pytorch dataloading variables
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
@@ -33,7 +34,7 @@ result_root = './results'
 if not os.path.exists(result_root):
     os.mkdir(result_root)
 
-mnist_folder = result_root + '/mnist_classification'
+mnist_folder = result_root + '/mnist_unsupervised'
 if not os.path.exists(mnist_folder):
     os.mkdir(mnist_folder)
 
@@ -87,32 +88,56 @@ dictionary_path = output_folder_path + '/hyper_parameters.txt'
 # dictionary just yet
 
 
-def mnist_loader(dims=1):
-    """ Regular MNIST loader, meant to be used to train a classifier """
-    def one_hot_mnist(targets):
-        targets_onehot = torch.zeros(10)
-        targets_onehot[targets] = 1
-        return targets_onehot
+def mnist_loader():
+    """ Data loader for MNIST to train an AutoEncoder (or any model that uses the input as target), the dataset's
+    targets are modified to be the inputs """
 
-    if dims == 3:
-        transform_all = transforms.Compose([
-            # transforms.RandomRotation(180),
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,))
-        ])
-    else:
-        transform_all = transforms.Compose([
-            # transforms.RandomRotation(180),
-            transforms.ToTensor(),
-            transforms.Normalize((0.1307,), (0.3081,)),
-            transforms.Lambda(lambda a: a.view(-1))
-        ])
+    transform_all = transforms.Compose([
+        # transforms.RandomRotation(180),
+        transforms.ToTensor(),
+        transforms.Normalize((0.1307,), (0.3081,)),
+        # transforms.Lambda(lambda a: a.view(-1 ))
+    ])
+    original_train_set = datasets.MNIST(root=data_root, train=True, transform=transform_all, download=True)
+    original_test_set = datasets.MNIST(root=data_root, train=False, transform=transform_all, download=True)
 
-    train_set = datasets.MNIST(root=data_root, train=True, transform=transform_all, download=True,
-                               target_transform=one_hot_mnist)
-    test_set = datasets.MNIST(root=data_root, train=False, transform=transform_all, download=True,
-                              target_transform=one_hot_mnist)
+    train_tensors = []
+    for i in range(len(original_train_set)):
+        input_tensor = original_train_set[i][0]
+        train_tensors.append(input_tensor.numpy())
+    train_tensors = np.array(train_tensors)
+    # this is necessary for some metrics
+    min_train = train_tensors.min()
+    max_train = train_tensors.max()
+    train_range = max_train - min_train
+    train_inputs = torch.Tensor(train_tensors)   # for some reason Pycharm doesn't like this but it works fine
 
+    test_tensors = []
+    for i in range(len(original_test_set)):
+        input_tensor = original_test_set[i][0]
+        test_tensors.append(input_tensor.numpy())
+    test_tensors = np.array(test_tensors)
+    # this is necessary for some metrics
+    min_test = test_tensors.min()
+    max_test = test_tensors.max()
+    test_range = max_test - min_test
+    test_inputs = torch.Tensor(test_tensors)     # for some reason Pycharm doesn't like this but it works fine
+
+    # we squeeze as the previous process leaves us with an extra useless dimension
+    train_inputs = torch.squeeze(train_inputs)
+    test_inputs = torch.squeeze(test_inputs)
+
+    # for some reason, the autoencoder doesn't like when it's not reshaped
+    train_inputs = torch.reshape(train_inputs, (train_inputs.size()[0], train_inputs.size()[1]*train_inputs.size()[2]))
+    test_inputs = torch.reshape(test_inputs, (test_inputs.size()[0], test_inputs.size()[1]*test_inputs.size()[2]))
+
+    train_inputs = train_inputs.to(torch.float)
+    test_inputs = test_inputs.to(torch.float)
+
+    train_set = TensorDataset(train_inputs, train_inputs)
+    test_set = TensorDataset(test_inputs, test_inputs)
+
+    # the rest is as usual
     train_sampler = RandomSampler(train_set)
     train_loader = DataLoader(train_set, sampler=train_sampler, batch_size=batch_size, num_workers=num_workers,
                               pin_memory=pin_memory)
@@ -128,7 +153,8 @@ def mnist_loader(dims=1):
     eval_loader = DataLoader(test_set, sampler=eval_sampler, batch_size=batch_size, num_workers=num_workers,
                              pin_memory=pin_memory)
 
-    return train_loader, test_loader, eval_loader
+    return train_loader, test_loader, eval_loader, max(train_range, test_range)
+
 
 def setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_loader):
     log_interval = 10
@@ -202,7 +228,8 @@ def setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_load
 def run():
     """ we assume all hyperparameters have been defined in the header, we should only have run code here """
     # define the model
-    model = FeedForward([784, 100, 10])  # placeholder for now
+    # TODO: add the model once the model code has been implemented
+    model = AutoEncoder([784, 100, 10])  # placeholder for now
     # move the model to the correct device
     model = model.to(device)
     # we save model name and model version to the hyper param dictionary
@@ -219,25 +246,22 @@ def run():
     with open(dictionary_path, 'w') as file:
         file.write(json.dumps(hyper_parameter_dictionary, indent=4, sort_keys=4))
 
-    train_loader, test_loader, eval_loader = mnist_loader()
+    train_loader, test_loader, eval_loader, data_range = mnist_loader()
+
+    # giving the data_range as a measure of reference for the psnr
+    out = "Data Range: {:.5f}".format(data_range)
+    print(out)
+    sys.stdout = output_handle
+    print(out)
+    sys.stdout = original
 
     trainer = create_supervised_trainer(model, optimizer, criterion, device=device)
 
-    def acc_ot_func(output):
-        """ this function is used to change the format of the model output to match the required format
-        for the accuracy metric """
-        y_pred, y = output
-        y_pred = torch.nn.functional.one_hot(torch.max(y_pred, 1)[1], num_classes=10).to(torch.float)
-        return (y_pred, y)
-
     # here we store all the metrics we want the evaluator to look at
-    # if any metrics are deleted, make sure to also remove them from the setup_event_handler function
-    # if any metric is added, make sure to add it where appropriate in the setup_event_handler function otherwise
-    # it won't appear in the logs
+    # the handler automatically adapts to the metrics put here, no need to modify it when adding/removing metrics
     val_metrics = {
-        # We're using Accuracy for classification tasks, however it might not make sense for AutoEncoders
-        "accuracy": Accuracy(output_transform=partial(acc_ot_func)),
-        "nll": Loss(criterion)
+        "psnr": PSNR(data_range),
+        "loss": Loss(criterion)
     }
 
     evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=device)
