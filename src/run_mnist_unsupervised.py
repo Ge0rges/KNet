@@ -239,7 +239,7 @@ def run():
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     hyper_parameter_dictionary['optimizer'] = 'Adam'  # couldn't find a way of getting the name from the object
 
-    criterion = torch.nn.BCELoss()
+    criterion = torch.nn.MSELoss()
     hyper_parameter_dictionary['loss'] = criterion._get_name()
 
     # we save the hyper parameter dictionary
