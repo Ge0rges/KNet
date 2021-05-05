@@ -3,7 +3,7 @@ from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss
 from functools import partial
-from src.models import AutoEncoder, FeedForward
+from src.models import FeedForward
 
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms

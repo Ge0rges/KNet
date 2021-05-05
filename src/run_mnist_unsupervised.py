@@ -2,7 +2,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler, TensorDataset
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import PSNR, Loss
-from src.models import AutoEncoder, FeedForward
+from src.models import AutoEncoder
 
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -27,7 +27,7 @@ if not os.path.exists(data_root):
 
 # We define a variable that needs to be modified for every run in order to uniquely identify them, this is used
 # when saving the tensorboard metrics as well as logging the results.
-run_id = 0
+run_id = 1
 
 # where to save experiment results and output metrics
 result_root = './results'
