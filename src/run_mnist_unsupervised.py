@@ -17,7 +17,6 @@ import sys
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
 num_workers = 0   # number of cpu threads allocated to data loading
-batch_size = 256
 
 # where to download the data files
 data_root = './data'
