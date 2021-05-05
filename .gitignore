@@ -130,5 +130,5 @@ src/checkpoints/
 
 data/
 src/data/
-
+src/results/
 *.npy
