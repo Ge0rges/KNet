@@ -95,7 +95,7 @@ def mnist_loader():
     transform_all = transforms.Compose([
         # transforms.RandomRotation(180),
         transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,)),
+        # transforms.Normalize((0.1307,), (0.3081,)),
         # transforms.Lambda(lambda a: a.view(-1 ))
     ])
     original_train_set = datasets.MNIST(root=data_root, train=True, transform=transform_all, download=True)
@@ -111,7 +111,6 @@ def mnist_loader():
     max_train = train_tensors.max()
     train_range = max_train - min_train
     train_inputs = torch.Tensor(train_tensors)   # for some reason Pycharm doesn't like this but it works fine
-
     test_tensors = []
     for i in range(len(original_test_set)):
         input_tensor = original_test_set[i][0]
