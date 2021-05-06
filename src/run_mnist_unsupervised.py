@@ -1,22 +1,22 @@
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
-import os
 from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler, TensorDataset
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import PSNR, Loss
-from functools import partial
-from src.models import AutoEncoder, FeedForward
+from src.models import AutoEncoder
+
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+import numpy as np
+import os
 import torch
 import logging
 import json
 import sys
-import numpy as np
+
 # Pytorch dataloading variables
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
 num_workers = 0   # number of cpu threads allocated to data loading
-batch_size = 256
 
 # where to download the data files
 data_root = './data'
@@ -27,7 +27,7 @@ if not os.path.exists(data_root):
 
 # We define a variable that needs to be modified for every run in order to uniquely identify them, this is used
 # when saving the tensorboard metrics as well as logging the results.
-run_id = 0
+run_id = 1
 
 # where to save experiment results and output metrics
 result_root = './results'
@@ -70,14 +70,13 @@ hyper_parameter_dictionary = {}
 
 # These are example placeholder values TODO: change those values to appropriate ones once we start experimentation
 epochs = 15
-hyper_parameter_dictionary['epochs'] = epochs
-
 learning_rate = 0.001
-hyper_parameter_dictionary['learning_rate'] = learning_rate
-
-hyper_parameter_dictionary['batch_size'] = batch_size
-
 weight_decay = 0.0001
+batch_size = 256
+
+hyper_parameter_dictionary['epochs'] = epochs
+hyper_parameter_dictionary['learning_rate'] = learning_rate
+hyper_parameter_dictionary['batch_size'] = batch_size
 hyper_parameter_dictionary['weight_decay'] = weight_decay
 
 
@@ -231,14 +230,14 @@ def run():
     model = AutoEncoder([784, 100, 10])  # placeholder for now
     # move the model to the correct device
     model = model.to(device)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    criterion = torch.nn.MSELoss()
+
     # we save model name and model version to the hyper param dictionary
     hyper_parameter_dictionary['model_name'] = model.name
     hyper_parameter_dictionary['model_version'] = model.version
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    hyper_parameter_dictionary['optimizer'] = 'Adam'  # couldn't find a way of getting the name from the object
-
-    criterion = torch.nn.MSELoss()
+    hyper_parameter_dictionary['optimizer'] = optimizer.__repr__()
     hyper_parameter_dictionary['loss'] = criterion._get_name()
 
     # we save the hyper parameter dictionary
@@ -246,6 +245,7 @@ def run():
         file.write(json.dumps(hyper_parameter_dictionary, indent=4, sort_keys=4))
 
     train_loader, test_loader, eval_loader, data_range = mnist_loader()
+    trainer = create_supervised_trainer(model, optimizer, criterion, device=device)
 
     # giving the data_range as a measure of reference for the psnr
     out = "Data Range: {:.5f}".format(data_range)
@@ -253,8 +253,6 @@ def run():
     sys.stdout = output_handle
     print(out)
     sys.stdout = original
-
-    trainer = create_supervised_trainer(model, optimizer, criterion, device=device)
 
     # here we store all the metrics we want the evaluator to look at
     # the handler automatically adapts to the metrics put here, no need to modify it when adding/removing metrics
@@ -264,7 +262,6 @@ def run():
     }
 
     evaluator = create_supervised_evaluator(model, metrics=val_metrics, device=device)
-
     setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_loader)
 
     trainer.run(train_loader, max_epochs=epochs)

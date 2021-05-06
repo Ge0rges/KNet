@@ -34,7 +34,7 @@ class AutoEncoder(nn.Module):
         )
         """
 
-        super().__init__()
+        super(AutoEncoder, self).__init__()
 
         assert len(encoder_shape) > 2, "encoder_shape requires at least an input and output"
 

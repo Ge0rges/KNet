@@ -25,7 +25,7 @@ class FeedForward(nn.Module):
          (3): Sigmoid()
         )
         """
-        super().__init__()
+        super(FeedForward, self).__init__()
 
         self.classifier = get_sequential(network_shape, backwards=False, activation=nn.Sigmoid)
 
