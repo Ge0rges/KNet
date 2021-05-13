@@ -93,11 +93,28 @@ class PlasticLinear(nn.Linear):
             self.in_features, self.out_features, self.alpha, self.bias is not None
         )
 
+class PlasticRNNMaze(nn.Module):
 
-class PlasticFeedforward(nn.Module):
+    def __init__(self, isize, hsize):
+        super(PlasticRNNMaze, self).__init__()
+        self.p1 = PlasticLinear(isize, hsize)
+        self.p2 = PlasticLinear(hsize, 4)  # 4 is NBACTIONS
+
+        self.mod = Mod(4)  # we give it the size of the output of the layer we want to set the mod at
+        # we set the mod of the layers
+        self.p1.set_mod(self.mod)
+        self.p2.set_mod(self.mod)
+
+    def forward(self, x):
+        x = self.p1(x)
+        x = self.p2(x)
+        self.mod.update_value(x)  # we update the mod value
+        return x
+
+class PlasticFeedforwardFixed(nn.Module):
 
     def __init__(self):
-        super(PlasticFeedforward, self).__init__()
+        super(PlasticFeedforwardFixed, self).__init__()
         self.p1 = PlasticLinear(784, 100)
         self.p2 = PlasticLinear(100, 10)
         self.p3 = PlasticLinear(10, 2)
