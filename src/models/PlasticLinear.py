@@ -23,6 +23,20 @@ class Mod(nn.Module):
         self.value = self.i2mod(input)
 
 
+class Mod(nn.Module):
+    def __init__(self, size: int) -> None:
+        super(Mod, self).__init__()
+        self.size = size
+        self.i2mod = torch.nn.Linear(size, 1)
+        self.value = (torch.Tensor(1))
+
+    def get_value(self):
+        return self.value
+
+    def update_value(self, input: Tensor):
+        self.value = self.i2mod(input)
+
+
 class PlasticLinear(nn.Linear):
     """
     Applies a linear transformation to the incoming data: :math:`y = xA^T + b`
@@ -38,7 +52,6 @@ class PlasticLinear(nn.Linear):
             self.bias = Parameter(torch.Tensor(out_features))
         else:
             self.register_parameter('bias', None)
-        self.reset_parameters()
 
         self.alpha = Parameter(torch.Tensor(out_features, in_features))
 
@@ -48,6 +61,9 @@ class PlasticLinear(nn.Linear):
 
         self.mod = None
         self.mod_fanout = nn.Linear(1, out_features)
+
+        self.reset_parameters()
+        self.clip_val = 1.0
 
     def set_mod(self, mod: Mod):
         self.mod = mod
@@ -75,8 +91,8 @@ class PlasticLinear(nn.Linear):
 
         myeta = self.mod_fanout(self.mod.get_value())
 
-        self.clip_val = 2.0
         self.hebbian = torch.clamp(self.hebbian + myeta * delta_hebb, min=-self.clip_val, max=self.clip_val).requires_grad = False
+
 
         self.previous_output = y
         return y
@@ -110,5 +126,24 @@ class PlasticFeedforward(nn.Module):
         x = self.p2(x)
         x = self.relu(x)
         self.mod.update_value(x)   # we update the mod value
+        return x
+
+
+class PlasticRNNMaze(nn.Module):
+
+    def __init__(self, isize, hsize):
+        super(PlasticRNNMaze, self).__init__()
+        self.p1 = PlasticLinear(isize, hsize)
+        self.p2 = PlasticLinear(hsize, 4)  # 4 is NBACTIONS
+
+        self.mod = Mod(4)  # we give it the size of the output of the layer we want to set the mod at
+        # we set the mod of the layers
+        self.p1.set_mod(self.mod)
+        self.p2.set_mod(self.mod)
+
+    def forward(self, x):
+        x = self.p1(x)
+        x = self.p2(x)
+        self.mod.update_value(x)  # we update the mod value
         return x
 
