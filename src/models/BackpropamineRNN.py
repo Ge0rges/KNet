@@ -5,6 +5,7 @@ from torch.autograd import Variable
 
 import torch.nn as nn
 import torch
+import torch.functional as F
 
 NBACTIONS = 4  # U, D, L, R ## This was meant to be used ina maze originally.
 
@@ -28,6 +29,8 @@ class bpRNN(nn.Module):
 
         self.h2o = torch.nn.Linear(hsize, NBACTIONS)  # From recurrent to outputs (action probabilities)
         self.h2v = torch.nn.Linear(hsize, 1)  # From recurrent to value-prediction (used for A2C)
+
+        self.clip_val = 0.0
 
     def forward(self, inputs, hidden):  # hidden is a tuple containing h-state and the hebbian trace
         HS = self.hsize
@@ -57,7 +60,7 @@ class bpRNN(nn.Module):
         myeta = self.modfanout(myeta)
 
         # Updating Hebbian traces, with a hard clip (other choices are possible)
-        self.clipval = 2.0
+        self.clip_val = 2.0
         hebb = torch.clamp(hebb + myeta * deltahebb, min=-self.clipval, max=self.clipval)
 
         hidden = (hactiv, hebb)
