@@ -368,26 +368,26 @@ def train(paramdict):
             print("Time spent on last", params['pe'], "iters: ", nowtime - previoustime)
             # print("ETA: ", net.eta.data.cpu().numpy(), " etaet: ", net.etaet.data.cpu().numpy())
 
-        if (numiter + 1) % params['save_every'] == 0:
-            print("Saving files...")
-            losslast100 = np.mean(all_losses_objective[-100:])
-            print("Average loss over the last 100 episodes:", losslast100)
-            print("Saving local files...")
-            with open('grad_' + suffix + '.txt', 'w') as thefile:
-                for item in all_grad_norms[::10]:
-                    thefile.write("%s\n" % item)
-            with open('loss_' + suffix + '.txt', 'w') as thefile:
-                for item in all_total_rewards[::10]:
-                    thefile.write("%s\n" % item)
-            torch.save(net.state_dict(), 'torchmodel_' + suffix + '.dat')
-            with open('params_' + suffix + '.dat', 'wb') as fo:
-                pickle.dump(params, fo)
-            if os.path.isdir('/mnt/share/tmiconi'):
-                print("Transferring to NFS storage...")
-                for fn in ['params_' + suffix + '.dat', 'loss_' + suffix + '.txt', 'torchmodel_' + suffix + '.dat']:
-                    result = os.system(
-                        'cp {} {}'.format(fn, '/mnt/share/tmiconi/modulmaze/' + fn))
-                print("Done!")
+        # if (numiter + 1) % params['save_every'] == 0:
+        #     print("Saving files...")
+        #     losslast100 = np.mean(all_losses_objective[-100:])
+        #     print("Average loss over the last 100 episodes:", losslast100)
+        #     print("Saving local files...")
+        #     with open('grad_' + suffix + '.txt', 'w') as thefile:
+        #         for item in all_grad_norms[::10]:
+        #             thefile.write("%s\n" % item)
+        #     with open('loss_' + suffix + '.txt', 'w') as thefile:
+        #         for item in all_total_rewards[::10]:
+        #             thefile.write("%s\n" % item)
+        #     torch.save(net.state_dict(), 'torchmodel_' + suffix + '.dat')
+        #     with open('params_' + suffix + '.dat', 'wb') as fo:
+        #         pickle.dump(params, fo)
+        #     if os.path.isdir('/mnt/share/tmiconi'):
+        #         print("Transferring to NFS storage...")
+        #         for fn in ['params_' + suffix + '.dat', 'loss_' + suffix + '.txt', 'torchmodel_' + suffix + '.dat']:
+        #             result = os.system(
+        #                 'cp {} {}'.format(fn, '/mnt/share/tmiconi/modulmaze/' + fn))
+        #         print("Done!")
 
 
 if __name__ == "__main__":
