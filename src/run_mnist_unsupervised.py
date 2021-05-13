@@ -236,7 +236,7 @@ def run():
 
     # we save model name and model version to the hyper param dictionary
     hyper_parameter_dictionary['model_name'] = model.name
-    hyper_parameter_dictionary['model_version'] = model.version
+    hyper_parameter_dictionary['model_version'] = model.versionA
     hyper_parameter_dictionary['optimizer'] = optimizer.__repr__()
     hyper_parameter_dictionary['loss'] = criterion._get_name()
 

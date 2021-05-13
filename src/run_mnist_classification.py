@@ -3,7 +3,7 @@ from torch.utils.data import RandomSampler, DataLoader, SubsetRandomSampler
 from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
 from ignite.metrics import Accuracy, Loss
 from functools import partial
-from src.models import FeedForward
+from src.models import FeedForward, PlasticFeedforward
 
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
@@ -202,7 +202,8 @@ def setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_load
 def run():
     """ we assume all hyperparameters have been defined in the header, we should only have run code here """
     # define the model
-    model = FeedForward([784, 100, 10])  # placeholder for now
+    # model = FeedForward([784, 100, 10])  # placeholder for now
+    model = PlasticFeedforward()
     # move the model to the correct device
     model = model.to(device)
 
