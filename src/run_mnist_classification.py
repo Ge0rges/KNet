@@ -27,8 +27,12 @@ if not os.path.exists(data_root):
 
 # We define a variable that needs to be modified for every run in order to uniquely identify them, this is used
 # when saving the tensorboard metrics as well as logging the results.
-run_id = 0
+run_id = "baseline_2"
+# run_id = 1
 
+# comments = ""
+comments = "running regular FF for a baseline performance for 2 layer FF [784, 300, 10], has as many params as a " \
+           "plastic FF with [784, 100, 10]"
 # where to save experiment results and output metrics
 result_root = './results'
 if not os.path.exists(result_root):
@@ -68,8 +72,8 @@ tensorboard_log_dir = output_folder_path + '/tb_logs'
 hyper_parameter_dictionary = {}
 
 # These are example placeholder values TODO: change those values to appropriate ones once we start experimentation
-epochs = 25
-learning_rate = 0.001
+epochs = 250
+learning_rate = 0.0001
 batch_size = 256
 weight_decay = 0.0001
 
@@ -77,6 +81,7 @@ hyper_parameter_dictionary['epochs'] = epochs
 hyper_parameter_dictionary['learning_rate'] = learning_rate
 hyper_parameter_dictionary['batch_size'] = batch_size
 hyper_parameter_dictionary['weight_decay'] = weight_decay
+hyper_parameter_dictionary['comments'] = comments
 
 # put the rest of the hyper_parameters below before the dictionary save
 dictionary_path = output_folder_path + '/hyper_parameters.txt'
@@ -202,8 +207,8 @@ def setup_event_handler(trainer, evaluator, train_loader, test_loader, eval_load
 def run():
     """ we assume all hyperparameters have been defined in the header, we should only have run code here """
     # define the model
-    # model = FeedForward([784, 100, 10])  # placeholder for now
-    model = PlasticFeedforward()
+    model = FeedForward([784, 300, 10])  # placeholder for now
+    # model = PlasticFeedforward()
     # move the model to the correct device
     model = model.to(device)
 

@@ -29,6 +29,8 @@ if not os.path.exists(data_root):
 # when saving the tensorboard metrics as well as logging the results.
 run_id = 1
 
+comments = ""
+
 # where to save experiment results and output metrics
 result_root = './results'
 if not os.path.exists(result_root):
@@ -73,6 +75,7 @@ learning_rate = 0.001
 weight_decay = 0.0001
 batch_size = 256
 
+hyper_parameter_dictionary['comments'] = comments
 hyper_parameter_dictionary['epochs'] = epochs
 hyper_parameter_dictionary['learning_rate'] = learning_rate
 hyper_parameter_dictionary['batch_size'] = batch_size
