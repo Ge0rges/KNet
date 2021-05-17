@@ -79,9 +79,9 @@ class PlasticLinear(nn.Linear):
         w = F.linear(input, self.weight.T, self.bias)
         # y = w + self.previous_output.unsqueeze(1).bmm(self.weight + torch.mul(self.alpha, self.hebbian))
         y = w + torch.matmul(self.previous_input, self.weight + torch.mul(self.alpha, self.hebbian))
-        delta_hebb = torch.matmul(self.previous_input.T, y)
 
         with torch.no_grad():
+            delta_hebb = torch.matmul(self.previous_input.T, y)
             if self.has_mod:
                 myeta = self.mod_fanout(self.mod.get_value().unsqueeze(dim=0))
                 self.hebbian = torch.clamp(self.hebbian + myeta * delta_hebb, min=-self.clip_val, max=self.clip_val)
