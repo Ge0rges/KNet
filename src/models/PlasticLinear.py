@@ -81,11 +81,12 @@ class PlasticLinear(nn.Linear):
         y = w + torch.matmul(self.previous_input, self.weight + torch.mul(self.alpha, self.hebbian))
         delta_hebb = torch.matmul(self.previous_input.T, y)
 
-        if self.has_mod:
-            myeta = self.mod_fanout(self.mod.get_value().unsqueeze(dim=0))
-            self.hebbian = torch.clamp(self.hebbian + myeta * delta_hebb, min=-self.clip_val, max=self.clip_val)
-        else:
-            self.hebbian = torch.clamp(self.hebbian + delta_hebb, min=-self.clip_val, max=self.clip_val)
+        with torch.no_grad():
+            if self.has_mod:
+                myeta = self.mod_fanout(self.mod.get_value().unsqueeze(dim=0))
+                self.hebbian = torch.clamp(self.hebbian + myeta * delta_hebb, min=-self.clip_val, max=self.clip_val)
+            else:
+                self.hebbian = torch.clamp(self.hebbian + delta_hebb, min=-self.clip_val, max=self.clip_val)
 
         self.previous_input = input.detach()
 
