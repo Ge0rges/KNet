@@ -49,12 +49,13 @@ class PlasticLinear(nn.Linear):
 
         self.has_mod = mod
 
-        if mod:
+        if self.has_mod:
             self.mod = None
             self.mod_fanout = nn.Linear(1, out_features)
 
-        self.reset_parameters()
         self.clip_val = 1.0
+
+        self.reset_parameters()
 
     def set_mod(self, mod: Mod):
         if self.has_mod:
@@ -93,8 +94,8 @@ class PlasticLinear(nn.Linear):
         return y
 
     def extra_repr(self) -> str:
-        return 'in_features={}, out_features={}, alpha,={}, bias={}'.format(
-            self.in_features, self.out_features, self.alpha, self.bias is not None
+        return 'in_features={}, out_features={}, alpha,={}, hebbian={}, bias={}'.format(
+            self.in_features, self.out_features, self.alpha, self.hebbian, self.bias is not None
         )
 
 
