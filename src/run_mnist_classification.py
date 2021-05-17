@@ -16,7 +16,7 @@ import os
 # Pytorch dataloading variables
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 pin_memory = (device.type == "cuda")
-num_workers = 0   # number of cpu threads allocated to data loading
+num_workers = 2   # number of cpu threads allocated to data loading
 
 # where to download the data files
 data_root = './data'
@@ -110,7 +110,7 @@ def mnist_loader(dims=1):
                                target_transform=one_hot_mnist)
     test_set = datasets.MNIST(root=data_root, train=False, transform=transform_all, download=True,
                               target_transform=one_hot_mnist)
-
+    print(train_set)
     train_sampler = RandomSampler(train_set)
     train_loader = DataLoader(train_set, sampler=train_sampler, batch_size=batch_size, num_workers=num_workers,
                               pin_memory=pin_memory)
@@ -119,12 +119,12 @@ def mnist_loader(dims=1):
     test_indices = list(range(index, len(test_set)))
     test_sampler = SubsetRandomSampler(test_indices)
     test_loader = DataLoader(test_set, sampler=test_sampler, batch_size=batch_size, num_workers=num_workers,
-                             pin_memory=pin_memory)
+                             pin_memory=pin_memory, drop_last=True)
 
     eval_indices = list(range(index))
     eval_sampler = SubsetRandomSampler(eval_indices)
     eval_loader = DataLoader(test_set, sampler=eval_sampler, batch_size=batch_size, num_workers=num_workers,
-                             pin_memory=pin_memory)
+                             pin_memory=pin_memory, drop_last=True)
 
     return train_loader, test_loader, eval_loader
 
