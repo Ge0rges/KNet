@@ -1,6 +1,8 @@
 """
 Implementation of a plastic autoencoder using backpropamine.
 """
+assert False, "This class has not been implemented yet"
+
 import torch.nn as nn
 from src.utils.misc import get_sequential
 

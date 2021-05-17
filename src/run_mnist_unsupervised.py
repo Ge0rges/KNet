@@ -39,12 +39,11 @@ if not os.path.exists(mnist_folder):
     os.mkdir(mnist_folder)
 
 output_folder_path = mnist_folder + '/output_run_' + str(run_id)
-if os.path.exists(output_folder_path):
-    print("THERE ALREADY EXISTS A RUN WITH THIS RUN IDENTIFIER, PLEASE MODIFY THE RUN_ID OR REMOVE THE EXISTING"
-          " OUTPUT RUN FOLDER BEFORE RESTARTING")
-    exit(1)
-else:
-    os.mkdir(output_folder_path)
+while os.path.exists(output_folder_path):
+    run_id += 1
+    print("RUN_ID incremented by 1")
+    output_folder_path = mnist_folder + '/output_run_' + str(run_id)
+os.mkdir(output_folder_path)
 
 # logging INFO and above so we can keep ignite info
 log_file_name = output_folder_path + '/logs.log'
