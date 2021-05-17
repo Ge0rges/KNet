@@ -41,8 +41,8 @@ if not os.path.exists(mnist_folder):
 output_folder_path = mnist_folder + '/output_run_' + str(run_id)
 while os.path.exists(output_folder_path):
     run_id += 1
-    print("RUN_ID incremented by 1")
     output_folder_path = mnist_folder + '/output_run_' + str(run_id)
+print("RUN_ID is"+ str(run_id))
 os.mkdir(output_folder_path)
 
 # logging INFO and above so we can keep ignite info

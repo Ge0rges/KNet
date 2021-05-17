@@ -41,8 +41,8 @@ if not os.path.exists(mnist_folder):
 output_folder_path = mnist_folder + '/output_run_' + str(run_id)
 while os.path.exists(output_folder_path):
     run_id += 1
-    print("RUN_ID incremented by 1")
     output_folder_path = mnist_folder + '/output_run_' + str(run_id)
+print("RUN_ID is"+ str(run_id))
 os.mkdir(output_folder_path)
 
 # logging INFO and above so we can keep ignite info
@@ -68,7 +68,7 @@ tensorboard_log_dir = output_folder_path + '/tb_logs'
 hyper_parameter_dictionary = {}
 
 # These are example placeholder values TODO: change those values to appropriate ones once we start experimentation
-epochs = 15
+epochs = 25
 learning_rate = 0.001
 batch_size = 256
 weight_decay = 0.0001
