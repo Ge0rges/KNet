@@ -119,7 +119,7 @@ class PlasticFeedforward(nn.Module):
         x = self.p1(x)
         x = self.relu(x)
         x = self.p2(x)
-        x = self.softmax(x)
+        x = self.relu(x)
         # self.mod.update_value(x)   # we update the mod value
         return x
 

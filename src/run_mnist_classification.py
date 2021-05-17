@@ -88,8 +88,9 @@ dictionary_path = output_folder_path + '/hyper_parameters.txt'
 def mnist_loader(dims=1):
     """ Regular MNIST loader, meant to be used to train a classifier """
     def one_hot_mnist(targets):
-        targets_onehot = torch.zeros(10)
-        targets_onehot[targets] = 1
+        # targets_onehot = torch.zeros(10)
+        # targets_onehot[targets] = 1
+        targets_onehot = targets
         return targets_onehot
 
     if dims == 3:
@@ -207,7 +208,7 @@ def run():
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    criterion = torch.nn.BCELoss()
+    criterion = torch.nn.CrossEntropyLoss()
 
     # we save model name and model version to the hyper param dictionary
     hyper_parameter_dictionary['model_name'] = model.name
