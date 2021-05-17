@@ -27,7 +27,7 @@ class FeedForward(nn.Module):
         """
         super(FeedForward, self).__init__()
 
-        self.classifier = get_sequential(network_shape, backwards=False, activation=nn.Sigmoid)
+        self.classifier = get_sequential(network_shape, backwards=False, activation=nn.ReLU)
 
         self.name = 'FeedForward'
         self.version = 'V0.0'
