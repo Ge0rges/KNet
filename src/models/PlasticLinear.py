@@ -88,6 +88,7 @@ class PlasticLinear(nn.Linear):
             self.hebbian = torch.clamp(self.hebbian + delta_hebb, min=-self.clip_val, max=self.clip_val)
 
         self.previous_input = input.detach()
+
         return y
 
     def extra_repr(self) -> str:
@@ -139,5 +140,4 @@ class PlasticRNNMaze(nn.Module):
         x = self.p2(x)
         self.mod.update_value(x)  # we update the mod value
         return x
-
 
